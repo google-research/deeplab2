@@ -1,0 +1,6 @@
+numpy==1.20.1
+tensorflow==2.4.1
+tensorflow-gpu==2.4.1
+matplotlib==3.2.1
+protobuf==3.12.2
+pillow

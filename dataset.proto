@@ -1,0 +1,72 @@
+// Copyright 2021 The Deeplab2 Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+package deeplab2;
+
+// Configure the dataset options.
+message DatasetOptions {
+  // Set the dataset. See dataset.py for supported datasets.
+  optional string dataset = 1;
+  // Set the dataset file pattern to be used with glob.
+  repeated string file_pattern = 2;
+  // Set the number of samples per batch. This must be a multiple of replicas.
+  // E.g. batch_size = 8 on 4 GPUs equals a batch size of 2 on each GPU.
+  optional int32 batch_size = 3 [default = 32];
+  // Set the crop size as a list of [crop_height, crop_width].
+  repeated int32 crop_size = 4;
+  // Minimum value for resize. Can be 1) empty; or 2) an integer, indicating
+  // the desired size of the shorter image side (either height or width); or
+  // 3) a 2-tuple of (height, width), indicating the desired minimum value for
+  // height and width after resize. Setting values to non-positive indicate
+  // no minimum value would be used.
+  repeated int32 min_resize_value = 5;
+  // Maximum value for resize. Can be 1) empty; or 2) an integer, indicating
+  // the maximum allowed size of the longer image side (either height or width);
+  // or 3) a 2-tuple of (height, width), indicating the maximum allowed size
+  // after resize. Setting values to non-positive indicates no maximum value
+  // would be used.
+  repeated int32 max_resize_value = 6;
+  // Set the resizing factor.
+  optional int32 resize_factor = 7;
+
+  /* Augmentation options.*/
+  message AugmentationOptions {
+    // Set the minimum scale factor for augmentation. Default not to use.
+    optional float min_scale_factor = 1 [default = 1.0];
+    // Set the maximum scale factor for augmentation. Default not to use.
+    optional float max_scale_factor = 2 [default = 1.0];
+    // Set the scale factor step size for data augmentation.
+    optional float scale_factor_step_size = 3 [default = 0.25];
+    // The name of the AutoAugment policy to use.
+    optional string autoaugment_policy_name = 4;
+  }
+  optional AugmentationOptions augmentations = 8;
+  // Set the standard deviation used to generate Gaussian center ground-truth.
+  optional float sigma = 9 [default = 8.0];
+  // Set whether to use increased weights on small instances.
+  optional bool increase_small_instance_weights = 10 [default = false];
+  // Set the pixel threshold for small instances.
+  optional int32 small_instance_threshold = 11 [default = 4096];
+  // Set the small instance weight.
+  optional float small_instance_weight = 12 [default = 3.0];
+  // Set whether to use 2 frames togetehr as input for video panoptic
+  // segmentation.
+  optional bool use_two_frames = 13 [default = false];
+  // Whether to decode the groundtruth label. Some dataset splits (e.g., test
+  // set) may not contain any groundtruth label. In that case, set this field
+  // to false to avoid decoding non-existing groundtruth label.
+  optional bool decode_groundtruth_label = 14 [default = true];
+}

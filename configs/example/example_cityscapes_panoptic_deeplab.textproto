@@ -1,0 +1,61 @@
+# proto-file: deeplab2/config.proto
+# proto-message: ExperimentOptions
+
+model_options {
+  decoder {
+    feature_key: "res5"
+    atrous_rates: 6
+    atrous_rates: 12
+    atrous_rates: 18
+  }
+
+  backbone {
+    name: "resnet50"
+  }
+
+  panoptic_deeplab {
+    low_level {
+      feature_key: "res3"
+      channels_project: 64
+    }
+    low_level {
+      feature_key: "res2"
+      channels_project: 32
+    }
+    semantic_head {
+      # Example for cityscapes.
+      output_channels: 19
+      head_channels: 256
+    }
+    instance {
+      instance_decoder_override {
+        feature_key: "res5"
+        decoder_channels: 128
+        atrous_rates: 6
+        atrous_rates: 12
+        atrous_rates: 18
+      }
+      low_level_override {
+        feature_key: "res3"
+        channels_project: 32
+      }
+      low_level_override {
+        feature_key: "res2"
+        channels_project: 16
+      }
+      center_head {
+        output_channels: 1
+        head_channels: 32
+      }
+      regression_head {
+        output_channels: 2
+        head_channels: 32
+      }
+    }
+  }
+}
+
+train_dataset_options {
+  crop_size: 1025
+  crop_size: 2049
+}

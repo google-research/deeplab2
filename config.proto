@@ -1,0 +1,40 @@
+// Copyright 2021 The Deeplab2 Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+package deeplab2;
+
+import public 'deeplab2/dataset.proto';
+import public 'deeplab2/evaluator.proto';
+import public 'deeplab2/model.proto';
+import public 'deeplab2/trainer.proto';
+
+option java_multiple_files = true;
+
+// Configure experiment options.
+message ExperimentOptions {
+  // Set the experiment name.
+  optional string experiment_name = 1;
+  // Set the options for the model.
+  optional ModelOptions model_options = 2;
+  // Set the options for the trainer.
+  optional TrainerOptions trainer_options = 3;
+  // Set the options for the training dataset.
+  optional DatasetOptions train_dataset_options = 4;
+  // Set the options for the evaluator.
+  optional EvaluatorOptions evaluator_options = 5;
+  // Set the options for the validation dataset.
+  optional DatasetOptions eval_dataset_options = 6;
+}

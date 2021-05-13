@@ -1,0 +1,87 @@
+// Copyright 2021 The Deeplab2 Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+package deeplab2;
+
+// Next ID: 19
+message EvaluatorOptions {
+  // Set the number of steps to run evaluation. -1 corresponds to a run over the
+  // full dataset.
+  optional int32 eval_steps = 1 [default = -1];
+  // Set the number of train steps after which eval should run in interleaved
+  // mode.
+  optional int32 eval_interval = 2 [default = 5000];
+  // Set the number of seconds to wait at most for the next checkpoint. -1 means
+  // the job will wait forever.
+  optional int32 continuous_eval_timeout = 3 [default = -1];
+  // Set whether to run evaluation as a tf function.
+  optional bool use_tf_function = 4 [default = true];
+  // Set the area size of stuff segments to discard.
+  optional int32 stuff_area_limit = 6 [default = 0];
+  // Set the threshold of the center heatmap for post-processing.
+  optional float center_score_threshold = 7 [default = 0.1];
+  // Set the kernel size of the nms kernel for the center heatmap.
+  optional int32 nms_kernel = 8 [default = 3];
+  // Set the number of top centers to keep. -1 corresponds to keeping all
+  // centers.
+  optional int32 keep_k_centers = 9 [default = 400];
+  // Enable saving predictions to disk.
+  optional bool save_predictions = 10 [default = false];
+  // Override the storing location. By default, predictions are written to
+  // `experiment_root` + `experiment_name` + `vis`.
+  optional string override_save_dir = 11;
+  // Set the number of samples to visualize.
+  optional int32 num_vis_samples = 12 [default = 10];
+  // Enable saving raw predictions for the whole dataset. The output path is the
+  // save_dir + `raw_semantic`/`raw_panoptic`.
+  optional bool save_raw_predictions = 13 [default = false];
+  // The format of raw panoptic predictions. This flag is used together with
+  // `save_raw_predictions`. When save_raw_predictions is True, this field
+  // specifies the format of saved raw panoptic predictions. Supports:
+  // - 'two_channel_png': The popular format, also supported by the official
+  //  COCO panoptic API (https://github.com/cocodataset/panopticapi), where
+  //  the saved PNG image contains R-channel for semantic labels and
+  //  G-channel for instance IDs.
+  // - 'three_channel_png': A simple extension of the 'two_channel_png' format,
+  //  and is adopted in some video panoptic segmentation datasets (for
+  //  example, KITTI-STEP and MOTChallenge-STEP), where the saved PNG image
+  //  contains R-channel for semantic labels, G-channel for the values of
+  //  (instance ID // 256), and B-channel for (instance ID % 256).
+  // - 'two_channel_numpy_array': A more flexible format (unconstrained by the
+  //  PNG channel size), where the panoptic predictions are saved as a numpy
+  //  array in the two channel format (i.e., first channel encodes the
+  //  semantic class and the second channel the instance ID).
+  optional string raw_panoptic_format = 17 [default = 'two_channel_png'];
+  // Enable conversion of train IDs to eval IDs for raw predictions.
+  optional bool convert_raw_to_eval_ids = 14 [default = true];
+  // Add flipped images for evaluation or not. This is used for multi-scale
+  // inference (usually used together with `eval_scales`). If True, another
+  // flipped image will be used during inference.
+  optional bool add_flipped_images = 5 [default = false];
+  // The scales to resize images for inference. Change it to, e.g. [0.5, 0.75,
+  // 1.0, 1.25, 1.5, 1.75], for multi-scale inference.
+  repeated float eval_scales = 15 [packed = true];
+  // Boolean, if true, use TensorFlow operation (CUDA kernel) to merge
+  // semantic and instance segmentation (for the final panoptic segmentation).
+  // Defaults to true, as our GPU implementation is much faster. Set to false
+  // if you could not successfully compile TensorFlow with this operation.
+  optional bool merge_semantic_and_instance_with_tf_op = 16 [default = true];
+  // Displays detailed metrics on instance segmentation AP. This includes e.g.
+  // AP at a matching IoU threshold of 0.5, or the AP of small objects only,
+  // etc. If false, will only display a summary AP metric that's an average of
+  // IoU thresholds and over all objects.
+  optional bool detailed_ap_metrics = 18 [default = false];
+}

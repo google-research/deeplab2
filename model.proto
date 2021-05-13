@@ -1,0 +1,171 @@
+// Copyright 2021 The Deeplab2 Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+package deeplab2;
+
+option java_multiple_files = true;
+
+/********** Submessages used to config model options **********/
+// Configure the decoder model options.
+message DecoderOptions {
+  // Set the features key for the high-level features, e.g. 'res5'.
+  optional string feature_key = 1;
+  // Set the number of filters in each convolution of the decoder.
+  optional int32 decoder_channels = 2 [default = 256];
+  // Set the decoder convolution type. Support 'depthwise_separable_conv' and
+  // 'standard_conv'.
+  optional string decoder_conv_type = 5 [default = 'depthwise_separable_conv'];
+  // Set the number of filters in each convolution of the ASPP.
+  optional int32 aspp_channels = 3 [default = 256];
+  // Set the list of atrous rates used in the ASPP.
+  repeated int32 atrous_rates = 4;
+}
+
+// Configure the low level features to use.
+message LowLevelOptions {
+  // Set the name of the low-level feature, e.g. 'res2'.
+  optional string feature_key = 1;
+  // Set the number of filters for the 1x1 projection convolution.
+  optional int32 channels_project = 2;
+}
+
+// Configure the head options.
+message HeadOptions {
+  // Set the number of filters in the last convolution, e.g. 1 or NUM_CLASSES.
+  optional int32 output_channels = 1;
+  // Set the number of filters in the 5x5 convolution, e.g. 256 or 32.
+  optional int32 head_channels = 2;
+  // Set the head convolution type. Support 'depthwise_separable_conv' and
+  // 'standard_conv'
+  optional string head_conv_type = 3 [default = 'depthwise_separable_conv'];
+}
+
+// Configure the instance branch.
+message InstanceOptions {
+  // Set whether to use the instance branch.
+  optional bool enable = 1 [default = true];
+
+  // Set the low level options used in instance branch. The list of
+  // LowLevelOptions must be ordered lower resolution to higher resolution.
+  // Leaving it empty will use the same low level options as the semantic
+  // branch.
+  repeated LowLevelOptions low_level_override = 2;
+  // Set the decoder options of the instance branch. Leaving it empty will use
+  // the same decoder options as the semantic branch.
+  optional DecoderOptions instance_decoder_override = 3;
+
+  // Configure instance center head.
+  optional HeadOptions center_head = 4;
+  // Configure instance regression head.
+  optional HeadOptions regression_head = 5;
+}
+
+// Configure the model options.
+// Next ID: 10
+message ModelOptions {
+  // Configure model backbone.
+  message BackboneOptions {
+    // Set the name of the specific architecture of the family.
+    optional string name = 1 [default = 'resnet50'];
+    // Set the output stride of the encoder.
+    optional int32 output_stride = 2 [default = 32];
+    // Set path to pretrained weights to load pretrained weights.
+    optional string pretrained_weights = 3;
+    // Set whether to use the squeeze-and-excite operation.
+    optional bool use_squeeze_and_excite = 4 [default = false];
+    // Set the drop path keep probability for training. Default not to use.
+    optional float drop_path_keep_prob = 5 [default = 1.0];
+    // Set the drop path schedule. Currently support (1) 'constant': use the
+    // same drop path probability for all blocks, and (2) 'linear': linearly
+    // decrease the drop path probability from 1.0 at the 0-th stage (or STEM)
+    // to drop_path_keep_prob at the last block.
+    optional string drop_path_schedule = 6 [default = 'constant'];
+    // Set the STEM width_multiplier, controlloing STEM convolution channels.
+    optional float stem_width_multiplier = 7 [default = 1.0];
+    // Set the backbone (except STEM) width_multiplier, controlling backbone
+    // (except STEM) convolution channels.
+    optional float backbone_width_multiplier = 8 [default = 1.0];
+    // Set the backbone (except STEM) layer_multiplier, controlling the number
+    // of layers in the backbone (except STEM).
+    optional float backbone_layer_multiplier = 9 [default = 1.0];
+    // Use the Switchable Atrous Convolution (SAC) beyond the specified stride.
+    // For example, if use_sac_beyond_stride = 16, SAC will be applied to the
+    // network stage whose original output stride >= 16 (i.e., 16 and 32, or
+    // the last two stages). Set to -1 to disable it.
+    optional int32 use_sac_beyond_stride = 10 [default = -1];
+  }
+  // Set the model option for the backbone encoder model.
+  optional BackboneOptions backbone = 1;
+
+  // Shared decoder settings across different meta architectures.
+  optional DecoderOptions decoder = 2;
+
+  // Meta-architecture specific settings.
+  message DeeplabV3Options {
+    // Set the number of classes for the last convolution to predict logits.
+    optional int32 num_classes = 1;
+  }
+
+  message DeeplabV3PlusOptions {
+    // Set the low level options used in this decoder. The list of
+    // LowLevelOptions must be ordered from higher to lower levels.
+    optional LowLevelOptions low_level = 1;
+
+    // Set the number of classes for the last convolution to predict logits.
+    optional int32 num_classes = 2;
+  }
+
+  message PanopticDeeplabOptions {
+    // Set the low level options used in this decoder. The list of
+    // LowLevelOptions must be ordered lower resolution to higher resolution.
+    repeated LowLevelOptions low_level = 1;
+    // Set the model options for the instance branch.
+    optional InstanceOptions instance = 2;
+    // Set the model options of the semantic head.
+    optional HeadOptions semantic_head = 3;
+  }
+
+  message MotionDeepLabOptions {
+    // Set the low level options used in this decoder. The list of
+    // LowLevelOptions must be ordered lower resolution to higher resolution.
+    repeated LowLevelOptions low_level = 1;
+    // Set the model options for the instance branch.
+    optional InstanceOptions instance = 2;
+    // Set the model options of the semantic head.
+    optional HeadOptions semantic_head = 3;
+    // Set the model options for the motion head.
+    optional HeadOptions motion_head = 4;
+  }
+
+  oneof meta_architecture {
+    DeeplabV3Options deeplab_v3 = 3;
+    DeeplabV3PlusOptions deeplab_v3_plus = 4;
+    PanopticDeeplabOptions panoptic_deeplab = 5;
+    MotionDeepLabOptions motion_deeplab = 7;
+  }
+  // Set the checkpoint to load.
+  optional string initial_checkpoint = 6;
+  // Set whether to restore the last convolution of the semantic head when
+  // loading from the initial checkpoint. Setting this flag to false is useful
+  // when an initial checkpoint was trained on a dataset with different classes.
+  optional bool restore_semantic_last_layer_from_initial_checkpoint = 8
+      [default = true];
+  // Set whether to restore the last convolution of the instance heads when
+  // loading from the initial checkpoint. Depending on the meta architecture,
+  // this includes center heatmap, center regression and motion regression.
+  optional bool restore_instance_last_layer_from_initial_checkpoint = 9
+      [default = true];
+}

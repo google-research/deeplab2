@@ -1,0 +1,29 @@
+# proto-file: deeplab2/config.proto
+# proto-message: ExperimentOptions
+
+model_options {
+  decoder {
+    feature_key: "res5"
+    atrous_rates: 6
+    atrous_rates: 12
+    atrous_rates: 18
+  }
+
+  backbone {
+    name: "resnet50"
+  }
+
+  deeplab_v3_plus {
+    low_level {
+      feature_key: "res2"
+      channels_project: 48
+    }
+    # Example for cityscapes.
+    num_classes: 19
+  }
+}
+
+train_dataset_options {
+  crop_size: 1025
+  crop_size: 2049
+}

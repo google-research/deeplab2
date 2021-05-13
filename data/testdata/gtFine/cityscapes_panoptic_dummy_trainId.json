@@ -1,0 +1,70 @@
+{
+  "annotations": [
+    {
+      "file_name": "dummy_000000_000000_gtFine_panoptic.png",
+      "image_id": "dummy_000000_000000",
+      "segments_info": [
+        {
+          "area": 958,
+          "category_id": 13,
+          "id": 26000,
+          "iscrowd": 0
+        },
+        {
+          "area": 6178,
+          "category_id": 13,
+          "id": 26,
+          "iscrowd": 1
+        },
+        {
+          "area": 10496,
+          "category_id": 13,
+          "id": 26001,
+          "iscrowd": 0
+        },
+        {
+          "area": 5534,
+          "category_id": 13,
+          "id": 26002,
+          "iscrowd": 0
+        },
+        {
+          "area": 32768,
+          "category_id": 13,
+          "id": 26003,
+          "iscrowd": 0
+        },
+        {
+          "area": 19906,
+          "category_id": 13,
+          "id": 26004,
+          "iscrowd": 0
+        },
+        {
+          "area": 15940,
+          "category_id": 8,
+          "id": 21,
+          "iscrowd": 0
+        },
+        {
+          "area": 278754,
+          "category_id": 10,
+          "id": 23,
+          "iscrowd": 0
+        },
+        {
+          "area": 222420,
+          "category_id": 2,
+          "id": 11,
+          "iscrowd": 0
+        },
+        {
+          "area": 46475,
+          "category_id": 0,
+          "id": 7,
+          "iscrowd": 0
+        }
+      ]
+    }
+  ]
+}

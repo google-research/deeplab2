@@ -1,0 +1,170 @@
+# proto-file: deeplab2/config.proto
+# proto-message: ExperimentOptions
+#
+# Motion-DeepLab with ResNet-50 and output stride 32.
+#
+############### PLEASE READ THIS BEFORE USING THIS CONFIG ###############
+# Before using this config, you need to update the following fields:
+# - experiment_name: Use a unique experiment name for each experiment.
+# - initial_checkpoint: Update the path to the initial checkpoint.
+# - train_dataset_options.file_pattern: Update the path to the
+#   training set. e.g., your_dataset/train*.tfrecord
+# - eval_dataset_options.file_pattern: Update the path to the
+#   validation set, e.g., your_dataset/eval*.tfrecord
+# - (optional) set merge_semantic_and_instance_with_tf_op: true, if you
+#   could successfully compile the provided efficient merging operation
+#   under the folder `tensorflow_ops`.
+#########################################################################
+#
+# This config uses the Cityscapes pretrained checkpoint where crowd label is
+# kept to pretrain the semantic segmentation branch. Note that we additionally
+# perform the net-surgery on the first convolution and the last prediction layer
+# since (1) Motion-DeepLab takes two-frame as inputs, and (2) MOTChallenge-STEP
+# contains a subeset of semantic classes of Cityscapes. For net-surgery details,
+# see utils/net_surgery_convert_last_layer.py.
+#
+# References:
+# For ResNet, see
+# - Kaiming He, et al. "Deep Residual Learning for Image Recognition."
+#   In CVPR, 2016.
+# For Motion-DeepLab, see
+# - Mark Weber, et al. "STEP: Segmenting and Tracking Every Pixel."
+#   arXiv: 2102.11859.
+
+# Use a unique experiment_name for each experiment.
+experiment_name: "${EXPERIMENT_NAME}"
+model_options {
+  # Update the path to the initial checkpoint (e.g., ImageNet
+  # pretrained checkpoint)
+  initial_checkpoint: "${INIT_CHECKPOINT}"
+  backbone {
+    name: "resnet50"
+    output_stride: 32
+  }
+  decoder {
+    feature_key: "res5"
+    decoder_channels: 256
+    aspp_channels: 256
+    atrous_rates: 3
+    atrous_rates: 6
+    atrous_rates: 9
+  }
+  motion_deeplab {
+    low_level {
+      feature_key: "res3"
+      channels_project: 64
+    }
+    low_level {
+      feature_key: "res2"
+      channels_project: 32
+    }
+    instance {
+      low_level_override {
+        feature_key: "res3"
+        channels_project: 32
+      }
+      low_level_override {
+        feature_key: "res2"
+        channels_project: 16
+      }
+      instance_decoder_override {
+        feature_key: "res5"
+        decoder_channels: 128
+        atrous_rates: 3
+        atrous_rates: 6
+        atrous_rates: 9
+      }
+      center_head {
+        output_channels: 1
+        head_channels: 32
+      }
+      regression_head {
+        output_channels: 2
+        head_channels: 32
+      }
+    }
+    semantic_head {
+      output_channels: 7
+      head_channels: 256
+    }
+    motion_head {
+      output_channels: 2
+      head_channels: 32
+    }
+  }
+}
+trainer_options {
+  save_checkpoints_steps: 100
+  save_summaries_steps: 50
+  steps_per_loop: 50
+  loss_options {
+    semantic_loss {
+      name: "softmax_cross_entropy"
+      weight: 1.0
+      top_k_percent: 0.2
+    }
+    center_loss {
+      name: "mse"
+      weight: 200
+    }
+    regression_loss {
+      name: "l1"
+      weight: 0.01
+    }
+    motion_loss {
+      name: "l1"
+      weight: 0.01
+    }
+  }
+  solver_options {
+    base_learning_rate: 0.00001
+    training_number_of_steps: 10000
+  }
+}
+train_dataset_options {
+  dataset: "motchallenge_step"
+  # Update the path to training set.
+  file_pattern: "${TRAIN_SET}"
+  batch_size: 32
+  crop_size: 1089
+  crop_size: 1921
+  # Skip resizing.
+  min_resize_value: 0
+  max_resize_value: 0
+  augmentations {
+    min_scale_factor: 0.5
+    max_scale_factor: 2.0
+    scale_factor_step_size: 0.1
+  }
+  increase_small_instance_weights: true
+  small_instance_weight: 3.0
+  use_two_frames: true
+}
+eval_dataset_options {
+  dataset: "motchallenge_step"
+  # Update the path to validation set.
+  file_pattern: "${VAL_SET}"
+  batch_size: 1
+  crop_size: 1089
+  crop_size: 1921
+  # Skip resizing.
+  min_resize_value: 0
+  max_resize_value: 0
+  # Add options to make the evaluation loss comparable to the training loss.
+  increase_small_instance_weights: true
+  small_instance_weight: 3.0
+  use_two_frames: true
+}
+evaluator_options {
+  continuous_eval_timeout: 10000
+  stuff_area_limit: 0
+  center_score_threshold: 0.1
+  nms_kernel: 13
+  save_predictions: true
+  save_raw_predictions: false
+  # Use pure tf functions (i.e., no CUDA kernel) to merge semantic and
+  # instance maps. For faster speed, compile TensorFlow with provided kernel
+  # implementation under the folder `tensorflow_ops`, and set
+  # merge_semantic_and_instance_with_tf_op to true.
+  merge_semantic_and_instance_with_tf_op: false
+}
