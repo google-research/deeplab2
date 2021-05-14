@@ -103,7 +103,7 @@ from one frame to another, as shown in our STEP paper.
 TODO: Add pretrained checkpoint.
 
 Backbone | Output stride | Dataset split | PQ&dagger; | AP<sup>Mask</sup>&dagger; | mIoU | STQ
--------- | :-----------: | :---------------: | :---: | :---: | :---: | :---: | :--:
+-------- | :-----------: | :---------------: | :---: | :---: | :---: | :---:
 ResNet-50 ([config](../../configs/motchallenge/motion_deeplab/resnet50_os32.textproto)) | 32 | MOTChallenge-STEP train set | ? | ? | ? |?
 ResNet-50 | 32 | MOTChallenge-STEP trainval set | - | - | - | -
 

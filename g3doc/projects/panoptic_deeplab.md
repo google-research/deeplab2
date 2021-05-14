@@ -44,7 +44,7 @@ config files under the directory
 [configs/cityscapes/panoptic_deeplab](../../configs/cityscapes/panoptic_deeplab).
 
 Backbone | Output stride | Output resolution | PQ&dagger; | AP<sup>Mask</sup>&dagger; | mIoU
--------- | :-----------: | :---------------: | :---: | :---: | :---: | :---:
+-------- | :-----------: | :---------------: | :---: | :---: | :---:
 ResNet-50 ([config](../../configs/cityscapes/panoptic_deeplab/resnet50_os32_merge_with_pure_tf_func.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_os32_panoptic_deeplab_cityscapes_trainfine.tar.gz)) | 32 | 1024 x 2048 | 60.24 | 30.01 | 76.36
 
 &dagger;: See Q4 in [FAQ](../faq.md).
