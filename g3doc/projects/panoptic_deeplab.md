@@ -1,21 +1,22 @@
 # Panoptic-DeepLab
 
 Panoptic-DeepLab is a state-of-the-art **box-free** system for panoptic
-segmentation, where the goal is to assign a unique value, encoding both
+segmentation [1], where the goal is to assign a unique value, encoding both
 semantic label (e.g., person, car) and instance ID (e.g., instance_1,
 instance_2), to every pixel in an image.
 
-Panoptic-DeepLab improves over the DeeperLab model (one of the first box-free
-systems for panoptic segmentation, which combines DeepLabv3+ and PersonLab) by
-simplifying the class-agnostic instance detection to only use a center keypoint.
-As a result, Panoptic-DeepLab predicts three outputs: (1) semantic segmentation,
-(2) instance center heatmap, and (3) instance center regression.
+Panoptic-DeepLab improves over the DeeperLab [6], which is one of the first
+box-free systems for panoptic segmentation combining DeepLabv3+ [7] and
+PersonLab [8], by simplifying the class-agnostic instance detection to only use
+a center keypoint. As a result, Panoptic-DeepLab predicts three outputs: (1)
+semantic segmentation, (2) instance center heatmap, and (3) instance center
+regression.
 
 The class-agnostic instance segmentation is first obtained by grouping
 the predicted foreground pixels (inferred by semantic segmentation) to their
-closest predicted instance centers. To generate final panoptic segmentation, we
-then fuse the class-agnostic instance segmentation with semantic segmentation by
-the efficient majority-vote scheme.
+closest predicted instance centers [2]. To generate final panoptic segmentation,
+we then fuse the class-agnostic instance segmentation with semantic segmentation
+by the efficient majority-vote scheme [6].
 
 
 <p align="center">
@@ -46,6 +47,11 @@ config files under the directory
 Backbone | Output stride | Output resolution | PQ&dagger; | AP<sup>Mask</sup>&dagger; | mIoU
 -------- | :-----------: | :---------------: | :---: | :---: | :---:
 ResNet-50 ([config](../../configs/cityscapes/panoptic_deeplab/resnet50_os32_merge_with_pure_tf_func.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_os32_panoptic_deeplab_cityscapes_trainfine.tar.gz)) | 32 | 1024 x 2048 | 60.24 | 30.01 | 76.36
+ResNet-50-Beta ([config](../../configs/cityscapes/panoptic_deeplab/resnet50_beta_os32.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_beta_os32_panoptic_deeplab_cityscapes_trainfine.tar.gz)) | 32 | 1024 x 2048 | 61.16 | 31.58 | 77.37
+Wide-ResNet-41 ([config](../../configs/cityscapes/panoptic_deeplab/wide_resnet41_os16.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/wide_resnet41_os16_panoptic_deeplab_cityscapes_trainfine.tar.gz)) | 16 | 1024 x 2048 | 64.83 | 36.07 | 81.92
+SWideRNet-SAC-(1, 1, 1) ([config](../../configs/cityscapes/panoptic_deeplab/swidernet_sac_1_1_1_os16.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/swidernet_sac_1_1_1_os16_panoptic_deeplab_cityscapes_trainfine.tar.gz)) | 16 | 1024 x 2048 | 64.81 | 36.80 | 82.24
+SWideRNet-SAC-(1, 1, 3) ([config](../../configs/cityscapes/panoptic_deeplab/swidernet_sac_1_1_3_os16.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/swidernet_sac_1_1_3_os16_panoptic_deeplab_cityscapes_trainfine.tar.gz))) | 16 | 1024 x 2048 | 67.05 | 38.59 | 82.67
+SWideRNet-SAC-(1, 1, 4.5) ([config](../../configs/cityscapes/panoptic_deeplab/swidernet_sac_1_1_4.5_os16.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/swidernet_sac_1_1_4.5_os16_panoptic_deeplab_cityscapes_trainfine.tar.gz)) | 16 | 1024 x 2048 | 67.29 | 39.51 | 82.74
 
 &dagger;: See Q4 in [FAQ](../faq.md).
 
@@ -137,3 +143,16 @@ If you use the MobileNetv3 backbone, please consider citing
 5. Zifeng Wu, Chunhua Shen, and Anton Van Den Hengel. "Wider or deeper:
    Revisiting the ResNet model for visual recognition." Pattern Recognition,
    2019.
+
+6. Tien-Ju Yang, Maxwell D Collins, Yukun Zhu, Jyh-Jing Hwang, Ting Liu,
+   Xiao Zhang, Vivienne Sze, George Papandreou, and Liang-Chieh Chen.
+   "DeeperLab: Single-shot image parser." arXiv:1902.05093, 2019.
+
+7. Liang-Chieh Chen, Yukun Zhu, George Papandreou, Florian Schroff, and
+   Hartwig Adam. "Encoder-decoder with atrous separable convolution for
+   semantic image segmentation." In ECCV, 2018.
+
+8. George Papandreou, Tyler Zhu, Liang-Chieh Chen, Spyros Gidaris,
+   Jonathan Tompson, and Kevin Murphy. "Personlab: Person pose estimation
+   and instance segmentation with a bottom-up, part-based, geometric embedding
+   model." In ECCV, 2018.
