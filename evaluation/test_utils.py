@@ -42,7 +42,8 @@ def read_test_image(testdata_path: str,
   Returns:
     The image, as a numpy array.
   """
-  image_path = os.path.join(_TEST_DIR, testdata_path)
+  image_path = os.path.join(# internal_test_dir
+_TEST_DIR, testdata_path)
   with tf.io.gfile.GFile(image_path, 'rb') as f:
     image = Image.open(f)
     if image_format is not None:

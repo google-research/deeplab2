@@ -8,8 +8,7 @@ DeepLab2 depends on the following libraries:
 *   Numpy
 *   Pillow
 *   Matplotlib
-*   Tensorflow 2.5
-*   Cython
+*   Tensorflow 2.x
 *   [Google Protobuf](https://developers.google.com/protocol-buffers)
 *   [Orbit](https://github.com/tensorflow/models/tree/master/orbit)
 *   [pycocotools](https://github.com/cocodataset/cocoapi/tree/master/PythonAPI/pycocotools)
@@ -29,11 +28,14 @@ cd ${YOUR_PROJECT_NAME}
 git clone https://github.com/google-research/deeplab2.git
 ```
 
-### Install TensorFlow 2.5 via PIP
+### Install TensorFlow 2.x via PIP
 
 ```bash
-# Should come with compatible numpy package.
-pip install tensorflow==2.5
+# For CPU
+pip install tensorflow
+
+# For GPU
+pip install tensorflow-gpu
 ```
 
 ### Install Protobuf
@@ -48,19 +50,6 @@ sudo apt-get install protobuf-compiler
 Alternatively, you can also download the package from web on other platforms.
 Please refer to https://github.com/protocolbuffers/protobuf for more details
 about installation.
-
-### Other Libraries
-
-The remaining libraries can be installed via pip:
-
-```bash
-# Pillow
-pip install pillow
-# matplotlib
-pip install matplotlib
-# Cython
-pip install cython
-```
 
 ### Install Orbit
 
@@ -88,6 +77,18 @@ git clone https://github.com/cocodataset/cocoapi.git
 cd ${YOUR_PROJECT_NAME}/cocoapi/PythonAPI
 make
 cd ${YOUR_PROJECT_NAME}
+```
+
+### Other Libraries
+
+The remaining libraries can be installed on Ubuntu 14.04 using apt-get or pip:
+
+```bash
+# numpy
+sudo apt-get install python-pil python-numpy
+
+# matplotlib
+pip install --user matplotlib
 ```
 
 ## **Compilation**
@@ -133,7 +134,8 @@ protobuf, run:
 # `${PATH_TO_PROTOC}` is the directory where the `protoc` binary locates.
 ${PATH_TO_PROTOC} deeplab2/*.proto --python_out=.
 
-# Alternatively, if protobuf compiler is globally accessible, you can simply run:
+# Alternatively, if protobuf compiler is installed via `apt-get install`, you
+# can simply run:
 protoc deeplab2/*.proto --python_out=.
 ```
 
@@ -181,10 +183,10 @@ as an example.
 ### Test the Configuration
 
 You can test if you have successfully installed and configured DeepLab2 by
-running the following commands (requires compilation of custom ops):
+running the following commands:
 
 ```bash
-# Model training test (test for custom ops, protobuf)
+# Model training test (test for custom ops, protobug)
 python deeplab2/model/deeplab_test.py
 
 # Model evaluator test (test for other packages such as orbit, cocoapi, etc)
@@ -203,10 +205,3 @@ deeplab2/compile.sh
 # GPU
 deeplab2/compile.sh gpu
 ```
-
-
-## Troubleshooting
-
-**Q1: Can I use [conda](https://anaconda.org/) instead of pip?**
-
-**A1:** We experienced several dependency issues with the most recent conda package. We therefore do not provide support for installing deeplab2 via conda at this stage.

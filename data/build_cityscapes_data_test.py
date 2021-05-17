@@ -33,7 +33,8 @@ _TEST_FILE_PREFIX = 'dummy_000000_000000'
 class BuildCityscapesDataTest(tf.test.TestCase):
 
   def test_read_segments(self):
-    cityscapes_root = os.path.join(_TEST_DATA_DIR)
+    cityscapes_root = os.path.join(# internal_test_dir
+_TEST_DATA_DIR)
     segments_dict = build_cityscapes_data._read_segments(
         cityscapes_root, dataset_split='dummy')
     self.assertIn(_TEST_FILE_PREFIX, segments_dict)
@@ -42,7 +43,8 @@ class BuildCityscapesDataTest(tf.test.TestCase):
 
   def test_generate_panoptic_label(self):
     FLAGS.treat_crowd_as_ignore = False  # Test a more complicated setting
-    cityscapes_root = os.path.join(_TEST_DATA_DIR)
+    cityscapes_root = os.path.join(# internal_test_dir
+_TEST_DATA_DIR)
     segments_dict = build_cityscapes_data._read_segments(
         cityscapes_root, dataset_split='dummy')
     annotation_file_name, segments = segments_dict[_TEST_FILE_PREFIX]
@@ -54,7 +56,8 @@ class BuildCityscapesDataTest(tf.test.TestCase):
 
     # Check panoptic label matches golden file.
     golden_file_path = os.path.join(
-        _TEST_DATA_DIR, 'dummy_gt_for_vps.png')
+        # internal_test_dir
+_TEST_DATA_DIR, 'dummy_gt_for_vps.png')
     with tf.io.gfile.GFile(golden_file_path, 'rb') as f:
       golden_label = Image.open(f)
       # The PNG file is encoded by:
