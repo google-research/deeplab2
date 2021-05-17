@@ -34,8 +34,11 @@ void           | 255
 #### Download data
 
 1.  Download MOTChallenge images from https://motchallenge.net/
-2.  Download groundtruth MOTChallenge-STEP panoptic maps from [TODO: Add the
-    link once dataset is uploaded]
+2.  Download groundtruth MOTChallenge-STEP panoptic maps from
+    http://storage.googleapis.com/gresearch/tf-deeplab/data/motchallenge-step.tar.gz
+
+The groundtruth panoptic map is encoded in the same way as described in
+[KITTI-STEP dataset](./kitti_step.md).
 
 #### Create tfrecord files
 

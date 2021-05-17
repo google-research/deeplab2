@@ -67,8 +67,8 @@ sequences are further split into training set (12 sequences) and validation set
 To prepare the dataset, you need to:
 
 1.  Download KITTI images from http://www.cvlibs.net/datasets/kitti/index.php
-2.  Download groundtruth KITTI-STEP panoptic maps from [TODO: Add the link once
-    dataset is uploaded]
+2.  Download groundtruth KITTI-STEP panoptic maps from
+    http://storage.googleapis.com/gresearch/tf-deeplab/data/kitti-step.tar.gz
 
 The groundtruth panoptic map is encoded as follows in PNG format:
 
