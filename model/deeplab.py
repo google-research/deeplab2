@@ -149,13 +149,13 @@ class DeepLab(tf.keras.Model):
     else:
       result_dict = collections.defaultdict(list)
       # Evaluation mode where one could perform multi-scale inference.
-      scale_1_pool_size = list(self.get_pool_size())
+      scale_1_pool_size = self.get_pool_size()
       logging.info('Eval with scales %s', self._eval_scales)
       for eval_scale in self._eval_scales:
         # Get the scaled images/pool_size for each scale.
         scaled_images, scaled_pool_size = (
             self._scale_images_and_pool_size(
-                input_tensor, scale_1_pool_size, eval_scale))
+                input_tensor, list(scale_1_pool_size), eval_scale))
         # Update the ASPP pool size for different eval scales.
         self.set_pool_size(tuple(scaled_pool_size))
         logging.info('Eval scale %s; setting pooling size to %s',
@@ -271,7 +271,8 @@ class DeepLab(tf.keras.Model):
 
     Args:
       images: An input tensor with shape [batch, height, width, 3].
-      pool_size: A tuple, specifying the pooling size of ASPP pooling layer.
+      pool_size: A list with two elements, specifying the pooling size
+        of ASPP pooling layer.
       scale: A float, used to scale the input images and pool_size.
 
     Returns:
@@ -284,5 +285,7 @@ class DeepLab(tf.keras.Model):
       image_size = images.get_shape().as_list()[1:3]
       scaled_image_size = utils.scale_mutable_sequence(image_size, scale)
       scaled_images = utils.resize_bilinear(images, scaled_image_size)
-      scaled_pool_size = utils.scale_mutable_sequence(pool_size, scale)
+      scaled_pool_size = [None, None]
+      if pool_size != [None, None]:
+        scaled_pool_size = utils.scale_mutable_sequence(pool_size, scale)
     return scaled_images, scaled_pool_size

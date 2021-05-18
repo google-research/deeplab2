@@ -30,8 +30,20 @@ message DecoderOptions {
   optional string decoder_conv_type = 5 [default = 'depthwise_separable_conv'];
   // Set the number of filters in each convolution of the ASPP.
   optional int32 aspp_channels = 3 [default = 256];
-  // Set the list of atrous rates used in the ASPP.
+  // Set the list of atrous rates used in the ASPP. Note that this field has
+  // to be of length 3 (to specify the three 3x3 atrous convolutions in ASPP),
+  // and it is effective only when `aspp_use_only_1x1_proj_conv` is false.
   repeated int32 atrous_rates = 4;
+  // The ASPP module uses only 1x1 projection convolution (i.e., the ASPP five
+  // branches consisting of one 1x1 convolution, three 3x3 atrous convolutions
+  // with specified `atrous_rates`, and the global average pooling are turned
+  // off, when `aspp_use_only_1x1_proj_conv` is true), equivalent to applying
+  // only one 1x1 convolution to reduce the feature map channels (obtained from
+  // encoder backbone) to the specified `aspp_channels`. This field is mainly
+  // used (i.e., set to true) when the encoder backbone is already able to
+  // efficiently capture long-range information, e.g., by axial attention blocks
+  // (for reference, see configs/cityscapes/axial_deeplab).
+  optional bool aspp_use_only_1x1_proj_conv = 6 [default = false];
 }
 
 // Configure the low level features to use.

@@ -179,6 +179,7 @@ class ASPP(tf.keras.layers.Layer):
   def __init__(self,
                output_channels,
                atrous_rates,
+               aspp_use_only_1x1_proj_conv=False,
                name='ASPP',
                bn_layer=tf.keras.layers.BatchNormalization):
     """Creates an ASPP layer.
@@ -188,39 +189,26 @@ class ASPP(tf.keras.layers.Layer):
         each ASPP convolution layer.
       atrous_rates: A list of three integers specifying the atrous/dilation rate
         of each ASPP convolution layer.
+      aspp_use_only_1x1_proj_conv: Boolean, specifying if the ASPP five branches
+        are turned off or not. If True, the ASPP module is degenerated to one
+        1x1 convolution, projecting the input channels to `output_channels`.
       name: A string specifying the name of this layer (default: 'ASPP').
       bn_layer: An optional tf.keras.layers.Layer that computes the
         normalization (default: tf.keras.layers.BatchNormalization).
 
     Raises:
-      ValueError: An error occurs when atrous_rates does not contain 3 elements.
+      ValueError: An error occurs when both atrous_rates does not contain 3
+        elements and `aspp_use_only_1x1_proj_conv` is False.
     """
     super(ASPP, self).__init__(name=name)
 
-    if len(atrous_rates) != 3:
+    if not aspp_use_only_1x1_proj_conv and len(atrous_rates) != 3:
       raise ValueError(
           'The ASPP layers need exactly 3 atrous rates, but %d were given' %
           len(atrous_rates))
+    self._aspp_use_only_1x1_proj_conv = aspp_use_only_1x1_proj_conv
 
-    self._conv_bn_act = convolutions.Conv2DSame(
-        output_channels,
-        kernel_size=1,
-        name='conv_bn_act',
-        use_bias=False,
-        use_bn=True,
-        bn_layer=bn_layer,
-        activation='relu')
-
-    rate1, rate2, rate3 = atrous_rates
-    self._aspp_conv1 = ASPPConv(output_channels, rate1, name='aspp_conv1',
-                                bn_layer=bn_layer)
-    self._aspp_conv2 = ASPPConv(output_channels, rate2, name='aspp_conv2',
-                                bn_layer=bn_layer)
-    self._aspp_conv3 = ASPPConv(output_channels, rate3, name='aspp_conv3',
-                                bn_layer=bn_layer)
-    self._aspp_pool = ASPPPool(output_channels, name='aspp_pool',
-                               bn_layer=bn_layer)
-
+    # Projection convolution is always used.
     self._proj_conv_bn_act = convolutions.Conv2DSame(
         output_channels,
         kernel_size=1,
@@ -229,7 +217,27 @@ class ASPP(tf.keras.layers.Layer):
         use_bn=True,
         bn_layer=bn_layer,
         activation='relu')
-    self._proj_drop = layers.Dropout(rate=0.1)
+
+    if not aspp_use_only_1x1_proj_conv:
+      self._conv_bn_act = convolutions.Conv2DSame(
+          output_channels,
+          kernel_size=1,
+          name='conv_bn_act',
+          use_bias=False,
+          use_bn=True,
+          bn_layer=bn_layer,
+          activation='relu')
+      rate1, rate2, rate3 = atrous_rates
+      self._aspp_conv1 = ASPPConv(output_channels, rate1, name='aspp_conv1',
+                                  bn_layer=bn_layer)
+      self._aspp_conv2 = ASPPConv(output_channels, rate2, name='aspp_conv2',
+                                  bn_layer=bn_layer)
+      self._aspp_conv3 = ASPPConv(output_channels, rate3, name='aspp_conv3',
+                                  bn_layer=bn_layer)
+      self._aspp_pool = ASPPPool(output_channels, name='aspp_pool',
+                                 bn_layer=bn_layer)
+      # Dropout is needed only when ASPP five branches are used.
+      self._proj_drop = layers.Dropout(rate=0.1)
 
   def set_pool_size(self, pool_size):
     """Sets the pooling size of the ASPP pooling layer.
@@ -240,10 +248,14 @@ class ASPP(tf.keras.layers.Layer):
     Args:
       pool_size: A tuple specifying the pooling size of the ASPP pooling layer.
     """
-    self._aspp_pool.set_pool_size(pool_size)
+    if not self._aspp_use_only_1x1_proj_conv:
+      self._aspp_pool.set_pool_size(pool_size)
 
   def get_pool_size(self):
-    return self._aspp_pool.get_pool_size()
+    if not self._aspp_use_only_1x1_proj_conv:
+      return self._aspp_pool.get_pool_size()
+    else:
+      return (None, None)
 
   def reset_pooling_layer(self):
     """Resets the pooling layer to global average pooling."""
@@ -261,17 +273,17 @@ class ASPP(tf.keras.layers.Layer):
     Returns:
       The output tensor.
     """
-    results = []
-
-    results.append(self._conv_bn_act(input_tensor, training=training))
-    results.append(self._aspp_conv1(input_tensor, training=training))
-    results.append(self._aspp_conv2(input_tensor, training=training))
-    results.append(self._aspp_conv3(input_tensor, training=training))
-    results.append(self._aspp_pool(input_tensor, training=training))
-
-    x = tf.concat(results, 3)
-
-    x = self._proj_conv_bn_act(x, training=training)
-    x = self._proj_drop(x, training=training)
-
+    if self._aspp_use_only_1x1_proj_conv:
+      x = self._proj_conv_bn_act(input_tensor, training=training)
+    else:
+      # Apply the ASPP module.
+      results = []
+      results.append(self._conv_bn_act(input_tensor, training=training))
+      results.append(self._aspp_conv1(input_tensor, training=training))
+      results.append(self._aspp_conv2(input_tensor, training=training))
+      results.append(self._aspp_conv3(input_tensor, training=training))
+      results.append(self._aspp_pool(input_tensor, training=training))
+      x = tf.concat(results, 3)
+      x = self._proj_conv_bn_act(x, training=training)
+      x = self._proj_drop(x, training=training)
     return x

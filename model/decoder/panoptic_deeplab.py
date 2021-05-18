@@ -48,6 +48,7 @@ class PanopticDeepLabSingleDecoder(layers.Layer):
                decoder_output_channels,
                atrous_rates,
                name,
+               aspp_use_only_1x1_proj_conv=False,
                decoder_conv_type='depthwise_separable_conv',
                bn_layer=tf.keras.layers.BatchNormalization):
     """Initializes a single Panoptic-DeepLab decoder of layers.Layer.
@@ -67,6 +68,9 @@ class PanopticDeepLabSingleDecoder(layers.Layer):
       atrous_rates: A list of three integers specifying the atrous rate for the
         ASPP layers.
       name: A string specifying the name of the layer.
+      aspp_use_only_1x1_proj_conv: Boolean, specifying if the ASPP five branches
+        are turned off or not. If True, the ASPP module is degenerated to one
+        1x1 convolution, projecting the input channels to `output_channels`.
       decoder_conv_type: String, specifying decoder convolution type. Support
         'depthwise_separable_conv' and 'standard_conv'.
       bn_layer: An optional tf.keras.layers.Layer that computes the
@@ -82,6 +86,7 @@ class PanopticDeepLabSingleDecoder(layers.Layer):
     self._aspp = aspp.ASPP(
         aspp_output_channels,
         atrous_rates,
+        aspp_use_only_1x1_proj_conv=aspp_use_only_1x1_proj_conv,
         name='aspp',
         bn_layer=bn_layer)
     self._high_level_feature_name = high_level_feature_name
@@ -295,6 +300,7 @@ class PanopticDeepLabDecoder(layers.Layer):
         decoder_output_channels=decoder_options.decoder_channels,
         atrous_rates=decoder_options.atrous_rates,
         name='semantic_decoder',
+        aspp_use_only_1x1_proj_conv=decoder_options.aspp_use_only_1x1_proj_conv,
         decoder_conv_type=decoder_options.decoder_conv_type,
         bn_layer=bn_layer)
     self._semantic_head = PanopticDeepLabSingleHead(
@@ -335,6 +341,8 @@ class PanopticDeepLabDecoder(layers.Layer):
           decoder_output_channels=decoder_options.decoder_channels,
           atrous_rates=decoder_options.atrous_rates,
           name='instance_decoder',
+          aspp_use_only_1x1_proj_conv=(
+              decoder_options.aspp_use_only_1x1_proj_conv),
           decoder_conv_type=decoder_options.decoder_conv_type,
           bn_layer=bn_layer)
       self._instance_center_head = PanopticDeepLabSingleHead(
