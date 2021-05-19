@@ -37,6 +37,24 @@ by the efficient majority-vote scheme [6].
 
 ## Model Zoo
 
+In the Model Zoo, we explore building Panoptic-DeepLab on top of several
+backbones (e.g., ResNet model variants [3]).
+
+Herein, we highlight some of the employed backbones:
+
+1. **ResNet-50-Beta**: We replace the original stem in ResNet-50 [3] with the
+Inception stem [9], i.e., the first original 7x7 convolution is replaced
+by three 3x3 convolutions.
+
+2. **Wide-ResNet-41**: We modify the Wide-ResNet-38 [5] by (1) removing the
+last residual block, and (2) repeating the second last residual block two
+more times.
+
+3. **SWideRNet-SAC-(1, 1, x)**, where x = \{1, 3, 4.5\}, scaling the backbone
+layers (excluding the stem) of Wide-ResNet-41 by a factor of x. This
+backbone only employs the Switchable Atrous Convolution (SAC) without the
+Squeeze-and-Excitation modules [10].
+
 ### Cityscapes Panoptic Segmentation
 
 We provide checkpoints pretrained on Cityscapes train-fine set below. If you
@@ -156,3 +174,10 @@ If you use the MobileNetv3 backbone, please consider citing
    Jonathan Tompson, and Kevin Murphy. "Personlab: Person pose estimation
    and instance segmentation with a bottom-up, part-based, geometric embedding
    model." In ECCV, 2018.
+
+9. Christian Szegedy, Vincent Vanhoucke, Sergey Ioffe, Jon Shlens, and
+   Zbigniew Wojna. "Rethinking the inception architecture for computer
+   vision." In CVPR, 2016.
+
+10. Jie Hu, Li Shen, and Gang Sun. "Squeeze-and-excitation networks."
+    In CVPR, 2018.
