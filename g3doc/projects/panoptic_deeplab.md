@@ -50,8 +50,8 @@ by three 3x3 convolutions.
 last residual block, and (2) repeating the second last residual block two
 more times.
 
-3. **SWideRNet-SAC-(1, 1, x)**, where x = \{1, 3, 4.5\}, scaling the backbone
-layers (excluding the stem) of Wide-ResNet-41 by a factor of x. This
+3. **SWideRNet-SAC-(1, 1, x)**, where x = $$\{1, 3, 4.5\}$$, scaling the
+backbone layers (excluding the stem) of Wide-ResNet-41 by a factor of x. This
 backbone only employs the Switchable Atrous Convolution (SAC) without the
 Squeeze-and-Excitation modules [10].
 
