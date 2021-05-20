@@ -11,12 +11,12 @@ prominent for dense pixel prediction tasks) and further to allow us to
 perform attention witin a larger or even global region, we factorize the 2D
 self-attention [1, 3, 4] into **two** 1D self-attention [2, 5]. We then
 effectively integrate the **axial-attention** into a residual block [7], as
-illustrated below.
+illustrated in Fig. 1.
 
 <p align="center">
    <img src="../img/axial_deeplab/axial_block.png" width=800>
    <br>
-   <em>An axial-attention (residual) block, which consists of two
+   <em>Figure 1. An axial-attention (residual) block, which consists of two
     axial-attention layers operating along height- and width-axis
     sequentially.</em>
 </p>
@@ -38,17 +38,17 @@ segmentation tasks as shown in the Model Zoo below.
 Additionally, we propose a position-sensitive self-attention design,
 which captures long range interactions with precise positional information.
 We illustrate the difference between our design and the popular non-local
-block below.
+block in Fig. 2.
 
 <p align="center">
    <img src="../img/axial_deeplab/nonlocal_block.png" height=250>
    <img src="../img/axial_deeplab/position_sensitive_axial_block.png" height=250>
 </p>
-<center><em>A non-local block (left) vs. our position-sensitive axial-attention
-applied along the width-axis (right). $$\otimes$$ denotes matrix multiplication,
-and $$\oplus$$ denotes elementwise sum. The softmax is performed on the last
-axis. Blue boxes denote 1 × 1 convolutions, and red boxes denote relative
-positionalencoding.</em></center>
+<center><em>Figure 2. A non-local block (left) vs. our position-sensitive
+axial-attention applied along the width-axis (right). $$\otimes$$ denotes
+matrix multiplication, and $$\oplus$$ denotes elementwise sum. The softmax
+is performed on the last axis. Blue boxes denote 1 × 1 convolutions, and
+red boxes denote relative positionalencoding.</em></center>
 
 ## Prerequisite
 
