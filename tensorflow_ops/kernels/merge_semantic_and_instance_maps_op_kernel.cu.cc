@@ -189,8 +189,8 @@ void CreateLabelsPerInstance(const GPUDevice& d,
 
 // Specialization of Convert1DInt32TensorToSet for GPU.
 template <>
-absl::flat_hash_set<int32> Convert1DInt32TensorToSet(const GPUDevice& d,
-                                                     const Tensor& tensor) {
+absl::flat_hash_set<int32_t> Convert1DInt32TensorToSet(const GPUDevice& d,
+                                                       const Tensor& tensor) {
   const int n_vals = tensor.dim_size(0);
   std::vector<int32_t> host_buffer(n_vals);
   d.memcpyDeviceToHost(host_buffer.data(), tensor.tensor<int32_t, 1>().data(),
