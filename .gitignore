@@ -1,0 +1,15 @@
+# Caching.
+__pycache__/
+
+# IDE settings.
+.vscode/
+.idea/
+.env
+
+# Generated proto files.
+*_pb2.py
+
+# For mac
+.DS_Store
+
+# Generated files
