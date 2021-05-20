@@ -1,14 +1,54 @@
-References below are really meant for reference when writing the doc.
-Please remove the references once ready.
-
-References:
-
-* https://github.com/tensorflow/models/blob/master/research/deeplab/g3doc/model_zoo.md
-* https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/tf2_detection_zoo.md
-
 # Axial-DeepLab
 
-Cool model.
+Axial-DeepLab, improving over Panoptic-DeepLab, incorporates the powerful
+axial self-attention modules [1], also known as the encoder of Axial
+Transformers [2], for general dense prediction tasks. In this document,
+we demonstrate the effectiveness of Axial-DeepLab on the task of panoptic
+segmentation [6], unifying semantic segmentation and instance segmentation.
+
+To reduce the computation complexity of 2D self-attention (especially
+prominent for dense pixel prediction tasks) and further to allow us to
+perform attention witin a larger or even global region, we factorize the 2D
+self-attention [1, 3, 4] into **two** 1D self-attention [2, 5]. We then
+effectively integrate the **axial-attention** into a residual block [7], as
+illustrated below.
+
+<p align="center">
+   <img src="../img/axial_deeplab/axial_block.png" width=800>
+   <br>
+   <em>An axial-attention (residual) block, which consists of two
+    axial-attention layers operating along height- and width-axis
+    sequentially.</em>
+</p>
+
+The backbone of Axial-DeepLab, called Axial-ResNet, is obtained by replacing
+the residual blocks in any type of ResNets (e.g., Wide ResNets [8, 9]) with
+our proposed axial-attention blocks. Optionally, one could stack only the
+axial-attention blocks to form an **axial** stand-alone self-attention
+backbone. However, considering a better speed-accuracy trade-off
+(convolutions are typically well-optimized on modern accelerators), we
+adopt the hybrid CNN-Transformer architecture, where we stack the effective
+**axial-attention blocks** on top of the first few stages of ResNets (e.g.,
+Wide ResNets). In particular, in this document, we explore the case where
+we stack the axial-attention blocks after the *conv3_x*, i.e., we apply
+axial-attentions after (and *including*) stride 16 feature maps. This
+hybrid CNN-Transformer architecture is very effective on panoptic
+segmentation tasks as shown in the Model Zoo below.
+
+Additionally, we propose a position-sensitive self-attention design,
+which captures long range interactions with precise positional information.
+We illustrate the difference between our design and the popular non-local
+block below.
+
+<p align="center">
+   <img src="../img/axial_deeplab/nonlocal_block.png" height=250>
+   <img src="../img/axial_deeplab/position_sensitive_axial_block.png" height=250>
+</p>
+<center><em>A non-local block (left) vs. our position-sensitive axial-attention
+applied along the width-axis (right). $$\otimes$$ denotes matrix multiplication,
+and $$\oplus$$ denotes elementwise sum. The softmax is performed on the last
+axis. Blue boxes denote 1 × 1 convolutions, and red boxes denote relative
+positionalencoding.</em></center>
 
 ## Prerequisite
 
@@ -23,14 +63,40 @@ Cool model.
 
 ## Model Zoo
 
+In the Model Zoo, we explore building axial-attention blocks on top of
+SWideRNet (Scaling Wide ResNets) and MaX-DeepLab backbones (i.e., only
+the ImageNet pretrained backbone without any *Mask Transformers*).
+
+Herein, we highlight some of the employed backbones:
+
+1. **Axial-SWideRNet-(1, 1, x)**, where x = $$\{1, 3\}$$, scaling the backbone
+layers (excluding the stem) of Wide-ResNet-41 by a factor of x. This
+backbone augments the naive SWideRNet (i.e., no Squeeze-and-Excitation
+or Switchable Atrous Convolution) with axial-attention blocks in the last
+two stages.
+
+2. **MaX-DeepLab-S-Backbone**: The ImageNet pretrained backbone of
+MaX-DeepLab-S (i.e., without any *Mask Transformers*). This backbone augments
+the ResNet-50-Beta (i.e., replacing the original stem with Inception stem)
+with axial-attention blocks in the last two stages.
+
+3. **MaX-DeepLab-L-Backbone**: The ImageNet pretrained backbone of
+MaX-DeepLab-L (i.e., without any *Mask Transformers*). This backbone adds a
+stacked decoder on top of the Wide ResNet-41, and incorporates
+axial-attention blocks to all feature maps with output stride 16 and larger.
+
 #### Cityscapes Panoptic Segmentation
 
 We provide checkpoints pretrained on Cityscapes train-fine set below. If you
 would like to train those models by yourself, please find the corresponding
 config files under this [directory](../../configs/cityscapes/axial_deeplab).
 
-Backbone | Output stride | Output resolution | PQ&dagger; | AP<sup>Mask</sup>&dagger; | mIoU | Checkpoint
--------- | :-----------: | :---------------: | :---: | :---: | :---: | :---:
+TODO: Add backbones and configs.
+
+Backbone | Output stride | Output resolution | PQ&dagger; | AP<sup>Mask</sup>&dagger; | mIoU
+-------- | :-----------: | :---------------: | :---: | :---: | :---:
+
+
 
 &dagger;: See Q4 in [FAQ](../faq.md).
 
