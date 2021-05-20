@@ -29,8 +29,6 @@ cd ${YOUR_PROJECT_NAME}
 git clone https://github.com/google-research/deeplab2.git
 ```
 
-### **Option A: Direct Installation**
-
 ### Install TensorFlow 2.5 via PIP
 
 ```bash
