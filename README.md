@@ -1,13 +1,4 @@
-# WORK IN PROGRESS. PLEASE STAY TUNED.
-
-We are still cleaning the codes to make sure it is easy-to-use and could
-fully reproduce our results.
-
-After everything is ready, we will make an official announcement. Please stay
-tuned.
-
-
-## DeepLab2: A TensorFlow Library for Deep Labeling
+# DeepLab2: A TensorFlow Library for Deep Labeling
 
 DeepLab2 is a TensorFlow library for deep labeling, aiming to provide a
 unified and state-of-the-art TensorFlow codebase for dense pixel labeling tasks,
