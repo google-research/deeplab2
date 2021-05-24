@@ -97,7 +97,7 @@ class DeepLabV3Decoder(layers.Layer):
 
     Returns:
       A dictionary containing the semantic prediction under key
-      common.TARGET_SEMANTIC_LOGITS_KEY.
+      common.PRED_SEMANTIC_LOGITS_KEY.
     """
     if isinstance(features, tf.Tensor):
       feature = features
@@ -108,7 +108,7 @@ class DeepLabV3Decoder(layers.Layer):
 
     x = self._classifier_conv_bn_act(x, training=training)
 
-    return {common.TARGET_SEMANTIC_LOGITS_KEY: self._final_conv(x)}
+    return {common.PRED_SEMANTIC_LOGITS_KEY: self._final_conv(x)}
 
   @property
   def checkpoint_items(self):

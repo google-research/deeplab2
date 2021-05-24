@@ -67,7 +67,7 @@ class MotionDeepLabDecoder(tf.keras.layers.Layer):
     self._semantic_head = panoptic_deeplab.PanopticDeepLabSingleHead(
         motion_deeplab_options.semantic_head.head_channels,
         motion_deeplab_options.semantic_head.output_channels,
-        common.TARGET_SEMANTIC_LOGITS_KEY,
+        common.PRED_SEMANTIC_LOGITS_KEY,
         name='semantic_head',
         bn_layer=bn_layer)
 
@@ -104,13 +104,13 @@ class MotionDeepLabDecoder(tf.keras.layers.Layer):
     self._instance_center_head = panoptic_deeplab.PanopticDeepLabSingleHead(
         motion_deeplab_options.instance.center_head.head_channels,
         motion_deeplab_options.instance.center_head.output_channels,
-        common.TARGET_CENTER_HEATMAP_KEY,
+        common.PRED_CENTER_HEATMAP_KEY,
         name='instance_center_head',
         bn_layer=bn_layer)
     self._instance_regression_head = panoptic_deeplab.PanopticDeepLabSingleHead(
         motion_deeplab_options.instance.regression_head.head_channels,
         motion_deeplab_options.instance.regression_head.output_channels,
-        common.TARGET_OFFSET_MAP_KEY,
+        common.PRED_OFFSET_MAP_KEY,
         name='instance_regression_head',
         bn_layer=bn_layer)
 
@@ -119,7 +119,7 @@ class MotionDeepLabDecoder(tf.keras.layers.Layer):
     self._motion_regression_head = panoptic_deeplab.PanopticDeepLabSingleHead(
         motion_deeplab_options.motion_head.head_channels,
         motion_deeplab_options.motion_head.output_channels,
-        common.TARGET_FRAME_OFFSET_MAP_KEY,
+        common.PRED_FRAME_OFFSET_MAP_KEY,
         name='motion_regression_head',
         bn_layer=bn_layer)
 

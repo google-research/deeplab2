@@ -58,7 +58,7 @@ class DeeplabTest(tf.test.TestCase):
         experiment_options.model_options.deeplab_v3.num_classes]
     resulting_dict = model(input_tensor)
     self.assertListEqual(
-        resulting_dict[common.TARGET_SEMANTIC_LOGITS_KEY].shape.as_list(),
+        resulting_dict[common.PRED_SEMANTIC_LOGITS_KEY].shape.as_list(),
         expected_semantic_shape)
     num_params = np.sum(
         [np.prod(v.get_shape().as_list()) for v in model.trainable_weights])
@@ -76,7 +76,7 @@ class DeeplabTest(tf.test.TestCase):
         experiment_options.model_options.deeplab_v3_plus.num_classes]
     resulting_dict = model(input_tensor)
     self.assertListEqual(
-        resulting_dict[common.TARGET_SEMANTIC_LOGITS_KEY].shape.as_list(),
+        resulting_dict[common.PRED_SEMANTIC_LOGITS_KEY].shape.as_list(),
         expected_semantic_shape)
     num_params = np.sum(
         [np.prod(v.get_shape().as_list()) for v in model.trainable_weights])
@@ -94,7 +94,7 @@ class DeeplabTest(tf.test.TestCase):
         experiment_options.model_options.deeplab_v3.num_classes]
     resulting_dict = model(input_tensor)
     self.assertListEqual(
-        resulting_dict[common.TARGET_SEMANTIC_LOGITS_KEY].shape.as_list(),
+        resulting_dict[common.PRED_SEMANTIC_LOGITS_KEY].shape.as_list(),
         expected_semantic_shape)
     num_params = np.sum(
         [np.prod(v.get_shape().as_list()) for v in model.trainable_weights])
@@ -117,16 +117,16 @@ class DeeplabTest(tf.test.TestCase):
         2, train_crop_size[0], train_crop_size[1], 2]
     resulting_dict = model(input_tensor)
     self.assertListEqual(
-        resulting_dict[common.TARGET_SEMANTIC_LOGITS_KEY].shape.as_list(),
+        resulting_dict[common.PRED_SEMANTIC_LOGITS_KEY].shape.as_list(),
         expected_semantic_shape)
     self.assertListEqual(
-        resulting_dict[common.TARGET_INSTANCE_SCORES_KEY].shape.as_list(),
+        resulting_dict[common.PRED_INSTANCE_SCORES_KEY].shape.as_list(),
         expected_instance_center_shape)
     self.assertListEqual(
-        resulting_dict[common.TARGET_CENTER_HEATMAP_KEY].shape.as_list(),
+        resulting_dict[common.PRED_CENTER_HEATMAP_KEY].shape.as_list(),
         expected_instance_center_shape)
     self.assertListEqual(
-        resulting_dict[common.TARGET_OFFSET_MAP_KEY].shape.as_list(),
+        resulting_dict[common.PRED_OFFSET_MAP_KEY].shape.as_list(),
         expected_instance_regression_shape)
     num_params = np.sum(
         [np.prod(v.get_shape().as_list()) for v in model.trainable_weights])
@@ -149,16 +149,16 @@ class DeeplabTest(tf.test.TestCase):
         2, train_crop_size[0], train_crop_size[1], 2]
     resulting_dict = model(input_tensor)
     self.assertListEqual(
-        resulting_dict[common.TARGET_SEMANTIC_LOGITS_KEY].shape.as_list(),
+        resulting_dict[common.PRED_SEMANTIC_LOGITS_KEY].shape.as_list(),
         expected_semantic_shape)
     self.assertListEqual(
-        resulting_dict[common.TARGET_INSTANCE_SCORES_KEY].shape.as_list(),
+        resulting_dict[common.PRED_INSTANCE_SCORES_KEY].shape.as_list(),
         expected_instance_center_shape)
     self.assertListEqual(
-        resulting_dict[common.TARGET_CENTER_HEATMAP_KEY].shape.as_list(),
+        resulting_dict[common.PRED_CENTER_HEATMAP_KEY].shape.as_list(),
         expected_instance_center_shape)
     self.assertListEqual(
-        resulting_dict[common.TARGET_OFFSET_MAP_KEY].shape.as_list(),
+        resulting_dict[common.PRED_OFFSET_MAP_KEY].shape.as_list(),
         expected_instance_regression_shape)
     num_params = np.sum(
         [np.prod(v.get_shape().as_list()) for v in model.trainable_weights])

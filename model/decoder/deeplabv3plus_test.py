@@ -78,7 +78,7 @@ class Deeplabv3PlusTest(tf.test.TestCase):
 
       logit_tensor = deeplabv3plus_decoder(input_dict)
       self.assertListEqual(
-          logit_tensor[common.TARGET_SEMANTIC_LOGITS_KEY].shape.as_list(),
+          logit_tensor[common.PRED_SEMANTIC_LOGITS_KEY].shape.as_list(),
           expected_shape)
 
   def test_deeplabv3plus_feature_extraction_consistency(self):
@@ -99,8 +99,8 @@ class Deeplabv3PlusTest(tf.test.TestCase):
     logits_tensor_to_compare = deeplabv3plus_decoder(input_dict, training=False)
 
     np.testing.assert_equal(
-        reference_logits_tensor[common.TARGET_SEMANTIC_LOGITS_KEY].numpy(),
-        logits_tensor_to_compare[common.TARGET_SEMANTIC_LOGITS_KEY].numpy())
+        reference_logits_tensor[common.PRED_SEMANTIC_LOGITS_KEY].numpy(),
+        logits_tensor_to_compare[common.PRED_SEMANTIC_LOGITS_KEY].numpy())
 
   def test_deeplabv3plus_pool_size_setter(self):
     deeplabv3plus_decoder = _create_deeplabv3plus_model(

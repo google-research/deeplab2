@@ -149,8 +149,8 @@ class MotionDeepLab(tf.keras.Model):
         self._encoder(input_tensor, training=training), training=training)
     result_dict = dict()
     for key, value in pred.items():
-      if (key == common.TARGET_OFFSET_MAP_KEY or
-          key == common.TARGET_FRAME_OFFSET_MAP_KEY):
+      if (key == common.PRED_OFFSET_MAP_KEY or
+          key == common.PRED_FRAME_OFFSET_MAP_KEY):
         result_dict[key] = utils.resize_and_rescale_offsets(
             value, [input_h, input_w])
       else:
@@ -158,39 +158,39 @@ class MotionDeepLab(tf.keras.Model):
             value, [input_h, input_w])
 
     # Change the semantic logits to probabilities with softmax.
-    result_dict[common.TARGET_SEMANTIC_PROBS_KEY] = tf.nn.softmax(
-        result_dict[common.TARGET_SEMANTIC_LOGITS_KEY])
+    result_dict[common.PRED_SEMANTIC_PROBS_KEY] = tf.nn.softmax(
+        result_dict[common.PRED_SEMANTIC_LOGITS_KEY])
     if not training:
-      (result_dict[common.TARGET_PANOPTIC_KEY],
-       result_dict[common.TARGET_SEMANTIC_KEY],
-       result_dict[common.TARGET_INSTANCE_KEY],
-       result_dict[common.TARGET_INSTANCE_CENTER_KEY],
-       result_dict[common.TARGET_INSTANCE_SCORES_KEY]
+      (result_dict[common.PRED_PANOPTIC_KEY],
+       result_dict[common.PRED_SEMANTIC_KEY],
+       result_dict[common.PRED_INSTANCE_KEY],
+       result_dict[common.PRED_INSTANCE_CENTER_KEY],
+       result_dict[common.PRED_INSTANCE_SCORES_KEY]
       ) = self._post_processing_fn(
-          result_dict[common.TARGET_SEMANTIC_PROBS_KEY],
-          result_dict[common.TARGET_CENTER_HEATMAP_KEY],
-          result_dict[common.TARGET_OFFSET_MAP_KEY])
+          result_dict[common.PRED_SEMANTIC_PROBS_KEY],
+          result_dict[common.PRED_CENTER_HEATMAP_KEY],
+          result_dict[common.PRED_OFFSET_MAP_KEY])
 
       next_heatmap, next_centers = self._render_fn(
-          result_dict[common.TARGET_PANOPTIC_KEY])
+          result_dict[common.PRED_PANOPTIC_KEY])
       panoptic_map, next_centers, next_id = self._track_fn(
           self._prev_center_list.value(),
           next_centers,
           next_heatmap,
-          result_dict[common.TARGET_FRAME_OFFSET_MAP_KEY],
-          result_dict[common.TARGET_PANOPTIC_KEY],
+          result_dict[common.PRED_FRAME_OFFSET_MAP_KEY],
+          result_dict[common.PRED_PANOPTIC_KEY],
           self._next_tracking_id.value()
       )
 
-      result_dict[common.TARGET_PANOPTIC_KEY] = panoptic_map
+      result_dict[common.PRED_PANOPTIC_KEY] = panoptic_map
       self._next_tracking_id.assign(next_id)
       self._prev_center_prediction.assign(
           tf.expand_dims(next_heatmap, axis=3, name='expand_prev_centermap'))
       self._prev_center_list.assign(next_centers)
 
-    if common.TARGET_CENTER_HEATMAP_KEY in result_dict:
-      result_dict[common.TARGET_CENTER_HEATMAP_KEY] = tf.squeeze(
-          result_dict[common.TARGET_CENTER_HEATMAP_KEY], axis=3)
+    if common.PRED_CENTER_HEATMAP_KEY in result_dict:
+      result_dict[common.PRED_CENTER_HEATMAP_KEY] = tf.squeeze(
+          result_dict[common.PRED_CENTER_HEATMAP_KEY], axis=3)
     return result_dict
 
   def _add_previous_heatmap_to_input(self, input_tensor: tf.Tensor

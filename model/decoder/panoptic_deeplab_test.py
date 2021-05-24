@@ -170,7 +170,7 @@ class PanopticDeeplabTest(tf.test.TestCase):
     head = panoptic_deeplab.PanopticDeepLabSingleHead(
         intermediate_channels=256,
         output_channels=output_channels,
-        target_key='target',
+        pred_key='pred',
         name='test_head')
 
     input_shapes_list = [[2, 256, 256, 48], [2, 257, 257, 48]]
@@ -179,7 +179,7 @@ class PanopticDeeplabTest(tf.test.TestCase):
       expected_shape = _create_expected_shape(shape, output_channels)
 
       resulting_tensor = head(input_tensor)
-      self.assertListEqual(resulting_tensor['target'].shape.as_list(),
+      self.assertListEqual(resulting_tensor['pred'].shape.as_list(),
                            expected_shape)
 
   def test_panoptic_deeplab_decoder_output_shape(self):
@@ -206,13 +206,13 @@ class PanopticDeeplabTest(tf.test.TestCase):
 
       resulting_dict = decoder(input_dict)
       self.assertListEqual(
-          resulting_dict[common.TARGET_SEMANTIC_LOGITS_KEY].shape.as_list(),
+          resulting_dict[common.PRED_SEMANTIC_LOGITS_KEY].shape.as_list(),
           expected_semantic_shape)
       self.assertListEqual(
-          resulting_dict[common.TARGET_CENTER_HEATMAP_KEY].shape.as_list(),
+          resulting_dict[common.PRED_CENTER_HEATMAP_KEY].shape.as_list(),
           expected_instance_center_shape)
       self.assertListEqual(
-          resulting_dict[common.TARGET_OFFSET_MAP_KEY].shape.as_list(),
+          resulting_dict[common.PRED_OFFSET_MAP_KEY].shape.as_list(),
           expected_instance_regression_shape)
 
   @test_utils.test_all_strategies

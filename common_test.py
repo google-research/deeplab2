@@ -21,16 +21,16 @@ from deeplab2 import common
 
 class CommonTest(tf.test.TestCase):
 
-  def test_constants_target_keys(self):
-    self.assertEqual(common.TARGET_PANOPTIC_KEY, 'panoptic_pred')
-    self.assertEqual(common.TARGET_SEMANTIC_KEY, 'semantic_pred')
-    self.assertEqual(common.TARGET_INSTANCE_CENTER_KEY, 'instance_center_pred')
-    self.assertEqual(common.TARGET_INSTANCE_KEY, 'instance_pred')
+  def test_constants_keys(self):
+    self.assertEqual(common.PRED_PANOPTIC_KEY, 'panoptic_pred')
+    self.assertEqual(common.PRED_SEMANTIC_KEY, 'semantic_pred')
+    self.assertEqual(common.PRED_INSTANCE_CENTER_KEY, 'instance_center_pred')
+    self.assertEqual(common.PRED_INSTANCE_KEY, 'instance_pred')
 
-    self.assertEqual(common.TARGET_SEMANTIC_LOGITS_KEY, 'semantic_logits')
-    self.assertEqual(common.TARGET_CENTER_HEATMAP_KEY, 'center_heatmap')
-    self.assertEqual(common.TARGET_OFFSET_MAP_KEY, 'offset_map')
-    self.assertEqual(common.TARGET_FRAME_OFFSET_MAP_KEY, 'frame_offset_map')
+    self.assertEqual(common.PRED_SEMANTIC_LOGITS_KEY, 'semantic_logits')
+    self.assertEqual(common.PRED_CENTER_HEATMAP_KEY, 'center_heatmap')
+    self.assertEqual(common.PRED_OFFSET_MAP_KEY, 'offset_map')
+    self.assertEqual(common.PRED_FRAME_OFFSET_MAP_KEY, 'frame_offset_map')
 
     self.assertEqual(common.GT_PANOPTIC_KEY, 'panoptic_gt')
     self.assertEqual(common.GT_SEMANTIC_KEY, 'semantic_gt')

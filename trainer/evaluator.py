@@ -189,18 +189,18 @@ class Evaluator(orbit.StandardEvaluator):
               tf.equal(inputs[common.GT_SEMANTIC_RAW], self._ignore_label),
               0,
               inputs[common.GT_SEMANTIC_RAW]),
-          outputs[common.TARGET_SEMANTIC_KEY],
+          outputs[common.PRED_SEMANTIC_KEY],
           tf.where(
               tf.equal(inputs[common.GT_SEMANTIC_RAW], self._ignore_label),
               0.0,
               1.0))
       if self._is_panoptic:
         step_outputs[self._eval_pq_metric.name] = (
-            inputs[common.GT_PANOPTIC_RAW], outputs[common.TARGET_PANOPTIC_KEY])
+            inputs[common.GT_PANOPTIC_RAW], outputs[common.PRED_PANOPTIC_KEY])
         step_outputs[self._eval_ap_metric.name] = (
-            inputs[common.GT_PANOPTIC_RAW], outputs[common.TARGET_PANOPTIC_KEY],
-            outputs[common.TARGET_SEMANTIC_PROBS_KEY],
-            outputs[common.TARGET_INSTANCE_SCORES_KEY],
+            inputs[common.GT_PANOPTIC_RAW], outputs[common.PRED_PANOPTIC_KEY],
+            outputs[common.PRED_SEMANTIC_PROBS_KEY],
+            outputs[common.PRED_INSTANCE_SCORES_KEY],
             inputs[common.GT_IS_CROWD_RAW])
     if common.SEQUENCE_ID in inputs:
       step_outputs[common.SEQUENCE_ID] = inputs[common.SEQUENCE_ID]

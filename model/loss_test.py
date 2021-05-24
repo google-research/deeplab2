@@ -30,20 +30,20 @@ class LossTest(tf.test.TestCase):
         'gt': tf.ones([2, 33, 33]) * 2,
         'weight': tf.ones([2, 33, 33])
     }
-    y_pred = {'target': tf.zeros([2, 33, 33])}
+    y_pred = {'pred': tf.zeros([2, 33, 33])}
 
     with self.subTest('L1'):
       loss_layer = loss.TopKGeneralLoss(
           loss.mean_absolute_error,
           'gt',
-          'target',
+          'pred',
           'weight')
       expected_loss = tf.ones([2]) * 2
     with self.subTest('MSE'):
       loss_layer = loss.TopKGeneralLoss(
           loss.mean_squared_error,
           'gt',
-          'target',
+          'pred',
           'weight')
       expected_loss = tf.ones([2]) * 4
     loss_result = loss_layer(y_true, y_pred)
@@ -61,11 +61,11 @@ class LossTest(tf.test.TestCase):
         'gt': tf.convert_to_tensor(gt, dtype=tf.float32),
         'weight': tf.convert_to_tensor(weights, dtype=tf.float32)
     }
-    y_pred = {'target': tf.zeros([2, 33, 33])}
+    y_pred = {'pred': tf.zeros([2, 33, 33])}
     loss_layer = loss.TopKGeneralLoss(
         loss.mean_absolute_error,
         'gt',
-        'target',
+        'pred',
         'weight')
 
     expected_loss = tf.ones([2]) * 2
@@ -79,7 +79,7 @@ class LossTest(tf.test.TestCase):
     ignore_label = 255
     loss_layer = loss.TopKCrossEntropyLoss(
         gt_key='gt',
-        target_key='target',
+        pred_key='pred',
         weight_key='weight',
         num_classes=num_classes,
         ignore_label=ignore_label)
@@ -92,7 +92,7 @@ class LossTest(tf.test.TestCase):
         'gt': tf.convert_to_tensor(gt_tensor),
         'weight': tf.ones([2, 33, 33])
     }
-    y_pred = {'target': logits}
+    y_pred = {'pred': logits}
 
     expected_result = tf.nn.softmax_cross_entropy_with_logits(
         tf.one_hot(np.squeeze(gt_tensor[:, 17:29, 15:23]), num_classes),
@@ -109,7 +109,7 @@ class LossTest(tf.test.TestCase):
     weight = 3.145
     loss_layer = loss.TopKCrossEntropyLoss(
         gt_key='gt',
-        target_key='target',
+        pred_key='pred',
         weight_key='weight',
         num_classes=num_classes)
     logits = tf.random.uniform(shape=[2, 33, 33, num_classes])
@@ -118,7 +118,7 @@ class LossTest(tf.test.TestCase):
         'gt': tf.ones([2, 33, 33], tf.int32),
         'weight': tf.ones([2, 33, 33])
     }
-    y_pred = {'target': logits}
+    y_pred = {'pred': logits}
 
     expected_result = tf.nn.softmax_cross_entropy_with_logits(
         tf.one_hot(y_true['gt'], num_classes), logits)
@@ -135,7 +135,7 @@ class LossTest(tf.test.TestCase):
     top_k = 0.5
     loss_layer = loss.TopKCrossEntropyLoss(
         gt_key='gt',
-        target_key='target',
+        pred_key='pred',
         weight_key='weight',
         num_classes=num_classes,
         top_k_percent_pixels=top_k)
@@ -145,7 +145,7 @@ class LossTest(tf.test.TestCase):
         'gt': tf.ones([2, 33, 33], tf.int32),
         'weight': tf.ones([2, 33, 33])
     }
-    y_pred = {'target': logits}
+    y_pred = {'pred': logits}
 
     expected_result = tf.nn.softmax_cross_entropy_with_logits(
         tf.one_hot(y_true['gt'], num_classes), logits)
@@ -179,13 +179,13 @@ class LossTest(tf.test.TestCase):
         ignore_label=ignore_label)
 
     pred_dict = {
-        common.TARGET_SEMANTIC_LOGITS_KEY:
+        common.PRED_SEMANTIC_LOGITS_KEY:
             tf.random.uniform(shape=[2, 33, 33, num_classes]),
-        common.TARGET_CENTER_HEATMAP_KEY:
+        common.PRED_CENTER_HEATMAP_KEY:
             tf.zeros(shape=[2, 33, 33]),
-        common.TARGET_OFFSET_MAP_KEY:
+        common.PRED_OFFSET_MAP_KEY:
             tf.zeros(shape=[2, 33, 33, 2]),
-        common.TARGET_FRAME_OFFSET_MAP_KEY:
+        common.PRED_FRAME_OFFSET_MAP_KEY:
             tf.zeros(shape=[2, 33, 33, 2]),
     }
 
@@ -283,7 +283,7 @@ class LossTest(tf.test.TestCase):
       }
       expected_result = tf.nn.softmax_cross_entropy_with_logits(
           tf.one_hot(gt_dict[common.GT_SEMANTIC_KEY], num_classes),
-          pred_dict[common.TARGET_SEMANTIC_LOGITS_KEY])
+          pred_dict[common.PRED_SEMANTIC_LOGITS_KEY])
       expected_result = tf.reduce_mean(expected_result, axis=[1, 2])
       # Add center and regression loss.
       expected_result += tf.ones(shape=[2]) * 8
@@ -307,7 +307,7 @@ class LossTest(tf.test.TestCase):
         ignore_label=ignore_label)
 
     pred_dict = {
-        common.TARGET_SEMANTIC_LOGITS_KEY:
+        common.PRED_SEMANTIC_LOGITS_KEY:
             tf.random.uniform(shape=[2, 33, 33, num_classes]),
     }
     gt_dict = {
@@ -317,7 +317,7 @@ class LossTest(tf.test.TestCase):
 
     expected_result = tf.nn.softmax_cross_entropy_with_logits(
         tf.one_hot(gt_dict[common.GT_SEMANTIC_KEY], num_classes),
-        pred_dict[common.TARGET_SEMANTIC_LOGITS_KEY])
+        pred_dict[common.PRED_SEMANTIC_LOGITS_KEY])
     expected_result = tf.reduce_mean(expected_result, axis=[1, 2])
 
     loss_result = tf.reduce_sum(loss_layer(gt_dict, pred_dict), axis=1)

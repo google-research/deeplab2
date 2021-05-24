@@ -116,7 +116,7 @@ def mean_squared_error(y_true: tf.Tensor,
 
 
 def _create_loss(loss_options: config_pb2.LossOptions.SingleLossOptions,
-                 gt_key: Text, target_key: Text, weight_key: Text,
+                 gt_key: Text, pred_key: Text, weight_key: Text,
                  **kwargs: Any) -> tf.keras.losses.Loss:
   """Creates a loss from loss options.
 
@@ -124,7 +124,7 @@ def _create_loss(loss_options: config_pb2.LossOptions.SingleLossOptions,
     loss_options: Loss options as defined by
       config_pb2.LossOptions.SingleLossOptions or None.
     gt_key: A key to extract the ground-truth from a dictionary.
-    target_key: A key to extract the prediction from a dictionary.
+    pred_key: A key to extract the prediction from a dictionary.
     weight_key: A key to extract the per-pixel weights from a dictionary.
     **kwargs: Additional parameters to initialize the loss.
 
@@ -140,7 +140,7 @@ def _create_loss(loss_options: config_pb2.LossOptions.SingleLossOptions,
   if loss_options.name == 'softmax_cross_entropy':
     return TopKCrossEntropyLoss(
         gt_key,
-        target_key,
+        pred_key,
         weight_key,
         top_k_percent_pixels=loss_options.top_k_percent,
         **kwargs), loss_options.weight
@@ -148,14 +148,14 @@ def _create_loss(loss_options: config_pb2.LossOptions.SingleLossOptions,
     return TopKGeneralLoss(
         mean_absolute_error,
         gt_key,
-        target_key,
+        pred_key,
         weight_key,
         top_k_percent_pixels=loss_options.top_k_percent), loss_options.weight
   elif loss_options.name == 'mse':
     return TopKGeneralLoss(
         mean_squared_error,
         gt_key,
-        target_key,
+        pred_key,
         weight_key,
         top_k_percent_pixels=loss_options.top_k_percent), loss_options.weight
 
@@ -209,7 +209,7 @@ class DeepLabFamilyLoss(tf.keras.losses.Loss):
     self._semantic_loss, self._semantic_weight = _create_loss(
         semantic_loss_options,
         common.GT_SEMANTIC_KEY,
-        common.TARGET_SEMANTIC_LOGITS_KEY,
+        common.PRED_SEMANTIC_LOGITS_KEY,
         common.SEMANTIC_LOSS_WEIGHT_KEY,
         num_classes=num_classes,
         ignore_label=ignore_label)
@@ -220,18 +220,18 @@ class DeepLabFamilyLoss(tf.keras.losses.Loss):
     self._center_loss, self._center_weight = _create_loss(
         center_loss_options,
         common.GT_INSTANCE_CENTER_KEY,
-        common.TARGET_CENTER_HEATMAP_KEY,
+        common.PRED_CENTER_HEATMAP_KEY,
         common.CENTER_LOSS_WEIGHT_KEY)
     self._regression_loss, self._regression_weight = _create_loss(
         regression_loss_options,
         common.GT_INSTANCE_REGRESSION_KEY,
-        common.TARGET_OFFSET_MAP_KEY,
+        common.PRED_OFFSET_MAP_KEY,
         common.REGRESSION_LOSS_WEIGHT_KEY)
 
     # Currently, only used for Motion-DeepLab.
     self._motion_loss, self._motion_weight = _create_loss(
         motion_loss_options, common.GT_FRAME_OFFSET_KEY,
-        common.TARGET_FRAME_OFFSET_MAP_KEY,
+        common.PRED_FRAME_OFFSET_MAP_KEY,
         common.FRAME_REGRESSION_LOSS_WEIGHT_KEY)
 
   def call(self, y_true: Dict[Text, tf.Tensor],
@@ -249,9 +249,9 @@ class DeepLabFamilyLoss(tf.keras.losses.Loss):
         common.GT_FRAME_OFFSET_KEY.
       y_pred: A dicitionary of tf.Tensor containing all predictions to compute
         the loss. Depending on the configuration, the dict has to contain
-        common.TARGET_SEMANTIC_LOGITS_KEY, and optionally
-        common.TARGET_CENTER_HEATMAP_KEY, common.TARGET_OFFSET_MAP_KEY, and
-        common.TARGET_FRAME_OFFSET_MAP_KEY.
+        common.PRED_SEMANTIC_LOGITS_KEY, and optionally
+        common.PRED_CENTER_HEATMAP_KEY, common.PRED_OFFSET_MAP_KEY, and
+        common.PRED_FRAME_OFFSET_MAP_KEY.
 
     Returns:
       The loss as tf.Tensor with shape [batch, 4] containing the following:
@@ -285,7 +285,7 @@ class TopKGeneralLoss(tf.keras.losses.Loss):
   def __init__(self,
                loss_function: Callable[[tf.Tensor, tf.Tensor], tf.Tensor],
                gt_key: Text,
-               target_key: Text,
+               pred_key: Text,
                weight_key: Text,
                top_k_percent_pixels: float = 1.0):
     """Initializes a top-k L1 loss.
@@ -293,7 +293,7 @@ class TopKGeneralLoss(tf.keras.losses.Loss):
     Args:
       loss_function: A callable loss function.
       gt_key: A key to extract the ground-truth tensor.
-      target_key: A key to extract the target tensor.
+      pred_key: A key to extract the prediction tensor.
       weight_key: A key to extract the weight tensor.
       top_k_percent_pixels: An optional float specifying the percentage of
         pixels used to compute the loss. The value must lie within [0.0, 1.0].
@@ -308,7 +308,7 @@ class TopKGeneralLoss(tf.keras.losses.Loss):
     self._loss_function = loss_function
     self._top_k_percent_pixels = top_k_percent_pixels
     self._gt_key = gt_key
-    self._target_key = target_key
+    self._pred_key = pred_key
     self._weight_key = weight_key
 
   def call(self, y_true: Dict[Text, tf.Tensor],
@@ -323,10 +323,10 @@ class TopKGeneralLoss(tf.keras.losses.Loss):
       A tensor of shape [batch] containing the loss per sample.
     """
     gt = y_true[self._gt_key]
-    target = y_pred[self._target_key]
+    pred = y_pred[self._pred_key]
     weights = y_true[self._weight_key]
 
-    per_pixel_loss = self._loss_function(gt, target)
+    per_pixel_loss = self._loss_function(gt, pred)
     per_pixel_loss = tf.multiply(per_pixel_loss, weights)
 
     return compute_average_top_k_loss(per_pixel_loss,
@@ -338,7 +338,7 @@ class TopKCrossEntropyLoss(tf.keras.losses.Loss):
 
   def __init__(self,
                gt_key: Text,
-               target_key: Text,
+               pred_key: Text,
                weight_key: Text,
                num_classes: int,
                ignore_label: int = 255,
@@ -347,7 +347,7 @@ class TopKCrossEntropyLoss(tf.keras.losses.Loss):
 
     Args:
       gt_key: A key to extract the ground-truth tensor.
-      target_key: A key to extract the target tensor.
+      pred_key: A key to extract the prediction tensor.
       weight_key: A key to extract the weight tensor.
       num_classes: An integer specifying the number of classes in the dataset.
       ignore_label: An optional integer specifying the ignore label or 'None'
@@ -370,7 +370,7 @@ class TopKCrossEntropyLoss(tf.keras.losses.Loss):
     self._ignore_label = ignore_label
     self._top_k_percent_pixels = top_k_percent_pixels
     self._gt_key = gt_key
-    self._target_key = target_key
+    self._pred_key = pred_key
     self._weight_key = weight_key
 
   def call(self, y_true: Dict[Text, tf.Tensor],
@@ -385,7 +385,7 @@ class TopKCrossEntropyLoss(tf.keras.losses.Loss):
       A tensor of shape [batch] containing the loss per image.
     """
     gt = tf.cast(y_true[self._gt_key], tf.int32)
-    target = y_pred[self._target_key]
+    pred = y_pred[self._pred_key]
     weights = y_true[self._weight_key]
 
     if self._ignore_label is not None:
@@ -396,7 +396,7 @@ class TopKCrossEntropyLoss(tf.keras.losses.Loss):
     gt = tf.stop_gradient(tf.one_hot(gt, self._num_classes))
 
     pixel_losses = tf.keras.backend.categorical_crossentropy(
-        gt, target, from_logits=True)
+        gt, pred, from_logits=True)
     weights = tf.multiply(weights, keep_mask)
     weighted_pixel_losses = tf.multiply(pixel_losses, weights)
 

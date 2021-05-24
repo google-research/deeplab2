@@ -169,8 +169,8 @@ class DeepLab(tf.keras.Model):
         # Change the semantic logits to probabilities with softmax. Note
         # one should remove semantic logits for faster inference. We still
         # keep them since they will be used to compute evaluation loss.
-        pred_dict[common.TARGET_SEMANTIC_PROBS_KEY] = tf.nn.softmax(
-            pred_dict[common.TARGET_SEMANTIC_LOGITS_KEY])
+        pred_dict[common.PRED_SEMANTIC_PROBS_KEY] = tf.nn.softmax(
+            pred_dict[common.PRED_SEMANTIC_LOGITS_KEY])
         # Store the predictions from each scale.
         for output_type, output_value in pred_dict.items():
           result_dict[output_type].append(output_value)
@@ -184,8 +184,8 @@ class DeepLab(tf.keras.Model):
               target_w=input_w,
               reverse=True)
           # Change the semantic logits to probabilities with softmax.
-          pred_dict_reverse[common.TARGET_SEMANTIC_PROBS_KEY] = tf.nn.softmax(
-              pred_dict_reverse[common.TARGET_SEMANTIC_LOGITS_KEY])
+          pred_dict_reverse[common.PRED_SEMANTIC_PROBS_KEY] = tf.nn.softmax(
+              pred_dict_reverse[common.PRED_SEMANTIC_LOGITS_KEY])
           # Store the predictions from each scale.
           for output_type, output_value in pred_dict_reverse.items():
             result_dict[output_type].append(output_value)
@@ -196,21 +196,21 @@ class DeepLab(tf.keras.Model):
         result_dict[output_type] = tf.reduce_mean(
             tf.stack(output_value, axis=0), axis=0)
       if self._predict_panoptic_segmentation:
-        (result_dict[common.TARGET_PANOPTIC_KEY],
-         result_dict[common.TARGET_SEMANTIC_KEY],
-         result_dict[common.TARGET_INSTANCE_KEY],
-         result_dict[common.TARGET_INSTANCE_CENTER_KEY],
-         result_dict[common.TARGET_INSTANCE_SCORES_KEY]
+        (result_dict[common.PRED_PANOPTIC_KEY],
+         result_dict[common.PRED_SEMANTIC_KEY],
+         result_dict[common.PRED_INSTANCE_KEY],
+         result_dict[common.PRED_INSTANCE_CENTER_KEY],
+         result_dict[common.PRED_INSTANCE_SCORES_KEY]
         ) = self._post_processing_fn(
-            result_dict[common.TARGET_SEMANTIC_PROBS_KEY],
-            result_dict[common.TARGET_CENTER_HEATMAP_KEY],
-            result_dict[common.TARGET_OFFSET_MAP_KEY])
+            result_dict[common.PRED_SEMANTIC_PROBS_KEY],
+            result_dict[common.PRED_CENTER_HEATMAP_KEY],
+            result_dict[common.PRED_OFFSET_MAP_KEY])
       else:
-        result_dict[common.TARGET_SEMANTIC_KEY] = self._post_processing_fn(
-            result_dict[common.TARGET_SEMANTIC_PROBS_KEY])
-    if common.TARGET_CENTER_HEATMAP_KEY in result_dict:
-      result_dict[common.TARGET_CENTER_HEATMAP_KEY] = tf.squeeze(
-          result_dict[common.TARGET_CENTER_HEATMAP_KEY], axis=3)
+        result_dict[common.PRED_SEMANTIC_KEY] = self._post_processing_fn(
+            result_dict[common.PRED_SEMANTIC_PROBS_KEY])
+    if common.PRED_CENTER_HEATMAP_KEY in result_dict:
+      result_dict[common.PRED_CENTER_HEATMAP_KEY] = tf.squeeze(
+          result_dict[common.PRED_CENTER_HEATMAP_KEY], axis=3)
     return result_dict
 
   def reset_pooling_layer(self):

@@ -66,7 +66,7 @@ class Deeplabv3Test(tf.test.TestCase):
 
       logit_tensor = deeplabv3_decoder(input_tensor)
       self.assertListEqual(
-          logit_tensor[common.TARGET_SEMANTIC_LOGITS_KEY].shape.as_list(),
+          logit_tensor[common.PRED_SEMANTIC_LOGITS_KEY].shape.as_list(),
           expected_shape)
 
   @test_utils.test_all_strategies
@@ -98,8 +98,8 @@ class Deeplabv3Test(tf.test.TestCase):
     logits_tensor_to_compare = deeplabv3_decoder(input_dict, training=False)
 
     np.testing.assert_equal(
-        reference_logits_tensor[common.TARGET_SEMANTIC_LOGITS_KEY].numpy(),
-        logits_tensor_to_compare[common.TARGET_SEMANTIC_LOGITS_KEY].numpy())
+        reference_logits_tensor[common.PRED_SEMANTIC_LOGITS_KEY].numpy(),
+        logits_tensor_to_compare[common.PRED_SEMANTIC_LOGITS_KEY].numpy())
 
   def test_deeplabv3_pool_size_setter(self):
     deeplabv3_decoder = _create_deeplabv3_model(

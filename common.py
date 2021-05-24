@@ -15,19 +15,19 @@
 
 """This file contains common methods and constants used across this framework."""
 
-# Target keys used by the model output dictionary.
-TARGET_PANOPTIC_KEY = 'panoptic_pred'
-TARGET_SEMANTIC_KEY = 'semantic_pred'
-TARGET_INSTANCE_KEY = 'instance_pred'
-TARGET_INSTANCE_CENTER_KEY = 'instance_center_pred'
+# Prediction keys used by the model output dictionary.
+PRED_PANOPTIC_KEY = 'panoptic_pred'
+PRED_SEMANTIC_KEY = 'semantic_pred'
+PRED_INSTANCE_KEY = 'instance_pred'
+PRED_INSTANCE_CENTER_KEY = 'instance_center_pred'
 
 
-TARGET_SEMANTIC_LOGITS_KEY = 'semantic_logits'
-TARGET_SEMANTIC_PROBS_KEY = 'semantic_probs'
-TARGET_INSTANCE_SCORES_KEY = 'instance_scores'
-TARGET_CENTER_HEATMAP_KEY = 'center_heatmap'
-TARGET_OFFSET_MAP_KEY = 'offset_map'
-TARGET_FRAME_OFFSET_MAP_KEY = 'frame_offset_map'
+PRED_SEMANTIC_LOGITS_KEY = 'semantic_logits'
+PRED_SEMANTIC_PROBS_KEY = 'semantic_probs'
+PRED_INSTANCE_SCORES_KEY = 'instance_scores'
+PRED_CENTER_HEATMAP_KEY = 'center_heatmap'
+PRED_OFFSET_MAP_KEY = 'offset_map'
+PRED_FRAME_OFFSET_MAP_KEY = 'frame_offset_map'
 
 # Ground-truth keys used by the model.
 GT_PANOPTIC_KEY = 'panoptic_gt'

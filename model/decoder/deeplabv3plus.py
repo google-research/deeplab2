@@ -124,7 +124,7 @@ class DeepLabV3PlusDecoder(tf.keras.layers.Layer):
 
     Returns:
       A dictionary containing the semantic prediction under key
-      common.TARGET_SEMANTIC_LOGITS_KEY.
+      common.PRED_SEMANTIC_LOGITS_KEY.
     """
     low_level_features = features[self._low_level_feature_name]
     high_level_features = features[self._high_level_feature_name]
@@ -142,4 +142,4 @@ class DeepLabV3PlusDecoder(tf.keras.layers.Layer):
     x = tf.concat([high_level_features, low_level_features], 3)
     x = self._fuse(x)
 
-    return {common.TARGET_SEMANTIC_LOGITS_KEY: self._final_conv(x)}
+    return {common.PRED_SEMANTIC_LOGITS_KEY: self._final_conv(x)}

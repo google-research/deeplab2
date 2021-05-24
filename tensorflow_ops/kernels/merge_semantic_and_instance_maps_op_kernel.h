@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef MERGE_SEMANTIC_AND_INSTANCE_MAPS_OP_KERNEL_H_
-#define MERGE_SEMANTIC_AND_INSTANCE_MAPS_OP_KERNEL_H_
+#ifndef DEEPLAB2_MERGE_SEMANTIC_AND_INSTANCE_MAPS_OP_KERNEL_H_
+#define DEEPLAB2_MERGE_SEMANTIC_AND_INSTANCE_MAPS_OP_KERNEL_H_
 #include <stdint.h>
 
 #include /*third_party*/"absl/container/flat_hash_set.h"
@@ -49,4 +49,4 @@ absl::flat_hash_set<int32_t> Convert1DInt32TensorToSet(
 }  // namespace deeplab
 }  // namespace tensorflow_models
 
-#endif  // MERGE_SEMANTIC_AND_INSTANCE_MAPS_OP_KERNEL_H_
+#endif  // DEEPLAB2_MERGE_SEMANTIC_AND_INSTANCE_MAPS_OP_KERNEL_H_

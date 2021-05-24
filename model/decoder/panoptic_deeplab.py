@@ -208,7 +208,7 @@ class PanopticDeepLabSingleHead(layers.Layer):
   def __init__(self,
                intermediate_channels,
                output_channels,
-               target_key,
+               pred_key,
                name,
                conv_type='depthwise_separable_conv',
                bn_layer=tf.keras.layers.BatchNormalization):
@@ -219,7 +219,7 @@ class PanopticDeepLabSingleHead(layers.Layer):
         first 5x5 convolution.
       output_channels: An integer specifying the number of filters of the second
         1x1 convolution.
-      target_key: A string specifying the key of the output dictionary.
+      pred_key: A string specifying the key of the output dictionary.
       name: A string specifying the name of this head.
       conv_type: String, specifying head convolution type. Support
         'depthwise_separable_conv' and 'standard_conv'.
@@ -227,7 +227,7 @@ class PanopticDeepLabSingleHead(layers.Layer):
         normalization (default: tf.keras.layers.BatchNormalization).
     """
     super(PanopticDeepLabSingleHead, self).__init__(name=name)
-    self._target_key = target_key
+    self._pred_key = pred_key
 
     self.conv_block = convolutions.StackedConv2DSame(
         conv_type=conv_type,
@@ -257,7 +257,7 @@ class PanopticDeepLabSingleHead(layers.Layer):
       The dictionary containing the predictions under the specified key.
     """
     x = self.conv_block(features, training=training)
-    return {self._target_key: self.final_conv(x)}
+    return {self._pred_key: self.final_conv(x)}
 
 
 class PanopticDeepLabDecoder(layers.Layer):
@@ -306,7 +306,7 @@ class PanopticDeepLabDecoder(layers.Layer):
     self._semantic_head = PanopticDeepLabSingleHead(
         panoptic_deeplab_options.semantic_head.head_channels,
         panoptic_deeplab_options.semantic_head.output_channels,
-        common.TARGET_SEMANTIC_LOGITS_KEY,
+        common.PRED_SEMANTIC_LOGITS_KEY,
         name='semantic_head',
         conv_type=panoptic_deeplab_options.semantic_head.head_conv_type,
         bn_layer=bn_layer)
@@ -348,7 +348,7 @@ class PanopticDeepLabDecoder(layers.Layer):
       self._instance_center_head = PanopticDeepLabSingleHead(
           panoptic_deeplab_options.instance.center_head.head_channels,
           panoptic_deeplab_options.instance.center_head.output_channels,
-          common.TARGET_CENTER_HEATMAP_KEY,
+          common.PRED_CENTER_HEATMAP_KEY,
           name='instance_center_head',
           conv_type=(
               panoptic_deeplab_options.instance.center_head.head_conv_type),
@@ -356,7 +356,7 @@ class PanopticDeepLabDecoder(layers.Layer):
       self._instance_regression_head = PanopticDeepLabSingleHead(
           panoptic_deeplab_options.instance.regression_head.head_channels,
           panoptic_deeplab_options.instance.regression_head.output_channels,
-          common.TARGET_OFFSET_MAP_KEY,
+          common.PRED_OFFSET_MAP_KEY,
           name='instance_regression_head',
           conv_type=(
               panoptic_deeplab_options.instance.regression_head.head_conv_type),

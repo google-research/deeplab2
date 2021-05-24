@@ -104,7 +104,7 @@ def store_raw_predictions(predictions: Dict[str, Any],
 
   Args:
     predictions: A dctionary with string keys and any content. Tensors under
-      common.TARGET_SEMANTIC_KEY and common.TARGET_PANOPTIC_KEY will be stored.
+      common.PRED_SEMANTIC_KEY and common.PRED_PANOPTIC_KEY will be stored.
     image_filename: A tf.Tensor containing the image filename.
     dataset_info: A dataset.DatasetDescriptor specifying the dataset.
     save_dir: A path to the folder to write the output to.
@@ -141,7 +141,7 @@ def store_raw_predictions(predictions: Dict[str, Any],
   image_filename = os.path.splitext(image_filename)[0]
 
   # Store raw semantic prediction.
-  semantic_prediction = predictions[common.TARGET_SEMANTIC_KEY]
+  semantic_prediction = predictions[common.PRED_SEMANTIC_KEY]
   if convert_to_eval:
     if 'cityscapes' in dataset_info.dataset_name:
       semantic_prediction = _convert_cityscapes_train_id_to_eval_id(
@@ -161,11 +161,11 @@ def store_raw_predictions(predictions: Dict[str, Any],
       image_filename,
       add_colormap=False)
 
-  if common.TARGET_PANOPTIC_KEY in predictions:
+  if common.PRED_PANOPTIC_KEY in predictions:
     # Save the predicted panoptic annotations in two-channel format, where the
     # R-channel stores the semantic label while the G-channel stores the
     # instance label.
-    panoptic_prediction = predictions[common.TARGET_PANOPTIC_KEY]
+    panoptic_prediction = predictions[common.PRED_PANOPTIC_KEY]
     panoptic_outputs = np.zeros(
         (panoptic_prediction.shape[0], panoptic_prediction.shape[1], 3),
         dtype=panoptic_prediction.dtype)
@@ -175,7 +175,7 @@ def store_raw_predictions(predictions: Dict[str, Any],
       predicted_semantic_labels = _convert_cityscapes_train_id_to_eval_id(
           predicted_semantic_labels)
     predicted_instance_labels = predictions[
-        common.TARGET_PANOPTIC_KEY] % dataset_info.panoptic_label_divisor
+        common.PRED_PANOPTIC_KEY] % dataset_info.panoptic_label_divisor
 
     output_folder = os.path.join(save_dir, 'raw_panoptic')
     if dataset_info.is_video_dataset:
@@ -246,7 +246,7 @@ def store_predictions(predictions: Dict[str, Any], inputs: Dict[str, Any],
 
   # 2. Save semantic predictions and semantic labels.
   vis_utils.save_annotation(
-      predictions[common.TARGET_SEMANTIC_KEY],
+      predictions[common.PRED_SEMANTIC_KEY],
       save_dir,
       _SEMANTIC_PREDICTION_FORMAT % image_id,
       add_colormap=True,
@@ -258,11 +258,11 @@ def store_predictions(predictions: Dict[str, Any], inputs: Dict[str, Any],
       add_colormap=True,
       colormap_name=colormap_name)
 
-  if common.TARGET_PANOPTIC_KEY in predictions:
+  if common.PRED_PANOPTIC_KEY in predictions:
     # 3. Save center heatmap.
     vis_utils.save_annotation(
         vis_utils.overlay_heatmap_on_image(
-            predictions[common.TARGET_CENTER_HEATMAP_KEY],
+            predictions[common.PRED_CENTER_HEATMAP_KEY],
             inputs[common.IMAGE]),
         save_dir,
         _CENTER_HEATMAP_PREDICTION_FORMAT % image_id,
@@ -277,11 +277,11 @@ def store_predictions(predictions: Dict[str, Any], inputs: Dict[str, Any],
 
     # 4. Save center offsets.
     center_offset_prediction = _crop_like(
-        predictions[common.TARGET_OFFSET_MAP_KEY],
-        predictions[common.TARGET_SEMANTIC_KEY])
+        predictions[common.PRED_OFFSET_MAP_KEY],
+        predictions[common.PRED_SEMANTIC_KEY])
     center_offset_prediction_rgb = vis_utils.flow_to_color(
         center_offset_prediction)
-    semantic_prediction = predictions[common.TARGET_SEMANTIC_KEY]
+    semantic_prediction = predictions[common.PRED_SEMANTIC_KEY]
     pred_fg_mask = _get_fg_mask(semantic_prediction, thing_list)
     center_offset_prediction_rgb = (
         center_offset_prediction_rgb * pred_fg_mask)
@@ -303,14 +303,14 @@ def store_predictions(predictions: Dict[str, Any], inputs: Dict[str, Any],
     # 5. Save instance map.
     vis_utils.save_annotation(
         vis_utils.create_rgb_from_instance_map(
-            predictions[common.TARGET_INSTANCE_KEY]),
+            predictions[common.PRED_INSTANCE_KEY]),
         save_dir,
         _INSTANCE_PREDICTION_FORMAT % image_id,
         add_colormap=False)
 
     # 6. Save panoptic segmentation.
     vis_utils.save_parsing_result(
-        predictions[common.TARGET_PANOPTIC_KEY],
+        predictions[common.PRED_PANOPTIC_KEY],
         label_divisor=label_divisor,
         thing_list=thing_list,
         save_dir=save_dir,
@@ -327,7 +327,7 @@ def store_predictions(predictions: Dict[str, Any], inputs: Dict[str, Any],
   # 7. Save error of semantic prediction.
   label = inputs[common.GT_SEMANTIC_RAW].astype(np.uint8)
   error_prediction = (
-      (predictions[common.TARGET_SEMANTIC_KEY] != label) &
+      (predictions[common.PRED_SEMANTIC_KEY] != label) &
       (label != dataset_info.ignore_label)).astype(np.uint8) * 255
   vis_utils.save_annotation(
       error_prediction,
