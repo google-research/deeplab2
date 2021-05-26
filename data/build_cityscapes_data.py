@@ -76,7 +76,7 @@ def _get_images(cityscapes_root, dataset_split):
   """Gets files for the specified data type and dataset split.
 
   Args:
-    cityscapes_root: String, Path to Cityscapes dataset root folder.
+    cityscapes_root: String, path to Cityscapes dataset root folder.
     dataset_split: String, dataset split ('train', 'val', 'test')
 
   Returns:
@@ -179,8 +179,8 @@ def _generate_panoptic_label(panoptic_annotation_file, segments):
   Returns:
     A 2D numpy int32 array with the same height / width with panoptic
     annotation. Each pixel value represents its panoptic ID. Please refer to
-    the docstring at the beginning of this script for more details about how
-    panoptic ID is assigned.
+    ../g3doc/setup/cityscapes.md for more details about how panoptic ID is
+    assigned.
   """
   with tf.io.gfile.GFile(panoptic_annotation_file, 'rb') as f:
     panoptic_label = data_utils.read_image(f.read())
@@ -256,7 +256,7 @@ def _convert_dataset(cityscapes_root, dataset_split, output_dir):
   """Converts the specified dataset split to TFRecord format.
 
   Args:
-    cityscapes_root: String, Path to Cityscapes dataset root folder.
+    cityscapes_root: String, path to Cityscapes dataset root folder.
     dataset_split: String, the dataset split (one of `train`, `val` and `test`).
     output_dir: String, directory to write output TFRecords to.
 
