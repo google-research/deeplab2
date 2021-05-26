@@ -6,7 +6,7 @@ This page walks through the steps required to generate
 ## Prework
 
 Before running any Deeplab2 scripts, the users should (1) register the
-Cityscapes dataset website at https://www.cityscapes-dataset.com to download the
+Cityscapes dataset [website](https://www.cityscapes-dataset.com) to download the
 dataset, and (2) run the script provided by Cityscapes to generate the training
 groundtruth. See sample commandlines below:
 
