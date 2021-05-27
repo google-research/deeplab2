@@ -26,8 +26,8 @@ import tensorflow as tf
 
 FLAGS = flags.FLAGS
 
-_TEST_DIR = ('deeplab2/'
-             'evaluation/testdata')
+_TEST_DATA_DIR = ('deeplab2/'
+                  'evaluation/testdata')
 
 
 def read_test_image(testdata_path: str,
@@ -42,7 +42,7 @@ def read_test_image(testdata_path: str,
   Returns:
     The image, as a numpy array.
   """
-  image_path = os.path.join(_TEST_DIR, testdata_path)
+  image_path = os.path.join(_TEST_DATA_DIR, testdata_path)
   with tf.io.gfile.GFile(image_path, 'rb') as f:
     image = Image.open(f)
     if image_format is not None:

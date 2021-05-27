@@ -53,8 +53,8 @@ class BuildCityscapesDataTest(tf.test.TestCase):
         panoptic_annotation_file, segments)
 
     # Check panoptic label matches golden file.
-    golden_file_path = os.path.join(
-        _TEST_DATA_DIR, 'dummy_gt_for_vps.png')
+    golden_file_path = os.path.join(_TEST_DATA_DIR,
+                                    'dummy_gt_for_vps.png')
     with tf.io.gfile.GFile(golden_file_path, 'rb') as f:
       golden_label = Image.open(f)
       # The PNG file is encoded by:

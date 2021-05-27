@@ -26,6 +26,8 @@ import numpy as np
 from PIL import Image
 import tensorflow as tf
 
+# resources dependency
+
 from deeplab2.data import data_utils
 from deeplab2.data import dataset
 
@@ -170,16 +172,18 @@ def main(argv):
   if len(argv) > 1:
     raise app.UsageError('Too many command-line arguments.')
 
-  panoptic_map, vps_map, segments_info = create_test_data(
-      FLAGS.panoptic_annotation_path)
+  data_path = resources.GetResourceFilename(FLAGS.panoptic_annotation_path)
+  panoptic_map, vps_map, segments_info = create_test_data(data_path)
   panoptic_map_filename = _FILENAME_PREFIX + '_gtFine_panoptic.png'
   panoptic_map_path = os.path.join(FLAGS.output_cityscapes_root, 'gtFine',
                                    'cityscapes_panoptic_dummy_trainId',
                                    panoptic_map_filename)
 
-  with tf.io.gfile.GFile(FLAGS.panoptic_gt_output_path, 'wb') as f:
+  gt_output_path = resources.GetResourceFilename(FLAGS.panoptic_gt_output_path)
+  with tf.io.gfile.GFile(gt_output_path, 'wb') as f:
     Image.fromarray(vps_map).save(f, format='png')
 
+  panoptic_map_path = panoptic_map_path  # OSS: removed internal filename loading.
   with tf.io.gfile.GFile(panoptic_map_path, 'wb') as f:
     Image.fromarray(panoptic_map).save(f, format='png')
 
@@ -192,6 +196,7 @@ def main(argv):
   }
   json_annotation_path = os.path.join(FLAGS.output_cityscapes_root, 'gtFine',
                                       'cityscapes_panoptic_dummy_trainId.json')
+  json_annotation_path = json_annotation_path  # OSS: removed internal filename loading.
   with tf.io.gfile.GFile(json_annotation_path, 'w') as f:
     json.dump(json_annotation, f, indent=2)
 
