@@ -72,7 +72,7 @@ then
   echo "-----------------------------------------------------------------------"
   echo "Compiling the custom cc op: merge_semantic_and_instance_maps_op (CPU)..."
   echo "-----------------------------------------------------------------------"
-  g++ -std=c++11 -shared \
+  g++ -std=c++14 -shared \
   ${OP_NAME}.cc ${OP_NAME}_kernel.cc -o ${OP_NAME}.so -fPIC ${TF_CFLAGS[@]} ${TF_LFLAGS[@]} -O2
 else
   # GPU
@@ -80,11 +80,11 @@ else
   echo "-----------------------------------------------------------------------"
   echo "Compiling the custom cc op: merge_semantic_and_instance_maps_op (GPU)..."
   echo "-----------------------------------------------------------------------"
-  nvcc -std=c++11 -c -o ${OP_NAME}_kernel.cu.o \
+  nvcc -std=c++14 -c -o ${OP_NAME}_kernel.cu.o \
   ${OP_NAME}_kernel.cu.cc \
-    ${TF_CFLAGS[@]} -D GOOGLE_CUDA=1 -x cu -Xcompiler -fPIC
+    ${TF_CFLAGS[@]} -D GOOGLE_CUDA=1 -x cu -Xcompiler -fPIC --expt-relaxed-constexpr
 
-  g++ -std=c++11 -shared -o ${OP_NAME}.so ${OP_NAME}.cc ${OP_NAME}_kernel.cc \
+  g++ -std=c++14 -shared -o ${OP_NAME}.so ${OP_NAME}.cc ${OP_NAME}_kernel.cc \
     ${OP_NAME}_kernel.cu.o ${TF_CFLAGS[@]} -fPIC -lcudart ${TF_LFLAGS[@]}
 fi
 

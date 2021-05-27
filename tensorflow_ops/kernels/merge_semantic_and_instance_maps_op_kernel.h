@@ -15,8 +15,8 @@
 #ifndef DEEPLAB2_MERGE_SEMANTIC_AND_INSTANCE_MAPS_OP_KERNEL_H_
 #define DEEPLAB2_MERGE_SEMANTIC_AND_INSTANCE_MAPS_OP_KERNEL_H_
 #include <stdint.h>
+#include <unordered_set>
 
-#include /*third_party*/"absl/container/flat_hash_set.h"
 #include /*third_party*/"tensorflow/core/framework/numeric_types.h"
 #include /*third_party*/"tensorflow/core/framework/op_kernel.h"
 #include /*third_party*/"tensorflow/core/framework/tensor.h"
@@ -34,14 +34,14 @@ struct MergeSemanticAndInstanceMaps {
       const Device& d,
       typename tensorflow::TTypes<int32_t, 3>::ConstTensor semantic_maps,
       typename tensorflow::TTypes<int32_t, 3>::ConstTensor instance_maps,
-      const absl::flat_hash_set<int32_t>& thing_ids_set, int label_divisor,
+      const std::unordered_set<int32_t>& thing_ids_set, int label_divisor,
       int stuff_area_limit, int void_label,
       typename tensorflow::TTypes<int32_t, 3>::Tensor parsing_maps);
 };
 
 // Helper method to convert a list of thing IDs into hashset.
 template <typename Device>
-absl::flat_hash_set<int32_t> Convert1DInt32TensorToSet(
+std::unordered_set<int32_t> Convert1DInt32TensorToSet(
     const Device& d, const tensorflow::Tensor& tensor);
 
 }  // namespace functor
