@@ -28,7 +28,6 @@ import tensorflow as tf
 from deeplab2.model import utils
 from deeplab2.model.layers import activations
 from deeplab2.model.layers import convolutions
-from deeplab2.model.layers import drop_path
 
 
 class AttentionOperation(tf.keras.layers.Layer):
@@ -126,8 +125,6 @@ class DualPathTransformerLayer(tf.keras.layers.Layer):
                use_memory_self_attention=True,
                use_pixel2memory_feedback_attention=True,
                transformer_activation='softmax',
-               drop_path_keep_prob=1.0,
-               recompute_grad=False,
                bn_layer=tf.keras.layers.BatchNormalization,
                conv_kernel_weight_decay=0.0):
     """Initializes a DualPathTransformerLayer.
@@ -160,10 +157,6 @@ class DualPathTransformerLayer(tf.keras.layers.Layer):
         pixel2memory feedback attention.
       transformer_activation: A string, type of activation function for
         self-attention. Support 'sigmoid' and 'softmax'.
-      drop_path_keep_prob: A float, the keep probability for dropping path.
-      recompute_grad: A boolean, whether to use the gradient checkpointing
-        trick. This trick reduces accelerator memory usage, but takes longer to
-        compute gradients.
       bn_layer: A tf.keras.layers.Layer that computes the normalization
         (default: tf.keras.layers.BatchNormalization).
       conv_kernel_weight_decay: A float, the weight decay for convolution
@@ -174,8 +167,6 @@ class DualPathTransformerLayer(tf.keras.layers.Layer):
       ValueError: If filters * value_expansion is not divisible by num_heads.
     """
     super(DualPathTransformerLayer, self).__init__(name=name)
-    self._drop_path_keep_prob = drop_path_keep_prob
-    self._recompute_grad = recompute_grad
 
     bottleneck_channels = int(round(filters * bottleneck_expansion))
     total_key_depth = int(round(filters * key_expansion))
@@ -281,8 +272,8 @@ class DualPathTransformerLayer(tf.keras.layers.Layer):
     self._activation_fn = activations.get_activation(activation)
     self._feed_forward_network_channels = feed_forward_network_channels
 
-  def build(self, input_shapes):
-    pixel_shape, memory_shape = input_shapes
+  def build(self, input_shape_list):
+    pixel_shape, memory_shape = input_shape_list[:2]
     # Here we follow ResNet bottleneck blocks: we apply a batch norm with gamma
     # initialized at zero, followed by drop path and an activation function.
     # Initializing this gamma at zero ensures that at random initialization of
@@ -330,15 +321,32 @@ class DualPathTransformerLayer(tf.keras.layers.Layer):
           activation='none',
           conv_kernel_weight_decay=self._conv_kernel_weight_decay)
 
-  def call(self, inputs, training=False):
+  def call(self, inputs):
     """Performs a forward pass.
 
+    We have to define drop_path_masks outside the layer call and pass it into
+    the layer call, because recompute_grad (gradient checkpointing) does not
+    allow any randomness within the function call. In addition, recompute_grad
+    only supports float tensors as inputs. For this reason, the training flag
+    should be also passed as a float tensor. For the same reason, we cannot
+    support passing drop_path_random_mask as None. Instead, we ask the users to
+    pass only the first two tensors when drop path is not used.
+
     Args:
-      inputs: A tuple of two tensors. The first input, pixel_space_input, is a
-        [batch, num_pixel, pixel_space_channels] tensor. The second input,
-        memory_space_input, is a [batch, num_memory, memory_space_channels]
-        tensor.
-      training: A boolean, whether the model is in training mode.
+      inputs: A tuple of 3 or 6 tensors, containing
+        pixel_space_input should be a [batch, num_pixel, pixel_space_channels]
+          tensor.
+        memory_space_input should be a [batch, num_memory,
+          memory_space_channels] tensor.
+        float_tensor_training should be a float tensor of 0.0 or 1.0, whether
+          the model is in training mode.
+        (optional) pixel_space_drop_path_mask is a drop path mask tensor of
+          shape [batch, 1, 1] for the pixel space.
+        (optional) memory_space_attention_drop_path_mask is a drop path mask
+          tensor of shape [batch, 1, 1] for the memory space.
+        (optional) memory_space_feed_forward_network_drop_path_mask is a drop
+          path mask tensor of shape [batch, 1, 1] for the memory space feed
+          forward network.
 
     Returns:
       pixel_space_output: A [batch, num_pixel, pixel_space_channels] tensor.
@@ -346,148 +354,135 @@ class DualPathTransformerLayer(tf.keras.layers.Layer):
         tensor, activated pixel_space_output.
       memory_space_output: A [batch, num_memory, memory_space_channels]
         tensor.
+
+    Raises:
+      ValueError: If the length of inputs is not 3 or 6.
     """
-    # Decode the inputs tuple and input shapes.
-    pixel_space_input, memory_space_input = inputs
+    if len(inputs) not in (3, 6):
+      raise ValueError('The length of inputs should be either 3 or 6.')
+
+    # Unpack the inputs.
+    (pixel_space_input, memory_space_input, float_tensor_training,
+     pixel_space_drop_path_mask, memory_space_attention_drop_path_mask,
+     memory_space_feed_forward_network_drop_path_mask) = (
+         utils.pad_sequence_with_none(inputs, target_length=6))
+
+    # Recompute_grad takes only float tensors as inputs. It does not allow
+    # bools or boolean tensors. For this reason, we cast training to a float
+    # tensor outside this call, and now we cast it back to a boolean tensor.
+    training = tf.cast(float_tensor_training, tf.bool)
+
+    # Decode the inputs shapes.
     pixel_shape = pixel_space_input.get_shape().as_list()
     memory_shape = memory_space_input.get_shape().as_list()
 
-    # We have to define drop_path_masks outside the helper call and pass it into
-    # the helper_call, because tf.recompute_grad (gradient checkpointing) does
-    # not allow any randomness within the function call.
-    if self._drop_path_keep_prob < 1.0 and training:
-      # Drop path random mask for pixel space attention.
-      pixel_space_drop_path_mask = drop_path.generate_drop_path_random_mask(
-          pixel_space_input, self._drop_path_keep_prob)
-      # Drop path random mask for memory space attention.
-      memory_space_attention_drop_path_mask = (
-          drop_path.generate_drop_path_random_mask(
-              memory_space_input, self._drop_path_keep_prob))
-      # Drop path random mask for memory space feed-forward network.
-      memory_space_feed_forward_network_drop_path_mask = (
-          drop_path.generate_drop_path_random_mask(
-              memory_space_input, self._drop_path_keep_prob))
-    else:
-      pixel_space_drop_path_mask = None
-      memory_space_attention_drop_path_mask = None
-      memory_space_feed_forward_network_drop_path_mask = None
+    # Similar to the ResNet bottleneck design, we do an input down projection
+    # in both the pixel space and the memory space.
+    memory_space = self._memory_conv1_bn_act(memory_space_input,
+                                             training=training)
 
-    # Wrap the forward pass in a helper_call function which will optionally be
-    # recomputed (with tf.recompute_grad) in the backward pass.
-    def helper_call(pixel_space_input, memory_space_input):
+    # Pixel space input is not activated.
+    pixel_space = self._pixel_conv1_bn_act(
+        self._activation_fn(pixel_space_input), training=training)
 
-      # Similar to the ResNet bottleneck design, we do an input down projection
-      # in both the pixel space and the memory space.
-      memory_space = self._memory_conv1_bn_act(memory_space_input,
-                                               training=training)
-
-      # Pixel space input is not activated.
-      pixel_space = self._pixel_conv1_bn_act(
-          self._activation_fn(pixel_space_input), training=training)
-
-      if (self._use_memory_self_attention or
-          self._use_pixel2memory_feedback_attention):
-        memory_space_qkv = self._memory_qkv_conv_bn(memory_space,
-                                                    training=training)
-        # Split, reshape, and transpose the query, key, and value.
-        memory_query, memory_key, memory_value = (
-            tf.split(memory_space_qkv, [
-                self._total_key_depth, self._total_key_depth,
-                self._total_value_depth], axis=-1))
-        memory_key = utils.reshape_and_transpose_for_attention_operation(
-            memory_key, self._num_heads)
-        memory_value = tf.reshape(memory_value, [
-            -1, memory_shape[1], self._num_heads,
-            self._total_value_depth // self._num_heads])
-      else:
-        # Compute memory query only if memory key and value are not used.
-        memory_query = self._memory_query_conv_bn(memory_space,
+    if (self._use_memory_self_attention or
+        self._use_pixel2memory_feedback_attention):
+      memory_space_qkv = self._memory_qkv_conv_bn(memory_space,
                                                   training=training)
-      # Reshape and transpose the query.
-      memory_query = utils.reshape_and_transpose_for_attention_operation(
-          memory_query, self._num_heads)
-
-      if self._use_pixel2memory_feedback_attention:
-        pixel_space_qkv = self._pixel_qkv_conv_bn(pixel_space,
-                                                  training=training)
-        # Split the query, key, and value.
-        pixel_query, pixel_key, pixel_value = tf.split(
-            pixel_space_qkv, [
-                self._total_key_depth, self._total_key_depth,
-                self._total_value_depth], axis=-1)
-        pixel_query = utils.reshape_and_transpose_for_attention_operation(
-            pixel_query, self._num_heads)
-      else:
-        pixel_space_kv = self._pixel_kv_conv_bn(pixel_space, training=training)
-        # Split the key and the value.
-        pixel_key, pixel_value = tf.split(pixel_space_kv, [
-            self._total_key_depth, self._total_value_depth], axis=-1)
-      # Reshape and transpose the key and the value.
-      pixel_key = utils.reshape_and_transpose_for_attention_operation(
-          pixel_key, self._num_heads)
-      pixel_value = tf.reshape(pixel_value, [
-          -1, pixel_shape[1], self._num_heads,
+      # Split, reshape, and transpose the query, key, and value.
+      memory_query, memory_key, memory_value = (
+          tf.split(memory_space_qkv, [
+              self._total_key_depth, self._total_key_depth,
+              self._total_value_depth], axis=-1))
+      memory_key = utils.reshape_and_transpose_for_attention_operation(
+          memory_key, self._num_heads)
+      memory_value = tf.reshape(memory_value, [
+          -1, memory_shape[1], self._num_heads,
           self._total_value_depth // self._num_heads])
+    else:
+      # Compute memory query only if memory key and value are not used.
+      memory_query = self._memory_query_conv_bn(memory_space,
+                                                training=training)
+    # Reshape and transpose the query.
+    memory_query = utils.reshape_and_transpose_for_attention_operation(
+        memory_query, self._num_heads)
 
-      # Compute memory space attention.
-      if not self._use_memory_self_attention:
-        # If memory self attention is not used, then only memory2pixel cross
-        # attention is used for the memory space. In this case, the key and the
-        # value are simply pixel_key and pixel_value.
-        memory_attention_key = pixel_key
-        memory_attention_value = pixel_value
-      else:
-        # If we also use memory self attention, the key and the value are the
-        # concatenation of keys and values in both the pixel space and the
-        # memory space.
-        memory_attention_key = tf.concat([pixel_key, memory_key], axis=2)
-        memory_attention_value = tf.concat([pixel_value, memory_value], axis=1)
+    if self._use_pixel2memory_feedback_attention:
+      pixel_space_qkv = self._pixel_qkv_conv_bn(pixel_space,
+                                                training=training)
+      # Split the query, key, and value.
+      pixel_query, pixel_key, pixel_value = tf.split(
+          pixel_space_qkv, [
+              self._total_key_depth, self._total_key_depth,
+              self._total_value_depth], axis=-1)
+      pixel_query = utils.reshape_and_transpose_for_attention_operation(
+          pixel_query, self._num_heads)
+    else:
+      pixel_space_kv = self._pixel_kv_conv_bn(pixel_space, training=training)
+      # Split the key and the value.
+      pixel_key, pixel_value = tf.split(pixel_space_kv, [
+          self._total_key_depth, self._total_value_depth], axis=-1)
+    # Reshape and transpose the key and the value.
+    pixel_key = utils.reshape_and_transpose_for_attention_operation(
+        pixel_key, self._num_heads)
+    pixel_value = tf.reshape(pixel_value, [
+        -1, pixel_shape[1], self._num_heads,
+        self._total_value_depth // self._num_heads])
 
-      memory_space = self._memory_attention(
-          (memory_query, memory_attention_key, memory_attention_value),
-          training=training)
-      memory_space = self._memory_conv3_bn(memory_space, training=training)
+    # Compute memory space attention.
+    if not self._use_memory_self_attention:
+      # If memory self attention is not used, then only memory2pixel cross
+      # attention is used for the memory space. In this case, the key and the
+      # value are simply pixel_key and pixel_value.
+      memory_attention_key = pixel_key
+      memory_attention_value = pixel_value
+    else:
+      # If we also use memory self attention, the key and the value are the
+      # concatenation of keys and values in both the pixel space and the
+      # memory space.
+      memory_attention_key = tf.concat([pixel_key, memory_key], axis=2)
+      memory_attention_value = tf.concat([pixel_value, memory_value], axis=1)
 
-      if training and memory_space_attention_drop_path_mask is not None:
-        memory_space = memory_space * memory_space_attention_drop_path_mask
+    memory_space = self._memory_attention(
+        (memory_query, memory_attention_key, memory_attention_value),
+        training=training)
+    memory_space = self._memory_conv3_bn(memory_space, training=training)
+
+    if memory_space_attention_drop_path_mask is not None:
+      memory_space = memory_space * memory_space_attention_drop_path_mask
+    memory_space_output = self._activation_fn(
+        memory_space_input + memory_space)
+
+    # Apply an optional feed-forward network to the memory space.
+    if self._feed_forward_network_channels > 0:
+      memory_space = self._memory_ffn_conv1_bn_act(memory_space_output,
+                                                   training=training)
+      memory_space = self._memory_ffn_conv2_bn(memory_space,
+                                               training=training)
+      if memory_space_feed_forward_network_drop_path_mask is not None:
+        memory_space = (memory_space *
+                        memory_space_feed_forward_network_drop_path_mask)
       memory_space_output = self._activation_fn(
-          memory_space_input + memory_space)
+          memory_space_output + memory_space)
 
-      # Apply an optional feed-forward network to the memory space.
-      if self._feed_forward_network_channels > 0:
-        memory_space = self._memory_ffn_conv1_bn_act(memory_space_output,
-                                                     training=training)
-        memory_space = self._memory_ffn_conv2_bn(memory_space,
-                                                 training=training)
-        if (training and
-            memory_space_feed_forward_network_drop_path_mask is not None):
-          memory_space = (memory_space *
-                          memory_space_feed_forward_network_drop_path_mask)
-        memory_space_output = self._activation_fn(
-            memory_space_output + memory_space)
+    # Compute pixel space attention and the output projection only when
+    # pixel2memory_feedback_attention is used.
+    if self._use_pixel2memory_feedback_attention:
+      pixel_space = self._pixel_attention(
+          (pixel_query, memory_key, memory_value), training=training)
+      pixel_space = self._pixel_conv3_bn(pixel_space, training=training)
+      if pixel_space_drop_path_mask is not None:
+        pixel_space = pixel_space * pixel_space_drop_path_mask
+      pixel_space_output = pixel_space_input + pixel_space
+    else:
+      # If pixel2memory_feedback_attention is not used, the pixel_space_input
+      # is not changed.
+      pixel_space_output = pixel_space_input
+    activated_pixel_space_output = self._activation_fn(pixel_space_output)
 
-      # Compute pixel space attention and the output projection only when
-      # pixel2memory_feedback_attention is used.
-      if self._use_pixel2memory_feedback_attention:
-        pixel_space = self._pixel_attention(
-            (pixel_query, memory_key, memory_value), training=training)
-        pixel_space = self._pixel_conv3_bn(pixel_space, training=training)
-        if training and pixel_space_drop_path_mask is not None:
-          pixel_space = pixel_space * pixel_space_drop_path_mask
-        pixel_space_output = pixel_space_input + pixel_space
-      else:
-        # If pixel2memory_feedback_attention is not used, the pixel_space_input
-        # is not changed.
-        pixel_space_output = pixel_space_input
-      activated_pixel_space_output = self._activation_fn(pixel_space_output)
-
-      # Return the pixel space output and memory space output. Note that we
-      # return pixel sapce output with and without the activation function,
-      # because our decoder might use non-activated features.
-      return (pixel_space_output,
-              activated_pixel_space_output,
-              memory_space_output)
-
-    if self._recompute_grad:
-      helper_call = tf.recompute_grad(helper_call)
-    return helper_call(pixel_space_input, memory_space_input)
+    # Return the pixel space output and memory space output. Note that we
+    # return pixel sapce output with and without the activation function,
+    # because our decoder might use non-activated features.
+    return (pixel_space_output,
+            activated_pixel_space_output,
+            memory_space_output)

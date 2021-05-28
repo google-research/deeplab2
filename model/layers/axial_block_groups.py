@@ -24,6 +24,7 @@ from deeplab2.model.layers import axial_blocks
 from deeplab2.model.layers import drop_path
 from deeplab2.model.layers import dual_path_transformer
 from deeplab2.model.layers import positional_encodings
+from deeplab2.model.layers import recompute_grad as recompute_grad_lib
 
 
 def _get_current_names(index):
@@ -63,6 +64,7 @@ class BlockGroup(tf.keras.layers.Layer):
                conv_use_recompute_grad=False,
                axial_use_recompute_grad=True,
                recompute_within_stride=0,
+               transformer_use_recompute_grad=False,
                transformer_expansion=1,
                drop_path_keep_prob=0.8,
                drop_path_beyond_stride=16,
@@ -129,6 +131,10 @@ class BlockGroup(tf.keras.layers.Layer):
         gradient checkpointing trick. This trick reduces accelerator memory
         usage, but takes longer to compute gradients. Defaults to 0 (do not
         recompute any layer).
+      transformer_use_recompute_grad: A boolean, whether to use the gradient
+        checkpointing trick for dual-path transformer blocks. This trick reduces
+        accelerator memory usage, but takes longer to compute gradients.
+        Defaults to False.
       transformer_expansion: An integer, the expansion ratio for the transformer
         bottleneck.
       drop_path_keep_prob: A float, the keep probability for dropping path.
@@ -166,6 +172,9 @@ class BlockGroup(tf.keras.layers.Layer):
     self._add_absolute_positional_encoding = None
     self._activation_fn = activations.get_activation(activation)
     self._num_blocks = num_blocks
+    self._drop_path_keep_prob = []
+    self._recompute_grad = []
+    self._transformer_use_recompute_grad = transformer_use_recompute_grad
     if dual_path_transformer_layer_config is None:
       dual_path_transformer_layer_config = {}
     original_resnet_current_stride = original_resnet_input_stride
@@ -247,15 +256,15 @@ class BlockGroup(tf.keras.layers.Layer):
       else:
         raise ValueError(backbone_type + ' is not supported.')
 
+      self._drop_path_keep_prob.append(current_drop_path_keep_prob)
       # Apply the residual block.
       # The inputs to block_fn should be activated features.
-      utils.safe_setattr(self, current_name, axial_blocks.AxialBlock(
+      block_fn = axial_blocks.AxialBlock(
           filters_list,
           kernel_size=3,
           strides=current_strides,
           atrous_rate=atrous_rate,
           use_squeeze_and_excite=use_squeeze_and_excite,
-          drop_path_keep_prob=current_drop_path_keep_prob,
           use_sac=use_sac,
           bn_layer=bn_layer,
           activation=activation,
@@ -263,9 +272,10 @@ class BlockGroup(tf.keras.layers.Layer):
           conv_kernel_weight_decay=conv_kernel_weight_decay,
           basic_block_second_conv_atrous_rate=(
               basic_block_second_conv_atrous_rate),
-          recompute_grad=recompute_grad,
           attention_type=attention_type,
-          axial_layer_config=axial_layer_config))
+          axial_layer_config=axial_layer_config)
+      self._recompute_grad.append(recompute_grad)
+      utils.safe_setattr(self, current_name, block_fn)
 
       # Modify the original_resnet_stride according to the strides.
       if index == 0 and original_resnet_stride > 1:
@@ -279,18 +289,19 @@ class BlockGroup(tf.keras.layers.Layer):
                   positional_encoding_type, bn_layer, conv_kernel_weight_decay))
       if original_resnet_current_stride >= use_transformer_beyond_stride > 0:
         # Apply a dual-path transformer.
-        utils.safe_setattr(
-            self, transformer_current_name,
-            dual_path_transformer.DualPathTransformerLayer(
-                name=transformer_current_name[1:],
-                filters=int(128 * transformer_expansion),
-                drop_path_keep_prob=current_drop_path_keep_prob,
-                activation=activation,
-                bn_layer=bn_layer,
-                conv_kernel_weight_decay=conv_kernel_weight_decay,
-                **dual_path_transformer_layer_config))
+        transformer_block_fn = dual_path_transformer.DualPathTransformerLayer(
+            name=transformer_current_name[1:],
+            filters=int(128 * transformer_expansion),
+            activation=activation,
+            bn_layer=bn_layer,
+            conv_kernel_weight_decay=conv_kernel_weight_decay,
+            **dual_path_transformer_layer_config)
+        utils.safe_setattr(self, transformer_current_name, transformer_block_fn)
       else:
         utils.safe_setattr(self, transformer_current_name, None)
+    # Avoid using recompute_grad for the first call that builds the sub-layers.
+    # Otherwise, recompute_grad will not track newly built model parameters.
+    self._first_building_call = True
 
   def call(self, inputs, training=False):
     """Performs a forward pass.
@@ -314,14 +325,39 @@ class BlockGroup(tf.keras.layers.Layer):
     # The pixel space inputs are activated features.
     activated_features, memory_space_output = inputs
 
+    # Recompute_grad takes only float tensors as inputs. It does not allow
+    # bools or boolean tensors. For this reason, we cast training to a float
+    # tensor and cast it back after we go through the recompute_grad wrap.
+    float_tensor_training = tf.cast(training, tf.float32)
+
     for index in range(self._num_blocks):
       current_name, transformer_current_name = _get_current_names(index)
       block_fn = getattr(self, current_name)
       transformer_block_fn = getattr(self, transformer_current_name)
-      # Apply the residual block.
+      current_drop_path_keep_prob = self._drop_path_keep_prob[index]
+
+      # Wrap the layer if we want to recompute it in the backward pass. Avoid
+      # using recompute_grad for the first call that builds the sub-layers.
+      # Otherwise, recompute_grad will not track newly built model parameters.
+      if (self._recompute_grad[index] and
+          not self._first_building_call and training):
+        block_fn = recompute_grad_lib.recompute_grad(block_fn)
+
       # The inputs to block_fn should be activated features.
-      features, activated_features = block_fn(activated_features,
-                                              training=training)
+      block_fn_inputs = [activated_features, float_tensor_training]
+      # We have to define drop_path_masks outside the layer call and pass it
+      # into the layer, because tf.recompute_grad (gradient checkpointing) does
+      # not allow any randomness within the function call. In addition,
+      # recompute_grad functions can only take Tensors as inputs, so we do not
+      # pass the drop_path_random_mask (when it is None) into block_fn.
+      if current_drop_path_keep_prob < 1.0 and training:
+        drop_path_random_mask = drop_path.generate_drop_path_random_mask(
+            activated_features, current_drop_path_keep_prob)
+
+        block_fn_inputs.append(drop_path_random_mask)
+
+      # Apply the residual block.
+      features, activated_features = block_fn(tuple(block_fn_inputs))
 
       if index == 0 and self._add_absolute_positional_encoding is not None:
         features = self._add_absolute_positional_encoding(features,
@@ -329,18 +365,54 @@ class BlockGroup(tf.keras.layers.Layer):
         activated_features = self._activation_fn(features)
 
       if transformer_block_fn is not None:
-        # Apply a dual-path transformer.
         # Reshape pixel space features from 4D to 3D.
         _, height, width, channels = features.get_shape().as_list()
         features = tf.reshape(
             features, [-1, height * width, channels])
+
+        # Avoid using recompute_grad for the first call that builds the
+        # sub-layers. Otherwise, recompute_grad will not track newly built model
+        # parameters.
+        if (self._transformer_use_recompute_grad and
+            not self._first_building_call and training):
+          transformer_block_fn = recompute_grad_lib.recompute_grad(
+              transformer_block_fn)
+
+        transformer_block_fn_input_list = [
+            features, memory_space_output, float_tensor_training]
+        # We have to define drop_path_masks outside the layer call and pass it
+        # into the layer, because recompute_grad (gradient checkpointing) does
+        # not allow any randomness within the function call. In addition,
+        # recompute_grad functions can only take Tensors as inputs, so we do not
+        # pass the drop_path_masks (when they are None) into
+        # transformer_block_fn.
+        if current_drop_path_keep_prob < 1.0 and training:
+          # Drop path random mask for pixel space attention.
+          pixel_space_drop_path_mask = drop_path.generate_drop_path_random_mask(
+              memory_space_output, current_drop_path_keep_prob)
+          # Drop path random mask for memory space attention.
+          memory_space_attention_drop_path_mask = (
+              drop_path.generate_drop_path_random_mask(
+                  memory_space_output, current_drop_path_keep_prob))
+          # Drop path random mask for memory space feed-forward network.
+          memory_space_feed_forward_network_drop_path_mask = (
+              drop_path.generate_drop_path_random_mask(
+                  memory_space_output, current_drop_path_keep_prob))
+          transformer_block_fn_input_list += [
+              pixel_space_drop_path_mask,
+              memory_space_attention_drop_path_mask,
+              memory_space_feed_forward_network_drop_path_mask]
+
+        # Apply a dual-path transformer.
         features, activated_features, memory_space_output = (
-            transformer_block_fn((features, memory_space_output),
-                                 training=training))
+            transformer_block_fn(tuple(transformer_block_fn_input_list)))
+
         # Reshape pixel space features back to 4D.
         features = tf.reshape(features, [-1, height, width, channels])
         activated_features = tf.reshape(activated_features,
                                         [-1, height, width, channels])
+    # Now the first call has finished and the sub-layers have been built.
+    self._first_building_call = False
     # We also return the non-activated output so that the function is compatible
     # with a decoder that takes a non-activated tensor as input.
     return features, activated_features, memory_space_output

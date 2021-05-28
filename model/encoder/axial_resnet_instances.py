@@ -74,6 +74,7 @@ def _get_default_config():
           'conv_use_recompute_grad': False,
           'axial_use_recompute_grad': True,
           'recompute_within_stride': 0,
+          'transformer_use_recompute_grad': False,
           'axial_layer_config': {
               'query_shape': (129, 129),
               'key_expansion': 1,
@@ -91,7 +92,6 @@ def _get_default_config():
               'self_attention_activation': 'softmax',
           },
           'dual_path_transformer_layer_config': {
-              'recompute_grad': False,
               'num_heads': 8,
               'bottleneck_expansion': 2,
               'key_expansion': 1,

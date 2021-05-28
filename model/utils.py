@@ -360,3 +360,7 @@ def safe_setattr(obj, name, value):
   if hasattr(obj, name):
     raise ValueError('The object already has an attribute with the same name.')
   setattr(obj, name, value)
+
+
+def pad_sequence_with_none(sequence, target_length):
+  return list(sequence) + [None] * (target_length - len(sequence))

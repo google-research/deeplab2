@@ -32,8 +32,10 @@ class TransformerLayersTest(tf.test.TestCase):
 
   def test_default_transformer_layer_output_shape(self):
     layer = dual_path_transformer.DualPathTransformerLayer()
+    float_training_tensor = tf.constant(0.0, dtype=tf.float32)
     output = layer((tf.zeros([2, 4225, 126]),
-                    tf.zeros([2, 127, 128])))
+                    tf.zeros([2, 127, 128]),
+                    float_training_tensor))
     self.assertListEqual(output[0].get_shape().as_list(), [2, 4225, 126])
     self.assertListEqual(output[1].get_shape().as_list(), [2, 4225, 126])
     self.assertListEqual(output[2].get_shape().as_list(), [2, 127, 128])
@@ -41,17 +43,10 @@ class TransformerLayersTest(tf.test.TestCase):
   def test_zero_feed_forward_network_output_shape(self):
     layer = dual_path_transformer.DualPathTransformerLayer(
         feed_forward_network_channels=0)
+    float_training_tensor = tf.constant(0.0, dtype=tf.float32)
     output = layer((tf.zeros([2, 4225, 128]),
-                    tf.zeros([2, 128, 128])))
-    self.assertListEqual(output[0].get_shape().as_list(), [2, 4225, 128])
-    self.assertListEqual(output[1].get_shape().as_list(), [2, 4225, 128])
-    self.assertListEqual(output[2].get_shape().as_list(), [2, 128, 128])
-
-  def test_drop_path_with_recompute_grad_output_shape(self):
-    layer = dual_path_transformer.DualPathTransformerLayer(
-        drop_path_keep_prob=0.8, recompute_grad=True)
-    output = layer((tf.zeros([2, 4225, 128]),
-                    tf.zeros([2, 128, 128])))
+                    tf.zeros([2, 128, 128]),
+                    float_training_tensor))
     self.assertListEqual(output[0].get_shape().as_list(), [2, 4225, 128])
     self.assertListEqual(output[1].get_shape().as_list(), [2, 4225, 128])
     self.assertListEqual(output[2].get_shape().as_list(), [2, 128, 128])
@@ -60,8 +55,10 @@ class TransformerLayersTest(tf.test.TestCase):
     layer = dual_path_transformer.DualPathTransformerLayer(
         use_memory_self_attention=False,
         use_pixel2memory_feedback_attention=False)
+    float_training_tensor = tf.constant(0.0, dtype=tf.float32)
     output = layer((tf.zeros([2, 4225, 128]),
-                    tf.zeros([2, 128, 128])))
+                    tf.zeros([2, 128, 128]),
+                    float_training_tensor))
     self.assertListEqual(output[0].get_shape().as_list(), [2, 4225, 128])
     self.assertListEqual(output[1].get_shape().as_list(), [2, 4225, 128])
     self.assertListEqual(output[2].get_shape().as_list(), [2, 128, 128])

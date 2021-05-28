@@ -170,6 +170,12 @@ class UtilsTest(tf.test.TestCase):
     with self.assertRaises(ValueError):
       utils.safe_setattr(layer, 'another_conv', tf.keras.layers.Conv2D(1, 1))
 
+  def test_pad_sequence_with_none(self):
+    sequence = [1, 2]
+    output_2 = utils.pad_sequence_with_none(sequence, target_length=2)
+    self.assertEqual(output_2, [1, 2])
+    output_3 = utils.pad_sequence_with_none(sequence, target_length=3)
+    self.assertEqual(output_3, [1, 2, None])
 
 if __name__ == '__main__':
   tf.test.main()

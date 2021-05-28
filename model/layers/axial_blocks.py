@@ -26,10 +26,10 @@ followed by the other on the width-axis.
 """
 import tensorflow as tf
 
+from deeplab2.model import utils
 from deeplab2.model.layers import activations
 from deeplab2.model.layers import axial_layers
 from deeplab2.model.layers import convolutions
-from deeplab2.model.layers import drop_path
 from deeplab2.model.layers import squeeze_and_excite
 
 
@@ -61,14 +61,12 @@ class AxialBlock(tf.keras.layers.Layer):
                strides=1,
                atrous_rate=1,
                use_squeeze_and_excite=False,
-               drop_path_keep_prob=1.0,
                use_sac=False,
                bn_layer=tf.keras.layers.BatchNormalization,
                activation='relu',
                name=None,
                conv_kernel_weight_decay=0.0,
                basic_block_second_conv_atrous_rate=None,
-               recompute_grad=False,
                attention_type=None,
                axial_layer_config=None):
     """Initializes an AxialBlock.
@@ -88,7 +86,6 @@ class AxialBlock(tf.keras.layers.Layer):
         axial_block_groups_test.test_atrous_consistency_basic_block.
       use_squeeze_and_excite: A boolean flag indicating whether
         squeeze-and-excite (SE) is used.
-      drop_path_keep_prob: A float, drop path keep probability.
       use_sac: A boolean, using the Switchable Atrous Convolution (SAC) or not.
       bn_layer: A tf.keras.layers.Layer that computes the normalization
         (default: tf.keras.layers.BatchNormalization).
@@ -99,9 +96,6 @@ class AxialBlock(tf.keras.layers.Layer):
       basic_block_second_conv_atrous_rate: An integer, the atrous rate for the
         second convolution of basic block. This is necessary to ensure atrous
         consistency with different output_strides. Defaults to atrous_rate.
-      recompute_grad: A boolean, whether to use the gradient checkpointing
-        trick. This trick reduces accelerator memory usage, but takes longer to
-        compute gradients.
       attention_type: A string, type of attention to apply. Support 'axial' and
         'global'.
       axial_layer_config: A dict, an argument dictionary for the axial layer.
@@ -116,7 +110,6 @@ class AxialBlock(tf.keras.layers.Layer):
     self._filters_list = filters_list
     self._strides = strides
     self._use_squeeze_and_excite = use_squeeze_and_excite
-    self._drop_path_keep_prob = drop_path_keep_prob
     self._bn_layer = bn_layer
     self._activate_fn = activations.get_activation(activation)
     self._attention_type = attention_type
@@ -231,12 +224,12 @@ class AxialBlock(tf.keras.layers.Layer):
     if self._use_squeeze_and_excite:
       self._squeeze_and_excite = squeeze_and_excite.SimplifiedSqueezeAndExcite(
           filters_list[-1])
-    self._recompute_grad = recompute_grad
     self._conv_kernel_weight_decay = conv_kernel_weight_decay
 
-  def build(self, input_shape):
+  def build(self, input_shape_list):
+    input_tensor_shape = input_shape_list[0]
     self._shortcut = None
-    if input_shape[3] != self._filters_list[-1]:
+    if input_tensor_shape[3] != self._filters_list[-1]:
       self._shortcut = convolutions.Conv2DSame(
           self._filters_list[-1], 1, 'shortcut',
           strides=self._strides,
@@ -246,60 +239,70 @@ class AxialBlock(tf.keras.layers.Layer):
           activation='none',
           conv_kernel_weight_decay=self._conv_kernel_weight_decay)
 
-  def call(self, input_tensor, training=None):
+  def call(self, inputs):
     """Performs a forward pass.
 
+    We have to define drop_path_random_mask outside the layer call and pass it
+    into the layer, because recompute_grad (gradient checkpointing) does not
+    allow any randomness within the function call. In addition, recompute_grad
+    only supports float tensors as inputs. For this reason, the training flag
+    should be also passed as a float tensor. For the same reason, we cannot
+    support passing drop_path_random_mask as None. Instead, we ask the users to
+    pass only the first two tensors when drop path is not used.
+
     Args:
-      input_tensor: An input tensor of type tf.Tensor with shape [batch, height,
-        width, channels].
-      training: A boolean flag indicating whether training behavior should be
-        used (default: False).
+      inputs: A tuple of 2 or 3 tensors, containing
+        input_tensor should be an input tensor of type tf.Tensor with shape
+          [batch, height, width, channels].
+        float_tensor_training should be a float tensor of 0.0 or 1.0, whether
+          the model is in training mode.
+        (optional) drop_path_random_mask is a drop path random mask of type
+          tf.Tensor with shape [batch, 1, 1, 1].
 
     Returns:
       outputs: two tensors. The first tensor does not use the last activation
         function. The second tensor uses the activation. We return non-activated
         output to support MaX-DeepLab which uses non-activated feature for the
         stacked decoders.
+
+    Raises:
+      ValueError: If the length of inputs is not 2 or 3.
     """
-    # We have to define drop_path_random_mask outside the helper call and pass
-    # it into the helper_call, because tf.recompute_grad (gradient
-    # checkpointing) does not allow any randomness within the function call.
-    if self._drop_path_keep_prob < 1.0 and training:
-      drop_path_random_mask = drop_path.generate_drop_path_random_mask(
-          input_tensor, self._drop_path_keep_prob)
-    else:
-      drop_path_random_mask = None
+    if len(inputs) not in (2, 3):
+      raise ValueError('The length of inputs should be either 2 or 3.')
 
-    # Wrap the forward pass in a helper_call function which will optionally be
-    # recomputed (with tf.recompute_grad) in the backward pass.
-    def helper_call(input_tensor):
-      shortcut = input_tensor
-      if self._shortcut is not None:
-        shortcut = self._shortcut(shortcut, training=training)
-      elif self._strides != 1:
-        shortcut = shortcut[:, ::self._strides, ::self._strides, :]
+    # Unpack the inputs.
+    input_tensor, float_tensor_training, drop_path_random_mask = (
+        utils.pad_sequence_with_none(inputs, target_length=3))
 
-      if len(self._filters_list) == 3:
-        x = self._conv1_bn_act(input_tensor, training=training)
-        if (self._attention_type is None or
-            self._attention_type.lower() == 'none'):
-          x = self._conv2_bn_act(x, training=training)
-        else:
-          x = self._attention(x, training=training)
-          x = self._activate_fn(x)
-        x = self._conv3_bn(x, training=training)
-      if len(self._filters_list) == 2:
-        x = self._conv1_bn_act(input_tensor, training=training)
-        x = self._conv2_bn(x, training=training)
+    # Recompute_grad takes only float tensors as inputs. It does not allow
+    # bools or boolean tensors. For this reason, we cast training to a float
+    # tensor outside this call, and now we cast it back to a boolean tensor.
+    training = tf.cast(float_tensor_training, tf.bool)
 
-      if self._use_squeeze_and_excite:
-        x = self._squeeze_and_excite(x)
+    shortcut = input_tensor
+    if self._shortcut is not None:
+      shortcut = self._shortcut(shortcut, training=training)
+    elif self._strides != 1:
+      shortcut = shortcut[:, ::self._strides, ::self._strides, :]
 
-      if drop_path_random_mask is not None:
-        x = x * drop_path_random_mask
-      x = x + shortcut
-      return x, self._activate_fn(x)
+    if len(self._filters_list) == 3:
+      x = self._conv1_bn_act(input_tensor, training=training)
+      if (self._attention_type is None or
+          self._attention_type.lower() == 'none'):
+        x = self._conv2_bn_act(x, training=training)
+      else:
+        x = self._attention(x, training=training)
+        x = self._activate_fn(x)
+      x = self._conv3_bn(x, training=training)
+    if len(self._filters_list) == 2:
+      x = self._conv1_bn_act(input_tensor, training=training)
+      x = self._conv2_bn(x, training=training)
 
-    if self._recompute_grad:
-      helper_call = tf.recompute_grad(helper_call)
-    return helper_call(input_tensor)
+    if self._use_squeeze_and_excite:
+      x = self._squeeze_and_excite(x)
+
+    if drop_path_random_mask is not None:
+      x = x * drop_path_random_mask
+    x = x + shortcut
+    return x, self._activate_fn(x)
