@@ -16,18 +16,15 @@
 #ifdef GOOGLE_CUDA
 #define EIGEN_USE_GPU
 
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
-#include /*third_party*/"absl/container/flat_hash_map.h"
-#include /*third_party*/"absl/container/flat_hash_set.h"
 #include /*third_party*/"tensorflow/core/framework/op_kernel.h"
 #include /*third_party*/"tensorflow/core/framework/register_types.h"
 #include /*third_party*/"tensorflow/core/framework/tensor.h"
 #include /*third_party*/"tensorflow/core/framework/tensor_shape.h"
 #include /*third_party*/"tensorflow/core/framework/types.h"
-#include /*third_party*/"tensorflow/core/lib/core/errors.h"
-#include /*third_party*/"tensorflow/core/lib/core/status.h"
-#include /*third_party*/"tensorflow/core/platform/logging.h"
 #include /*third_party*/"tensorflow/core/util/gpu_kernel_helper.h"
 #include /*third_party*/"merge_semantic_and_instance_maps_op_kernel.h" // local headers
 
@@ -159,7 +156,7 @@ void CreateLabelsPerInstance(const GPUDevice& d,
   std::vector<int32_t> labels_per_instance_host(kMaxNumInstance * 2);
 
   // Map semantic_label -> largest instance label of this semantic class.
-  absl::flat_hash_map<int32_t, int32_t> instance_count_per_semantic_class;
+  std::unordered_map<int32_t, int32_t> instance_count_per_semantic_class;
   for (int i = 0; i < kMaxNumInstance; ++i) {
     int max_pixel_count = 0;
     int max_semantic_label = -1;
@@ -189,14 +186,14 @@ void CreateLabelsPerInstance(const GPUDevice& d,
 
 // Specialization of Convert1DInt32TensorToSet for GPU.
 template <>
-absl::flat_hash_set<int32_t> Convert1DInt32TensorToSet(const GPUDevice& d,
-                                                       const Tensor& tensor) {
+std::unordered_set<int32_t> Convert1DInt32TensorToSet(const GPUDevice& d,
+                                                      const Tensor& tensor) {
   const int n_vals = tensor.dim_size(0);
   std::vector<int32_t> host_buffer(n_vals);
   d.memcpyDeviceToHost(host_buffer.data(), tensor.tensor<int32_t, 1>().data(),
                        n_vals * sizeof(int32_t));
 
-  return absl::flat_hash_set<int32_t>(host_buffer.begin(), host_buffer.end());
+  return std::unordered_set<int32_t>(host_buffer.begin(), host_buffer.end());
 }
 
 // This function merges the semantic segmentation and class-agnostic
@@ -212,7 +209,7 @@ template <>
 void MergeSemanticAndInstanceMaps<GPUDevice>::operator()(
     const GPUDevice& d, typename TTypes<int32_t, 3>::ConstTensor semantic_maps,
     typename TTypes<int32_t, 3>::ConstTensor instance_maps,
-    const absl::flat_hash_set<int32_t>& thing_ids_set, int label_divisor,
+    const std::unordered_set<int32_t>& thing_ids_set, int label_divisor,
     int stuff_area_limit, int void_label,
     typename TTypes<int32_t, 3>::Tensor parsing_maps) {
   const int num_batches = semantic_maps.dimension(0);
@@ -222,7 +219,8 @@ void MergeSemanticAndInstanceMaps<GPUDevice>::operator()(
   // Allocate memory on host, which tells each semantic class is "thing" or not.
   bool is_thing_per_semantic_id[kMaxNumSemantic];
   for (int i = 0; i < kMaxNumSemantic; ++i) {
-    is_thing_per_semantic_id[i] = thing_ids_set.contains(i);
+    is_thing_per_semantic_id[i] =
+        (thing_ids_set.find(i) != thing_ids_set.end());
   }
   bool* is_thing_per_semantic_id_device =
       reinterpret_cast<bool*>(d.allocate_temp(kMaxNumSemantic * sizeof(bool)));

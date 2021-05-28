@@ -29,12 +29,19 @@ cd ${YOUR_PROJECT_NAME}
 git clone https://github.com/google-research/deeplab2.git
 ```
 
-### Install TensorFlow 2.5 via PIP
+### Install TensorFlow via PIP
 
 ```bash
-# Should come with compatible numpy package.
+# Install tensorflow 2.5 as an example.
+# This should come with compatible numpy package.
 pip install tensorflow==2.5
 ```
+
+**NOTE** You should find the right Tensorflow version according to your own
+configuration at
+https://www.tensorflow.org/install/source#tested_build_configurations. You also
+need to choose the right cuda version as listed on the page if we want to run
+with GPU.
 
 ### Install Protobuf
 
@@ -155,14 +162,14 @@ TF_LFLAGS=( $(python -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.ge
 OP_NAME='deeplab2/tensorflow_ops/kernels/merge_semantic_and_instance_maps_op'
 
 # CPU
-g++ -std=c++11 -shared \
+g++ -std=c++14 -shared \
 ${OP_NAME}.cc ${OP_NAME}_kernel.cc -o ${OP_NAME}.so -fPIC ${TF_CFLAGS[@]} ${TF_LFLAGS[@]} -O2
 
 # GPU support (https://www.tensorflow.org/guide/create_op#compiling_the_kernel_for_the_gpu_device)
-nvcc -std=c++11 -c -o ${OP_NAME}_kernel.cu.o ${OP_NAME}_kernel.cu.cc \
-  ${TF_CFLAGS[@]} -D GOOGLE_CUDA=1 -x cu -Xcompiler -fPIC
+nvcc -std=c++14 -c -o ${OP_NAME}_kernel.cu.o ${OP_NAME}_kernel.cu.cc \
+  ${TF_CFLAGS[@]} -D GOOGLE_CUDA=1 -x cu -Xcompiler -fPIC --expt-relaxed-constexpr
 
-g++ -std=c++11 -shared -o ${OP_NAME}.so ${OP_NAME}.cc ${OP_NAME}_kernel.cc \
+g++ -std=c++14 -shared -o ${OP_NAME}.so ${OP_NAME}.cc ${OP_NAME}_kernel.cc \
   ${OP_NAME}_kernel.cu.o ${TF_CFLAGS[@]} -fPIC -lcudart ${TF_LFLAGS[@]}
 ```
 
@@ -211,3 +218,23 @@ deeplab2/compile.sh gpu
 **A1:** We experienced several dependency issues with the most recent conda
 package. We therefore do not provide support for installing deeplab2 via conda
 at this stage.
+
+**Q2: How can I specify a specific nvcc to use a specific gcc version?**
+
+**A2:** At the moment, tensorflow requires a gcc version < 9. If your default
+compiler has a higher version, the path to a different gcc needs to be set to
+compile the custom GPU op. Please check that either gcc-7 or gcc-8 are
+installed.
+
+The compiler can then be set as follows:
+
+```bash
+# Assuming gcc-7 is installed in /usr/bin (can be verified by which gcc-7)
+
+nvcc -std=c++14 -c -o ${OP_NAME}_kernel.cu.o ${OP_NAME}_kernel.cu.cc \
+${TF_CFLAGS[@]} -D GOOGLE_CUDA=1 -x cu -Xcompiler -fPIC -ccbin=/usr/bin/g++-7 \
+--expt-relaxed-constexpr
+
+g++-7 -std=c++14 -shared -o ${OP_NAME}.so ${OP_NAME}.cc ${OP_NAME}_kernel.cc \
+${OP_NAME}_kernel.cu.o ${TF_CFLAGS[@]} -fPIC -lcudart ${TF_LFLAGS[@]}
+```

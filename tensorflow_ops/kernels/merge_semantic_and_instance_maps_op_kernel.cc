@@ -20,10 +20,10 @@
 #include <algorithm>
 #include <iterator>
 #include <set>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
-#include /*third_party*/"absl/container/flat_hash_map.h"
-#include /*third_party*/"absl/container/flat_hash_set.h"
 #include /*third_party*/"tensorflow/core/framework/op_kernel.h"
 #include /*third_party*/"tensorflow/core/framework/register_types.h"
 #include /*third_party*/"tensorflow/core/framework/tensor.h"
@@ -63,7 +63,7 @@ void MergeSemanticAndInstanceMaps<Eigen::ThreadPoolDevice>::operator()(
     const Eigen::ThreadPoolDevice& d,
     typename TTypes<int32_t, 3>::ConstTensor semantic_maps,
     typename TTypes<int32_t, 3>::ConstTensor instance_maps,
-    const absl::flat_hash_set<int32_t>& thing_ids_set, int label_divisor,
+    const std::unordered_set<int32_t>& thing_ids_set, int label_divisor,
     int stuff_area_limit, int void_label,
     typename TTypes<int32_t, 3>::Tensor parsing_maps) {
   const int num_batches = semantic_maps.dimension(0);
@@ -83,15 +83,15 @@ void MergeSemanticAndInstanceMaps<Eigen::ThreadPoolDevice>::operator()(
     using InstanceIdType = int32_t;
     using SemanticLabelType = int32_t;
     using CountsType = int32_t;
-    absl::flat_hash_map<InstanceIdType,
-                        absl::flat_hash_map<SemanticLabelType, CountsType>>
+    std::unordered_map<InstanceIdType,
+                       std::unordered_map<SemanticLabelType, CountsType>>
         instance_id_to_semantic_histogram;
     // A map from stuff label to area.
-    absl::flat_hash_map<SemanticLabelType, CountsType> stuff_label_to_area;
+    std::unordered_map<SemanticLabelType, CountsType> stuff_label_to_area;
     for (int h = 0; h < height; ++h) {
       for (int w = 0; w < width; ++w) {
         const int semantic_val = semantic_maps(b, h, w);
-        if (!thing_ids_set.contains(semantic_val)) {
+        if (thing_ids_set.find(semantic_val) == thing_ids_set.end()) {
           // Skip if it is `stuff`.
           is_thing[w + width * h] = false;
           ++stuff_label_to_area[semantic_val];
@@ -102,7 +102,7 @@ void MergeSemanticAndInstanceMaps<Eigen::ThreadPoolDevice>::operator()(
       }
     }
     // Keep track of how many instances for each semantic_label.
-    absl::flat_hash_map<SemanticLabelType, CountsType>
+    std::unordered_map<SemanticLabelType, CountsType>
         semantic_label_to_instance_counts;
     // Find the new semantic label and instance id for each instance. We use
     // majority vote to find the new semantic label while reorder the instance
@@ -112,13 +112,13 @@ void MergeSemanticAndInstanceMaps<Eigen::ThreadPoolDevice>::operator()(
     // `in different semantic classes` can have the same instance id. This
     // reduces the maximum instance label value and avoids the problem of
     // combining the two maps with the label_divisor.
-    absl::flat_hash_map<InstanceIdType,
-                        std::pair<SemanticLabelType, InstanceIdType>>
+    std::unordered_map<InstanceIdType,
+                       std::pair<SemanticLabelType, InstanceIdType>>
         instance_id_to_new_semantic_label_and_instance_id;
     for (const auto& instance_to_histogram :
          instance_id_to_semantic_histogram) {
       const int instance_val = instance_to_histogram.first;
-      const absl::flat_hash_map<SemanticLabelType, CountsType>
+      const std::unordered_map<SemanticLabelType, CountsType>
           semantic_histogram = instance_to_histogram.second;
       int semantic_label = -1;
       int max_count = 0;
@@ -182,9 +182,9 @@ void MergeSemanticAndInstanceMaps<Eigen::ThreadPoolDevice>::operator()(
 }
 
 template <>
-absl::flat_hash_set<int32_t> Convert1DInt32TensorToSet(
+std::unordered_set<int32_t> Convert1DInt32TensorToSet(
     const Eigen::ThreadPoolDevice& d, const Tensor& tensor) {
-  absl::flat_hash_set<int32_t> target_set;
+  std::unordered_set<int32_t> target_set;
   const int n_vals = tensor.dim_size(0);
   typename TTypes<int32_t, 1>::ConstTensor tensor_data =
       tensor.tensor<int32_t, 1>();
@@ -222,7 +222,7 @@ class MergeSemanticAndInstanceMapsOp : public tensorflow::OpKernel {
     const Tensor& thing_ids_tensor = context->input(2);
 
     // Convert thing_ids_tensor into a set.
-    absl::flat_hash_set<int32_t> thing_ids_set =
+    std::unordered_set<int32_t> thing_ids_set =
         functor::Convert1DInt32TensorToSet(context->eigen_device<Device>(),
                                            thing_ids_tensor);
 
