@@ -1,24 +1,33 @@
 # Run DeepLab2 on Cityscapes dataset
 
 This page walks through the steps required to generate
-[Cityscapes](https://www.cityscapes-dataset.com/) data for DeepLab2.
+[Cityscapes](https://www.cityscapes-dataset.com/) data for DeepLab2. DeepLab2 uses sharded TFRecords for efficient processing of the data.
 
 ## Prework
 
-Before running any Deeplab2 scripts, the users should (1) register the
-Cityscapes dataset [website](https://www.cityscapes-dataset.com) to download the
-dataset, and (2) run the script provided by Cityscapes to generate the training
+Before running any Deeplab2 scripts, the user should 
+1. register on the Cityscapes dataset [website](https://www.cityscapes-dataset.com) to download the dataset (gtFine_trainvaltest.zip and leftImg8bit_trainvaltest.zip).
+2. install cityscapesscripts via pip:
+```bash
+  # This will install the cityscapes scripts and its stand-alone tools.
+  pip install cityscapesscripts
+```
+
+3. run the tools provided by Cityscapes to generate the training
 groundtruth. See sample commandlines below:
 
 ```bash
-  python cityscapesscripts/preparation/createTrainIdLabelImgs.py
+  # Set CITYSCAPES_DATASET to your dataset root.
+
+  # Create train ID label images.
+  CITYSCAPES_DATASET='.' csCreateTrainIdLabelImgs
 
   # To generate panoptic groundtruth, run the following command.
-  python cityscapesscripts/preparation/createPanopticImgs.py --use-train-id
+  CITYSCAPES_DATASET='.' csCreatePanopticImgs --use-train-id
 
   # [Optional] Generate panoptic groundtruth with EvalId to match evaluation
   # on the server. This step is not required for generating TFRecords.
-  python cityscapesscripts/preparation/createPanopticImgs.py
+  CITYSCAPES_DATASET='.' csCreatePanopticImgs
 ```
 
 After running above commandlines, the expected directory structure should be as
@@ -26,15 +35,7 @@ follows:
 
 ```
 cityscapes
-+-- cityscapesscripts
-|   |
-|   +-- annotation
-|   +-- evaluation
-|   +-- helpers
-|   +-- preparation
-|   +-- viewer
-|
-|-- gtFine
++-- gtFine
 |   |
 |   +-- train
 |   |   |
