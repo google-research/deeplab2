@@ -172,14 +172,14 @@ def main(argv):
   if len(argv) > 1:
     raise app.UsageError('Too many command-line arguments.')
 
-  data_path = resources.GetResourceFilename(FLAGS.panoptic_annotation_path)
+  data_path = FLAGS.panoptic_annotation_path  # OSS: removed internal filename loading.
   panoptic_map, vps_map, segments_info = create_test_data(data_path)
   panoptic_map_filename = _FILENAME_PREFIX + '_gtFine_panoptic.png'
   panoptic_map_path = os.path.join(FLAGS.output_cityscapes_root, 'gtFine',
                                    'cityscapes_panoptic_dummy_trainId',
                                    panoptic_map_filename)
 
-  gt_output_path = resources.GetResourceFilename(FLAGS.panoptic_gt_output_path)
+  gt_output_path = FLAGS.panoptic_gt_output_path  # OSS: removed internal filename loading.
   with tf.io.gfile.GFile(gt_output_path, 'wb') as f:
     Image.fromarray(vps_map).save(f, format='png')
 
