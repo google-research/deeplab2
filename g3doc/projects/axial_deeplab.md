@@ -93,6 +93,8 @@ config files under this [directory](../../configs/cityscapes/axial_deeplab).
 
 TODO: Add backbones and configs.
 
+All the reported results are obtained by a *single-scale* inference.
+
 Backbone | Output stride | Output resolution | PQ&dagger; | AP<sup>Mask</sup>&dagger; | mIoU
 -------- | :-----------: | :---------------: | :---: | :---: | :---:
 
