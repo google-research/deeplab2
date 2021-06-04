@@ -41,7 +41,9 @@ We list a few projects that use DeepLab2.
 
 ## Colab Demo
 
-TBD
+Colab notebook for off-the-shelf inference.
+
+* <a href='https://colab.sandbox.google.com/google-research/deeplab2/blob/main/Deeplab_Demo.ipynb'>Colab notebook for off-the-shelf inference.</a><br>
 
 ## Change logs
 
