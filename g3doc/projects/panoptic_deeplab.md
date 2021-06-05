@@ -62,7 +62,8 @@ would like to train those models by yourself, please find the corresponding
 config files under the directory
 [configs/cityscapes/panoptic_deeplab](../../configs/cityscapes/panoptic_deeplab).
 
-All the reported results are obtained by a *single-scale* inference.
+All the reported results are obtained by a *single-scale* inference and
+*ImageNet-1K* pretrained checkpoints.
 
 Backbone | Output stride | Output resolution | PQ&dagger; | AP<sup>Mask</sup>&dagger; | mIoU
 -------- | :-----------: | :---------------: | :---: | :---: | :---:
