@@ -159,6 +159,120 @@ class LossTest(tf.test.TestCase):
     np.testing.assert_almost_equal(
         per_sample_loss.numpy(), expected_result.numpy(), decimal=5)
 
+  def test_is_one_hot(self):
+    num_classes = 19
+    gt_list = [
+        tf.ones([2, 33, 33], tf.int32),
+        tf.ones([2, 33], tf.int32),
+        tf.one_hot(tf.ones([2, 33, 33], tf.int32), num_classes),
+        tf.one_hot(tf.ones([2, 33], tf.int32), num_classes),
+    ]
+    pred_list = [
+        tf.random.uniform(shape=[2, 33, 33, num_classes]),
+        tf.random.uniform(shape=[2, 33, num_classes]),
+        tf.random.uniform(shape=[2, 33, 33, num_classes]),
+        tf.random.uniform(shape=[2, 33, num_classes]),
+    ]
+    expected_result_list = [False, False, True, True]
+    output_list = []
+    for gt, pred in zip(gt_list, pred_list):
+      output_list.append(loss.is_one_hot(gt, pred))
+    np.testing.assert_equal(output_list, expected_result_list)
+
+  def test_focal_ce_loss_integer_or_one_hot(self):
+    num_classes = 19
+    gamma = 0.5
+    alpha = 0.75
+    loss_layer = loss.FocalCrossEntropyLoss(
+        gt_key='gt',
+        pred_key='pred',
+        weight_key='weight',
+        num_classes=num_classes,
+        focal_loss_alpha=alpha,
+        focal_loss_gamma=gamma,)
+
+    logits = tf.random.uniform(shape=[2, 33 * 33, num_classes])
+    gt = tf.ones([2, 33 * 33], tf.int32)
+    use_one_hot_encode_list = [False, True]
+    for use_one_hot_encode in use_one_hot_encode_list:
+      if use_one_hot_encode:
+        gt = tf.one_hot(gt, num_classes)
+      y_true = {'gt': gt}
+      y_pred = {'pred': logits,
+                'weight': tf.ones([2, 33 * 33])}
+      predictions = tf.nn.softmax(logits, axis=-1)
+      if use_one_hot_encode:
+        pt = tf.reduce_sum(predictions * gt, axis=-1)
+        expected_result = tf.nn.softmax_cross_entropy_with_logits(gt, logits)
+      else:
+        pt = tf.reduce_sum(predictions * tf.one_hot(gt, num_classes), axis=-1)
+        expected_result = tf.nn.softmax_cross_entropy_with_logits(
+            tf.one_hot(gt, num_classes), logits)
+      expected_result = tf.multiply(tf.pow(1.0 - pt, gamma), expected_result)
+      expected_result = tf.reshape(expected_result, shape=[2, -1])
+      # Since labels has no '19' (background) in this example, only alpha is
+      # multiplied.
+      expected_result = tf.reduce_mean(expected_result, axis=[1]) * alpha
+      per_sample_loss = loss_layer(y_true, y_pred)
+
+      np.testing.assert_almost_equal(
+          per_sample_loss.numpy(), expected_result.numpy(), decimal=5)
+
+  def test_mask_dice_loss(self):
+    gt = [
+        [
+            [1., 1., 1.],
+            [0., 0., 0.],
+            [0., 0., 0.],
+        ],
+        [
+            [0., 0., 0.],
+            [1., 1., 1.],
+            [1., 1., 1.],
+        ],
+    ]
+    gt = tf.constant(gt, dtype=tf.float32)
+    gt = tf.expand_dims(gt, -1)
+    gt = tf.transpose(gt, perm=[3, 1, 2, 0])
+
+    y_true = {'gt': gt}
+
+    pred = [
+        [
+            [1., 1., 0.],
+            [1., 1., 0.],
+            [1., 1., 0.],
+        ],
+        [
+            [0., 0., 1.],
+            [0., 0., 1.],
+            [0., 0., 1.],
+        ],
+    ]
+    # Multiply 100 to make its Softmax output have 0 or 1 values.
+    pred = tf.constant(pred, dtype=tf.float32) * 100.
+    pred = tf.expand_dims(pred, -1)
+    pred = tf.transpose(pred, perm=[3, 1, 2, 0])
+    y_pred = {
+        'pred': pred,
+        'weight': tf.ones([1]) * 0.5
+    }
+
+    loss_layer = loss.MaskDiceLoss(
+        gt_key='gt',
+        pred_key='pred',
+        weight_key='weight',
+        prediction_activation='softmax')
+    dice_loss = loss_layer(y_true, y_pred)
+    loss_result = dice_loss.numpy()
+    # For each channel,
+    #   nominator = 2 * intersection(=2) + smooth(=1) = 5
+    #   denominator = 9 + smooth(=1) = 10
+    # Channel-wise sum: [5/10, 5/10] -> [1.0]
+    # Weighted result: [1.0] * weight(=0.5) = 0.5
+    expected_result = np.array([0.5])
+    np.testing.assert_almost_equal(loss_result, expected_result)
+
   def test_panoptic_deeplab_loss(self):
     ignore_label = 255
     num_classes = 19
