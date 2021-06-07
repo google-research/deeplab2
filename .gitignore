@@ -13,3 +13,5 @@ __pycache__/
 .DS_Store
 
 # Generated files
+*.DS_Store
+*.o
