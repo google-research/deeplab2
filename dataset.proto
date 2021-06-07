@@ -69,4 +69,15 @@ message DatasetOptions {
   // set) may not contain any groundtruth label. In that case, set this field
   // to false to avoid decoding non-existing groundtruth label.
   optional bool decode_groundtruth_label = 14 [default = true];
+  // Whether the model needs thing_id_mask annotations. When True, we will
+  // additionally return mask annotation for each `thing` instance, encoded with
+  // a unique thing_id. This ground-truth annotation could be used to learn a
+  // better segmentation mask for each instance. `thing_id` indicates the number
+  // of unique thing-ID to each instance in an image, starting the counting from
+  // 0 (default: False).
+  optional bool thing_id_mask_annotations = 15 [default = false];
+  // Set the maximum number of possible thing instances per image. It is used
+  // together when enabling generation of thing_id_mask_annotations (= True),
+  // representing the maximum thing ID encoded in the thing_id_mask.
+  optional int32 max_thing_id = 16 [default = 128];
 }

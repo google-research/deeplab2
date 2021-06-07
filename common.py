@@ -36,6 +36,8 @@ GT_INSTANCE_CENTER_KEY = 'instance_center_gt'
 GT_INSTANCE_REGRESSION_KEY = 'instance_regression_gt'
 GT_FRAME_OFFSET_KEY = 'frame_offset_gt'
 GT_IS_CROWD = 'is_crowd_gt'
+GT_THING_ID_MASK_KEY = 'thing_id_mask_gt'
+GT_THING_ID_CLASS_KEY = 'thing_id_class_gt'
 
 # Raw labels.
 GT_PANOPTIC_RAW = 'panoptic_raw'

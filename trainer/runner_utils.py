@@ -112,6 +112,8 @@ def create_dataset(dataset_config: config_pb2.DatasetOptions,
       scale_factor_step_size=augmentation_options.scale_factor_step_size,
       autoaugment_policy_name=augmentation_options.autoaugment_policy_name,
       only_semantic_annotations=only_semantic_annotations,
+      thing_id_mask_annotations=dataset_config.thing_id_mask_annotations,
+      max_thing_id=dataset_config.max_thing_id,
       sigma=dataset_config.sigma,
       focus_small_instances=focus_small_instances)
 

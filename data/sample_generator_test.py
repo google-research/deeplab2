@@ -103,7 +103,8 @@ class PanopticSampleGeneratorTest(tf.test.TestCase):
         dataset.CITYSCAPES_PANOPTIC_INFORMATION._asdict(),
         focus_small_instances=small_instances,
         is_training=True,
-        crop_size=[769, 769])
+        crop_size=[769, 769],
+        thing_id_mask_annotations=True)
     input_sample = {
         'image': self._rgb_image,
         'image_name': 'test_image',
@@ -119,6 +120,8 @@ class PanopticSampleGeneratorTest(tf.test.TestCase):
     self.assertIn(common.GT_INSTANCE_CENTER_KEY, sample)
     self.assertIn(common.GT_INSTANCE_REGRESSION_KEY, sample)
     self.assertIn(common.GT_IS_CROWD, sample)
+    self.assertIn(common.GT_THING_ID_MASK_KEY, sample)
+    self.assertIn(common.GT_THING_ID_CLASS_KEY, sample)
     self.assertIn(common.SEMANTIC_LOSS_WEIGHT_KEY, sample)
     self.assertIn(common.CENTER_LOSS_WEIGHT_KEY, sample)
     self.assertIn(common.REGRESSION_LOSS_WEIGHT_KEY, sample)
@@ -134,6 +137,10 @@ class PanopticSampleGeneratorTest(tf.test.TestCase):
         sample[common.GT_INSTANCE_REGRESSION_KEY].shape.as_list(),
         [769, 769, 2])
     self.assertListEqual(sample[common.GT_IS_CROWD].shape.as_list(), [769, 769])
+    self.assertListEqual(sample[common.GT_THING_ID_MASK_KEY].shape.as_list(),
+                         [769, 769])
+    self.assertListEqual(sample[common.GT_THING_ID_CLASS_KEY].shape.as_list(),
+                         [128])
     self.assertListEqual(
         sample[common.SEMANTIC_LOSS_WEIGHT_KEY].shape.as_list(), [769, 769])
     self.assertListEqual(sample[common.CENTER_LOSS_WEIGHT_KEY].shape.as_list(),
@@ -146,6 +153,8 @@ class PanopticSampleGeneratorTest(tf.test.TestCase):
     gt_pan = sample[common.GT_PANOPTIC_KEY]
     gt_center = tf.cast(sample[common.GT_INSTANCE_CENTER_KEY] * 255, tf.uint8)
     gt_is_crowd = sample[common.GT_IS_CROWD]
+    gt_thing_id_mask = sample[common.GT_THING_ID_MASK_KEY]
+    gt_thing_id_class = sample[common.GT_THING_ID_CLASS_KEY]
     image = tf.cast(sample[common.IMAGE], tf.uint8)
 
     # semantic weights can be in range of [0, 3] in this example.
@@ -175,6 +184,16 @@ class PanopticSampleGeneratorTest(tf.test.TestCase):
         _get_groundtruth_array(
             gt_pan,
             self._test_target_data_dir + 'panoptic_target.npy'))
+    np.testing.assert_almost_equal(
+        gt_thing_id_mask.numpy(),
+        _get_groundtruth_array(
+            gt_thing_id_mask,
+            self._test_target_data_dir + 'thing_id_mask_target.npy'))
+    np.testing.assert_almost_equal(
+        gt_thing_id_class.numpy(),
+        _get_groundtruth_array(
+            gt_thing_id_class,
+            self._test_target_data_dir + 'thing_id_class_target.npy'))
     np.testing.assert_almost_equal(
         gt_center.numpy(),
         _get_groundtruth_image(

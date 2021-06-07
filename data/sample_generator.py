@@ -49,6 +49,8 @@ class PanopticSampleGenerator:
                scale_factor_step_size=0,
                autoaugment_policy_name=None,
                only_semantic_annotations=False,
+               thing_id_mask_annotations=False,
+               max_thing_id=128,
                sigma=8,
                focus_small_instances=None):
     """Initializes the panoptic segmentation generator.
@@ -82,6 +84,16 @@ class PanopticSampleGenerator:
         autoaugment_policy.py for available policies.
       only_semantic_annotations: An optional flag indicating whether the model
         needs only semantic annotations (default: False).
+      thing_id_mask_annotations: An optional flag indicating whether the model
+        needs thing_id_mask annotations. When `thing_id_mask_annotations` is
+        True, we will additionally return mask annotation for each `thing`
+        instance, encoded with a unique thing_id. This ground-truth annotation
+        could be used to learn a better segmentation mask for each instance.
+        `thing_id` indicates the number of unique thing-ID to each instance in
+        an image, starting the counting from 0 (default: False).
+      max_thing_id: The maximum number of possible thing instances per image. It
+        is used together when thing_id_mask_annotations = True, representing the
+        maximum thing ID encoded in the thing_id_mask. (default: 128).
       sigma: The standard deviation of the Gaussian used to encode the center
         keypoint (default: 8).
       focus_small_instances: An optional dict that defines how to deal with
@@ -96,7 +108,8 @@ class PanopticSampleGenerator:
     self._sigma = sigma
     self._instance_area_threshold = 0
     self._small_instance_weight = 1.0
-
+    self._thing_id_mask_annotations = thing_id_mask_annotations
+    self._max_thing_id = max_thing_id
     self._is_training = is_training
     self._preprocessing_fn = functools.partial(
         preprocessing.preprocess_image_and_label,
@@ -166,6 +179,8 @@ class PanopticSampleGenerator:
 
     Raises:
       ValueError: An error occurs when the label shape is invalid.
+      NotImplementedError: An error occurs when thing_id_mask_annotations comes
+        together with prev_image or prev_label, not currently implemented.
     """
     if label is not None:
       label.get_shape().assert_is_compatible_with(
@@ -240,6 +255,18 @@ class PanopticSampleGenerator:
             sample[common.IMAGE] = tf.concat(
                 [sample[common.IMAGE], prev_center_map], axis=2)
 
+        if self._thing_id_mask_annotations:
+          if prev_image is not None or prev_label is not None:
+            raise NotImplementedError(
+                'Current implementation of Max-DeepLab does not support '
+                + 'prev_image and prev_label.')
+          thing_id_mask, thing_id_class = (
+              self._generate_thing_id_mask_and_class(
+                  panoptic_label, non_crowd_things))
+          sample[common.GT_THING_ID_MASK_KEY] = tf.squeeze(
+              thing_id_mask, axis=2)
+          sample[common.GT_THING_ID_CLASS_KEY] = thing_id_class
+
     if not self._is_training:
       # Resized image is only used during visualization.
       sample[common.RESIZED_IMAGE] = resized_image
@@ -257,6 +284,61 @@ class PanopticSampleGenerator:
           sample[common.GT_PANOPTIC_RAW] = tf.squeeze(original_label, axis=2)
           sample[common.GT_IS_CROWD_RAW] = tf.squeeze(orig_crowd_region)
     return sample
+
+  def _generate_thing_id_mask_and_class(self,
+                                        panoptic_label,
+                                        non_crowd_things):
+    """Generates the ground-truth thing-ID masks and their class labels.
+
+    It computes thing-ID mask and class with unique ID for each thing instance.
+    `thing_id` indicates the number of unique thing-ID to each instance in an
+    image, starting the counting from 0. Each pixel in thing_id_mask is labeled
+    with the corresponding thing-ID.
+
+    Args:
+      panoptic_label: A tf.Tensor of shape [height, width, 1].
+      non_crowd_things: A tf.Tensor of shape [height, width, 1], indicating
+        non-crowd and thing-class regions.
+
+    Returns:
+      thing_id_mask: A tf.Tensor of shape [height, width, 1]. It assigns each
+        non-crowd thing instance a unique mask-ID label, starting from 0.
+        Unassigned pixels are set to -1.
+      thing_id_class: A tf.Tensor of shape [max_thing_id]. It contains semantic
+        ID of each instance assigned to thing_id_mask. The remaining
+        (max_thing_id - num_things) elements are set to -1.
+
+    Raises:
+      ValueError: An error occurs when the thing-ID mask contains stuff or crowd
+        region.
+      ValueError: An error occurs when thing_count is greater or equal to
+        self._max_thing_id.
+
+    """
+    unique_ids, _ = tf.unique(tf.reshape(panoptic_label, [-1]))
+    thing_id_mask = -tf.ones_like(panoptic_label)
+    thing_id_class = -tf.ones(self._max_thing_id)
+    thing_count = 0
+    for panoptic_id in unique_ids:
+      semantic_id = panoptic_id // self._dataset_info['panoptic_label_divisor']
+      # Filter out IDs that are not thing instances (i.e., IDs for ignore_label,
+      # stuff classes or crowd). Stuff classes and crowd regions both have IDs
+      # of the form panoptic_id = semantic_id * label_divisor (i.e., instance id
+      # = 0)
+      if (semantic_id == self._dataset_info['ignore_label'] or
+          panoptic_id % self._dataset_info['panoptic_label_divisor'] == 0):
+        continue
+      if not tf.reduce_all(non_crowd_things[panoptic_label == panoptic_id]):
+        raise ValueError(
+            'thing-ID mask here must not contain stuff or crowd region.')
+      thing_id_mask = tf.where(panoptic_label == panoptic_id,
+                               thing_count, thing_id_mask)
+      if thing_count >= self._max_thing_id:
+        raise ValueError('thing_count must be smaller than self._max_thing_id.')
+      thing_id_class = tf.tensor_scatter_nd_update(
+          thing_id_class, [[thing_count]], [semantic_id])
+      thing_count += 1
+    return thing_id_mask, thing_id_class
 
   def _generate_prev_centers_with_noise(self,
                                         panoptic_label,
