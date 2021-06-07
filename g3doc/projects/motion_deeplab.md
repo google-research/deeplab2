@@ -47,7 +47,7 @@ or
 
 Backbone | Output stride | Dataset split | PQ&dagger; | AP<sup>Mask</sup>&dagger; | mIoU
 -------- | :-----------: | :---------------: | :---: | :---: | :---:
-ResNet-50 ([config](../../configs/kitti/panoptic_deeplab/resnet50_os32.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_os32_panoptic_deeplab_kitti_train.tar.gz)) | 32 | KITTI-STEP train set | 47.29 | 32.59 | 71.19
+ResNet-50 ([config](../../configs/kitti/panoptic_deeplab/resnet50_os32.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_os32_panoptic_deeplab_kitti_train.tar.gz)) | 32 | KITTI-STEP train set | 47.29 | 40.88 | 71.19
 ResNet-50 ([config](../../configs/kitti/panoptic_deeplab/resnet50_os32_trainval.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_os32_panoptic_deeplab_kitti_trainval.tar.gz))| 32 | KITTI-STEP trainval set | - | - | -
 
 &dagger;: See Q4 in [FAQ](../faq.md).
