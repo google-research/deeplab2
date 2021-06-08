@@ -27,6 +27,11 @@ Wide-ResNet-41 ([initial_checkpoint](http://storage.googleapis.com/gresearch/tf-
 SWideRNet-SAC-(1, 1, 1) ([initial_checkpoint](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/swidernet_sac_1_1_1_imagenet1k_strong_training_strategy.tar.gz)) | ImageNet-1K
 SWideRNet-SAC-(1, 1, 3) ([initial_checkpoint](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/swidernet_sac_1_1_3_imagenet1k_strong_training_strategy.tar.gz)) | ImageNet-1K
 SWideRNet-SAC-(1, 1, 4.5) ([initial_checkpoint](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/swidernet_sac_1_1_4.5_imagenet1k_strong_training_strategy.tar.gz)) | ImageNet-1K
+Axial-SWideRNet-(1, 1, 1) ([initial_checkpoint](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/axial_swidernet_1_1_1_imagenet1k_strong_training_strategy.gz)) | ImageNet-1K
+Axial-SWideRNet-(1, 1, 3) ([initial_checkpoint](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/axial_swidernet_1_1_3_imagenet1k_strong_training_strategy.gz)) | ImageNet-1K
+Axial-SWideRNet-(1, 1, 4.5) ([initial_checkpoint](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/axial_swidernet_1_1_4.5_imagenet1k_strong_training_strategy.gz)) | ImageNet-1K
+MaX-DeepLab-S-Backbone ([initial_checkpoint](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/max_deeplab_s_backbone_imagenet1k_strong_training_strategy.gz)) | ImageNet-1K
+MaX-DeepLab-L-Backbone ([initial_checkpoint](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/max_deeplab_l_backbone_imagenet1k_strong_training_strategy.gz)) | ImageNet-1K
 
 
 ### References

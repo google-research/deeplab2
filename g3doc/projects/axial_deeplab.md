@@ -69,8 +69,8 @@ the ImageNet pretrained backbone without any *Mask Transformers*).
 
 Herein, we highlight some of the employed backbones:
 
-1. **Axial-SWideRNet-(1, 1, x)**, where x = $$\{1, 3\}$$, scaling the backbone
-layers (excluding the stem) of Wide-ResNet-41 by a factor of x. This
+1. **Axial-SWideRNet-(1, 1, x)**, where x = $$\{1, 3, 4.5\}$$, scaling the
+backbone layers (excluding the stem) of Wide-ResNet-41 by a factor of x. This
 backbone augments the naive SWideRNet (i.e., no Squeeze-and-Excitation
 or Switchable Atrous Convolution) with axial-attention blocks in the last
 two stages.
@@ -91,15 +91,16 @@ We provide checkpoints pretrained on Cityscapes train-fine set below. If you
 would like to train those models by yourself, please find the corresponding
 config files under this [directory](../../configs/cityscapes/axial_deeplab).
 
-TODO: Add backbones and configs.
-
 All the reported results are obtained by a *single-scale* inference and
 *ImageNet-1K* pretrained checkpoints.
 
 Backbone | Output stride | Output resolution | PQ&dagger; | AP<sup>Mask</sup>&dagger; | mIoU
 -------- | :-----------: | :---------------: | :---: | :---: | :---:
-
-
+Axial-SWideRNet-(1, 1, 1) ([config](../../configs/cityscapes/axial_deeplab/axial_swidernet_1_1_1_os16.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/axial_swidernet_1_1_1_os16_axial_deeplab_cityscapes_trainfine.gz)) | 16 | 1024 x 2048 | 66.63 | 37.18 | 83.43
+Axial-SWideRNet-(1, 1, 3) ([config](../../configs/cityscapes/axial_deeplab/axial_swidernet_1_1_3_os16.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/axial_swidernet_1_1_3_os16_axial_deeplab_cityscapes_trainfine.gz)) | 16 | 1024 x 2048 | 67.63 | 40.00 | 83.97
+Axial-SWideRNet-(1, 1, 4.5) ([config](../../configs/cityscapes/axial_deeplab/axial_swidernet_1_1_4.5_os16.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/axial_swidernet_1_1_4.5_os16_axial_deeplab_cityscapes_trainfine.gz)) | 16 | 1024 x 2048 | 68.53 | 39.51 | 83.49
+MaX-DeepLab-S-Backbone ([config](../../configs/cityscapes/axial_deeplab/max_deeplab_s_backbone_os16.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/max_deeplab_s_backbone_os16_axial_deeplab_cityscapes_trainfine.gz)) | 16 | 1024 x 2048 | 64.97 | 35.55 | 82.63
+MaX-DeepLab-L-Backbone ([config](../../configs/cityscapes/axial_deeplab/max_deeplab_l_backbone_os16.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/max_deeplab_l_backbone_os16_axial_deeplab_cityscapes_trainfine.gz)) | 16 | 1024 x 2048 | 66.77 | 38.09 | 83.67
 
 &dagger;: See Q4 in [FAQ](../faq.md).
 
