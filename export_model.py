@@ -66,6 +66,9 @@ class DeepLabModule(tf.Module):
     crop_height, crop_width = dataset_options.crop_size
 
     config.evaluator_options.merge_semantic_and_instance_with_tf_op = use_tf_op
+    # Disable drop path and recompute grad as they are only used in training.
+    config.model_options.backbone.drop_path_keep_prob = 1.0
+
     deeplab_model = train_lib.create_deeplab_model(
         config,
         dataset.MAP_NAME_TO_DATASET_INFO[dataset_name])
