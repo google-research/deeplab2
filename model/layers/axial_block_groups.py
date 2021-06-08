@@ -332,16 +332,22 @@ class BlockGroup(tf.keras.layers.Layer):
 
     for index in range(self._num_blocks):
       current_name, transformer_current_name = _get_current_names(index)
-      block_fn = getattr(self, current_name)
-      transformer_block_fn = getattr(self, transformer_current_name)
+      block_fn_no_recompute = getattr(
+          self, current_name)
+      transformer_block_fn_no_recompute = getattr(
+          self, transformer_current_name)
       current_drop_path_keep_prob = self._drop_path_keep_prob[index]
 
-      # Wrap the layer if we want to recompute it in the backward pass. Avoid
-      # using recompute_grad for the first call that builds the sub-layers.
-      # Otherwise, recompute_grad will not track newly built model parameters.
-      if (self._recompute_grad[index] and
-          not self._first_building_call and training):
-        block_fn = recompute_grad_lib.recompute_grad(block_fn)
+      # Wrap the layer if we want to recompute it in the backward pass.
+      if (self._recompute_grad[index] and training):
+        # The seed is not actually used since we do not have any random
+        # operation in the recomputed function. The purpose of the provided seed
+        # is to prevent recompute_grad from generating a new seed variable which
+        # is not compatible with model exporting.
+        block_fn = recompute_grad_lib.recompute_grad(
+            block_fn_no_recompute, seed=tf.constant(0, tf.int32))
+      else:
+        block_fn = block_fn_no_recompute
 
       # The inputs to block_fn should be activated features.
       block_fn_inputs = [activated_features, float_tensor_training]
@@ -356,6 +362,10 @@ class BlockGroup(tf.keras.layers.Layer):
 
         block_fn_inputs.append(drop_path_random_mask)
 
+      # Build the sub-layers when the block_fn is called for the first time.
+      # Otherwise, recompute_grad will not track newly built model parameters.
+      if self._first_building_call:
+        _ = block_fn_no_recompute(tuple(block_fn_inputs))
       # Apply the residual block.
       features, activated_features = block_fn(tuple(block_fn_inputs))
 
@@ -364,19 +374,22 @@ class BlockGroup(tf.keras.layers.Layer):
                                                           training=training)
         activated_features = self._activation_fn(features)
 
-      if transformer_block_fn is not None:
+      if transformer_block_fn_no_recompute is not None:
         # Reshape pixel space features from 4D to 3D.
         _, height, width, channels = features.get_shape().as_list()
         features = tf.reshape(
             features, [-1, height * width, channels])
 
-        # Avoid using recompute_grad for the first call that builds the
-        # sub-layers. Otherwise, recompute_grad will not track newly built model
-        # parameters.
-        if (self._transformer_use_recompute_grad and
-            not self._first_building_call and training):
+        # Wrap the layer if we want to recompute it in the backward pass.
+        if (self._transformer_use_recompute_grad and training):
+          # The seed is not actually used since we do not have any random
+          # operation in the recomputed function. The purpose of the provided
+          # seed is to prevent recompute_grad from generating a new seed
+          # variable which is not compatible with model exporting.
           transformer_block_fn = recompute_grad_lib.recompute_grad(
-              transformer_block_fn)
+              transformer_block_fn_no_recompute, seed=tf.constant(0, tf.int32))
+        else:
+          transformer_block_fn = transformer_block_fn_no_recompute
 
         transformer_block_fn_input_list = [
             features, memory_space_output, float_tensor_training]
@@ -403,6 +416,12 @@ class BlockGroup(tf.keras.layers.Layer):
               memory_space_attention_drop_path_mask,
               memory_space_feed_forward_network_drop_path_mask]
 
+        # Build the sub-layers when the transformer_block_fn is called for the
+        # first time. Otherwise, recompute_grad will not track newly built model
+        # parameters.
+        if self._first_building_call:
+          _ = transformer_block_fn_no_recompute(
+              tuple(transformer_block_fn_input_list))
         # Apply a dual-path transformer.
         features, activated_features, memory_space_output = (
             transformer_block_fn(tuple(transformer_block_fn_input_list)))
