@@ -86,7 +86,7 @@ message InstanceOptions {
 }
 
 // Configure the model options.
-// Next ID: 10
+// Next ID: 11
 message ModelOptions {
   // Configure model backbone.
   message BackboneOptions {
@@ -162,11 +162,22 @@ message ModelOptions {
     optional HeadOptions motion_head = 4;
   }
 
+  message MaXDeepLabOptions {
+    // Set the head options of the mask head.
+    optional HeadOptions pixel_space_head = 1;
+    // Set the low level options used in the semantic decoder. The list of
+    // LowLevelOptions must be ordered lower resolution to higher resolution.
+    repeated LowLevelOptions auxiliary_low_level = 2;
+    // Set the head options of the semantic head.
+    optional HeadOptions auxiliary_semantic_head = 3;
+  }
+
   oneof meta_architecture {
     DeeplabV3Options deeplab_v3 = 3;
     DeeplabV3PlusOptions deeplab_v3_plus = 4;
     PanopticDeeplabOptions panoptic_deeplab = 5;
     MotionDeepLabOptions motion_deeplab = 7;
+    MaXDeepLabOptions max_deeplab = 10;
   }
   // Set the checkpoint to load.
   optional string initial_checkpoint = 6;

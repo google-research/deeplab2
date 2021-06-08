@@ -1,0 +1,41 @@
+# proto-file: deeplab2/config.proto
+# proto-message: ExperimentOptions
+
+model_options {
+  decoder {
+    feature_key: "feature_semantic"
+    atrous_rates: 6
+    atrous_rates: 12
+    atrous_rates: 18
+  }
+
+  backbone {
+    name: "max_deeplab_s"
+    output_stride: 16
+  }
+
+  max_deeplab {
+    pixel_space_head {
+      output_channels: 128
+      head_channels: 256
+    }
+    auxiliary_low_level {
+      feature_key: "res3"
+      channels_project: 64
+    }
+    auxiliary_low_level {
+      feature_key: "res2"
+      channels_project: 32
+    }
+    auxiliary_semantic_head {
+      # Example for COCO.
+      output_channels: 134
+      head_channels: 256
+    }
+  }
+}
+
+train_dataset_options {
+  crop_size: 65
+  crop_size: 65
+}
