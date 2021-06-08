@@ -94,15 +94,18 @@ config files under this [directory](../../configs/cityscapes/axial_deeplab).
 All the reported results are obtained by a *single-scale* inference and
 *ImageNet-1K* pretrained checkpoints.
 
-Backbone | Output stride | Output resolution | PQ&dagger; | AP<sup>Mask</sup>&dagger; | mIoU
--------- | :-----------: | :---------------: | :---: | :---: | :---:
-Axial-SWideRNet-(1, 1, 1) ([config](../../configs/cityscapes/axial_deeplab/axial_swidernet_1_1_1_os16.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/axial_swidernet_1_1_1_os16_axial_deeplab_cityscapes_trainfine.gz)) | 16 | 1024 x 2048 | 66.63 | 37.18 | 83.43
-Axial-SWideRNet-(1, 1, 3) ([config](../../configs/cityscapes/axial_deeplab/axial_swidernet_1_1_3_os16.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/axial_swidernet_1_1_3_os16_axial_deeplab_cityscapes_trainfine.gz)) | 16 | 1024 x 2048 | 67.63 | 40.00 | 83.97
-Axial-SWideRNet-(1, 1, 4.5) ([config](../../configs/cityscapes/axial_deeplab/axial_swidernet_1_1_4.5_os16.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/axial_swidernet_1_1_4.5_os16_axial_deeplab_cityscapes_trainfine.gz)) | 16 | 1024 x 2048 | 68.53 | 39.51 | 83.49
-MaX-DeepLab-S-Backbone ([config](../../configs/cityscapes/axial_deeplab/max_deeplab_s_backbone_os16.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/max_deeplab_s_backbone_os16_axial_deeplab_cityscapes_trainfine.gz)) | 16 | 1024 x 2048 | 64.97 | 35.55 | 82.63
-MaX-DeepLab-L-Backbone ([config](../../configs/cityscapes/axial_deeplab/max_deeplab_l_backbone_os16.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/max_deeplab_l_backbone_os16_axial_deeplab_cityscapes_trainfine.gz)) | 16 | 1024 x 2048 | 66.77 | 38.09 | 83.67
+Backbone | Output stride | Output resolution | PQ [*] | mIoU [*] | PQ [**] | mIoU [**] | AP<sup>Mask</sup> [**]
+-------- | :-----------: | :---------------: | :---: | :---: | :---: | :---: | :---:
+Axial-SWideRNet-(1, 1, 1) ([config](../../configs/cityscapes/axial_deeplab/axial_swidernet_1_1_1_os16.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/axial_swidernet_1_1_1_os16_axial_deeplab_cityscapes_trainfine.gz)) | 16 | 1024 x 2048 | 66.1 | 82.8 | 66.63 | 83.43 | 37.18
+Axial-SWideRNet-(1, 1, 3) ([config](../../configs/cityscapes/axial_deeplab/axial_swidernet_1_1_3_os16.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/axial_swidernet_1_1_3_os16_axial_deeplab_cityscapes_trainfine.gz)) | 16 | 1024 x 2048 | 67.1 | 83.5 | 67.63 | 83.97 | 40.00
+Axial-SWideRNet-(1, 1, 4.5) ([config](../../configs/cityscapes/axial_deeplab/axial_swidernet_1_1_4.5_os16.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/axial_swidernet_1_1_4.5_os16_axial_deeplab_cityscapes_trainfine.gz)) | 16 | 1024 x 2048 | 68.0 | 83.0 | 68.53 | 83.49 | 39.51
+MaX-DeepLab-S-Backbone ([config](../../configs/cityscapes/axial_deeplab/max_deeplab_s_backbone_os16.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/max_deeplab_s_backbone_os16_axial_deeplab_cityscapes_trainfine.gz)) | 16 | 1024 x 2048 | 64.5 | 82.2 | 64.97 | 82.63 | 35.55
+MaX-DeepLab-L-Backbone ([config](../../configs/cityscapes/axial_deeplab/max_deeplab_l_backbone_os16.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/max_deeplab_l_backbone_os16_axial_deeplab_cityscapes_trainfine.gz)) | 16 | 1024 x 2048 | 66.3 | 83.1 | 66.77 | 83.67 | 38.09
 
-&dagger;: See Q4 in [FAQ](../faq.md).
+[*]: Results evaluated by the official script. Instance segmentation evaluation
+is not supported yet (need to convert our prediction format).
+
+[**]: Results evaluated by our pipeline. See Q4 in [FAQ](../faq.md).
 
 
 ## Citing Axial-DeepLab

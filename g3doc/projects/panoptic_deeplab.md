@@ -65,16 +65,19 @@ config files under the directory
 All the reported results are obtained by a *single-scale* inference and
 *ImageNet-1K* pretrained checkpoints.
 
-Backbone | Output stride | Output resolution | PQ&dagger; | AP<sup>Mask</sup>&dagger; | mIoU
--------- | :-----------: | :---------------: | :---: | :---: | :---:
-ResNet-50 ([config](../../configs/cityscapes/panoptic_deeplab/resnet50_os32_merge_with_pure_tf_func.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_os32_panoptic_deeplab_cityscapes_trainfine.tar.gz)) | 32 | 1024 x 2048 | 60.24 | 30.01 | 76.36
-ResNet-50-Beta ([config](../../configs/cityscapes/panoptic_deeplab/resnet50_beta_os32.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_beta_os32_panoptic_deeplab_cityscapes_trainfine.tar.gz)) | 32 | 1024 x 2048 | 61.16 | 31.58 | 77.37
-Wide-ResNet-41 ([config](../../configs/cityscapes/panoptic_deeplab/wide_resnet41_os16.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/wide_resnet41_os16_panoptic_deeplab_cityscapes_trainfine.tar.gz)) | 16 | 1024 x 2048 | 64.83 | 36.07 | 81.92
-SWideRNet-SAC-(1, 1, 1) ([config](../../configs/cityscapes/panoptic_deeplab/swidernet_sac_1_1_1_os16.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/swidernet_sac_1_1_1_os16_panoptic_deeplab_cityscapes_trainfine.tar.gz)) | 16 | 1024 x 2048 | 64.81 | 36.80 | 82.24
-SWideRNet-SAC-(1, 1, 3) ([config](../../configs/cityscapes/panoptic_deeplab/swidernet_sac_1_1_3_os16.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/swidernet_sac_1_1_3_os16_panoptic_deeplab_cityscapes_trainfine.tar.gz))) | 16 | 1024 x 2048 | 67.05 | 38.59 | 82.67
-SWideRNet-SAC-(1, 1, 4.5) ([config](../../configs/cityscapes/panoptic_deeplab/swidernet_sac_1_1_4.5_os16.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/swidernet_sac_1_1_4.5_os16_panoptic_deeplab_cityscapes_trainfine.tar.gz)) | 16 | 1024 x 2048 | 67.29 | 39.51 | 82.74
+Backbone | Output stride | Output resolution | PQ [*] | mIoU [*] | PQ [**] | mIoU [**] | AP<sup>Mask</sup> [**]
+-------- | :-----------: | :---------------: | :---: | :---: | :---: | :---: | :---:
+ResNet-50 ([config](../../configs/cityscapes/panoptic_deeplab/resnet50_os32_merge_with_pure_tf_func.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_os32_panoptic_deeplab_cityscapes_trainfine.tar.gz)) | 32 | 1024 x 2048 | 59.8 | 76.0 | 60.24 | 76.36 | 30.01
+ResNet-50-Beta ([config](../../configs/cityscapes/panoptic_deeplab/resnet50_beta_os32.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_beta_os32_panoptic_deeplab_cityscapes_trainfine.tar.gz)) | 32 | 1024 x 2048 | 60.8 | 77.0 | 61.16 | 77.37 | 31.58
+Wide-ResNet-41 ([config](../../configs/cityscapes/panoptic_deeplab/wide_resnet41_os16.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/wide_resnet41_os16_panoptic_deeplab_cityscapes_trainfine.tar.gz)) | 16 | 1024 x 2048 | 64.4 | 81.5 | 64.83 | 81.92 | 36.07
+SWideRNet-SAC-(1, 1, 1) ([config](../../configs/cityscapes/panoptic_deeplab/swidernet_sac_1_1_1_os16.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/swidernet_sac_1_1_1_os16_panoptic_deeplab_cityscapes_trainfine.tar.gz)) | 16 | 1024 x 2048 | 64.3 | 81.8 | 64.81 | 82.24 | 36.80
+SWideRNet-SAC-(1, 1, 3) ([config](../../configs/cityscapes/panoptic_deeplab/swidernet_sac_1_1_3_os16.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/swidernet_sac_1_1_3_os16_panoptic_deeplab_cityscapes_trainfine.tar.gz))) | 16 | 1024 x 2048 | 66.6 | 82.1 | 67.05 | 82.67 | 38.59
+SWideRNet-SAC-(1, 1, 4.5) ([config](../../configs/cityscapes/panoptic_deeplab/swidernet_sac_1_1_4.5_os16.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/swidernet_sac_1_1_4.5_os16_panoptic_deeplab_cityscapes_trainfine.tar.gz)) | 16 | 1024 x 2048 | 66.8 | 82.2 | 67.29 | 82.74 | 39.51
 
-&dagger;: See Q4 in [FAQ](../faq.md).
+[*]: Results evaluated by the official script. Instance segmentation evaluation
+is not supported yet (need to convert our prediction format).
+
+[**]: Results evaluated by our pipeline. See Q4 in [FAQ](../faq.md).
 
 
 ## Citing Panoptic-DeepLab
