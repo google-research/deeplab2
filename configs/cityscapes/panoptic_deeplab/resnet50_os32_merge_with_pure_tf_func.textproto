@@ -117,7 +117,7 @@ train_dataset_options {
   # Update the path to training set.
   file_pattern: "${TRAIN_SET}"
   # Adjust the batch_size accordingly to better fit your GPU/TPU memory.
-  # Also see Q1 in g3doc/fag.md.
+  # Also see Q1 in g3doc/faq.md.
   batch_size: 8
   crop_size: 1025
   crop_size: 2049
