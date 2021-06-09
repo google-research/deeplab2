@@ -29,7 +29,7 @@ We provide checkpoints pretrained on Cityscapes train-fine set below. If you
 would like to train those models by yourself, please find the corresponding
 config files under this [directory](../../configs/cityscapes/max_deeplab).
 
-All the reported results are obtained by a *single-scale* inference and
+All the reported results are obtained by *single-scale* inference and
 *ImageNet-1K* pretrained checkpoint.
 
 Backbone | Output stride | Output resolution | PQ&dagger; | AP<sup>Mask</sup>&dagger; | mIoU | Checkpoint
