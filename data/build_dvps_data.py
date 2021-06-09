@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-r"""Converts DVPS data to sharded TFRecord file format with tf.train.Example protos.
+r"""Converts Depth-aware Video Panoptic Segmentation (DVPS) data to sharded TFRecord file format with tf.train.Example protos.
 
 The expected directory structure of the DVPS dataset should be as follows:
 
@@ -137,7 +137,8 @@ def _decode_panoptic_or_depth_map(map_path: str) -> Optional[str]:
     map_path: Path to the panoptic or depth map image file.
 
   Returns:
-    Panoptic or depth ap as an encoded int32 numpy array bytes or None if not existing.
+    Panoptic or depth ap as an encoded int32 numpy array bytes or None if not
+      existing.
   """
   if not tf.io.gfile.exists(map_path):
     return None
