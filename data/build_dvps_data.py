@@ -137,7 +137,7 @@ def _decode_panoptic_or_depth_map(map_path: str) -> Optional[str]:
     map_path: Path to the panoptic or depth map image file.
 
   Returns:
-    Panoptic or depth ap as an encoded int32 numpy array bytes or None if not
+    Panoptic or depth map as an encoded int32 numpy array bytes or None if not
       existing.
   """
   if not tf.io.gfile.exists(map_path):
