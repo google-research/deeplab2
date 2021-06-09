@@ -191,7 +191,11 @@ def create_video_tfexample(image_data,
                            label_data=None,
                            label_format=None,
                            prev_image_data=None,
-                           prev_label_data=None):
+                           prev_label_data=None,
+                           next_image_data=None,
+                           next_label_data=None,
+                           depth_data=None,
+                           depth_format=None):
   """Converts one video frame/panoptic segmentation pair to TF example.
 
   Args:
@@ -208,6 +212,12 @@ def create_video_tfexample(image_data,
       data.
     prev_label_data: An optional string or byte stream of (potentially) encoded
       previous label data.
+    next_image_data: An optional string or byte stream of encoded next image
+      data.
+    next_label_data: An optional string or byte stream of (potentially) encoded
+      next label data.
+    depth_data: An optional string or byte sream of encoded depth data.
+    depth_format: String, depth data format, should be either 'png' or 'raw'.
 
   Returns:
     TF example proto.
@@ -224,6 +234,17 @@ def create_video_tfexample(image_data,
   if prev_label_data is not None:
     feature_dict[common.KEY_ENCODED_PREV_LABEL] = _bytes_list_feature(
         prev_label_data)
+  if next_image_data is not None:
+    feature_dict[common.KEY_ENCODED_NEXT_IMAGE] = _bytes_list_feature(
+        next_image_data)
+  if next_label_data is not None:
+    feature_dict[common.KEY_ENCODED_NEXT_LABEL] = _bytes_list_feature(
+        next_label_data)
+  if depth_data is not None:
+    feature_dict[common.KEY_ENCODED_DEPTH] = _bytes_list_feature(
+        depth_data)
+    feature_dict[common.KEY_DEPTH_FORMAT] = _bytes_list_feature(
+        depth_format)
   return tf.train.Example(features=tf.train.Features(feature=feature_dict))
 
 
