@@ -24,7 +24,7 @@ STEP panoptic map.
 
 To run this script, you need to install opencv-python (>=4.4.0).
 e.g. In Linux, run
-$sudo apt-get install python3-opencv
+$pip install opencv-python
 
 The input directory structure should be as follows:
 

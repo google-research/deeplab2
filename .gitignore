@@ -5,13 +5,14 @@ __pycache__/
 .vscode/
 .idea/
 .env
+.config/
 
 # Generated proto files.
 *_pb2.py
 
 # For mac
-.DS_Store
+*.DS_Store
 
 # Generated files
-*.DS_Store
 *.o
+*.so

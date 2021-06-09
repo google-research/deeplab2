@@ -308,6 +308,7 @@ class SegmentationDecoder(object):
     if self._use_two_frames:
       return_dict['prev_image'] = self._decode_image(
           parsed_tensors, common.KEY_ENCODED_PREV_IMAGE)
-      return_dict['prev_label'] = self._decode_label(
-          parsed_tensors, common.KEY_ENCODED_PREV_LABEL)
+      if self._decode_groundtruth_label:
+        return_dict['prev_label'] = self._decode_label(
+            parsed_tensors, common.KEY_ENCODED_PREV_LABEL)
     return return_dict
