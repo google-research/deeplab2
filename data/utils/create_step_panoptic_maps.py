@@ -286,12 +286,15 @@ def main(argv: Sequence[str]) -> None:
   panoptic_map_generator = StepPanopticMapGenerator(FLAGS.kernel_size,
                                                     FLAGS.dataset_name)
   for dataset_split in ('train', 'val', 'test'):
-    for set_dir in tf.io.gfile.listdir(
-        os.path.join(FLAGS.input_semantic_map_root_dir, dataset_split)):
+    sem_dir = os.path.join(FLAGS.input_semantic_map_root_dir, dataset_split)
+    if not tf.io.gfile.exists(sem_dir):
+      logging.info('Split %s not found.', dataset_split)
+      continue
+    for set_dir in tf.io.gfile.listdir(sem_dir):
       tf.io.gfile.makedirs(
           os.path.join(FLAGS.output_panoptic_map_root_dir, dataset_split,
                        set_dir))
-      logging.info('Starts to creat panoptic map for split %s, sequence %s.',
+      logging.info('Start to create panoptic map for split %s, sequence %s.',
                    dataset_split, set_dir)
       panoptic_map_generator.build_panoptic_maps(
           FLAGS.input_semantic_map_root_dir, FLAGS.input_instance_root_dir,
