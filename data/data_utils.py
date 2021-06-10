@@ -238,7 +238,8 @@ def create_video_and_depth_tfexample(image_data,
                                      next_label_data=None,
                                      depth_data=None,
                                      depth_format=None):
-  """Converts one video frame/panoptic segmentation pair to TF example.
+  """Converts one video frame/panoptic segmentation pair with the depth label
+    of the first frame to TF example.
 
   Args:
     image_data: String or byte stream of encoded image data.
