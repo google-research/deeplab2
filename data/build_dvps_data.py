@@ -13,7 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-r"""Converts Depth-aware Video Panoptic Segmentation (DVPS) data to sharded TFRecord file format with tf.train.Example protos.
+r"""Converts Depth-aware Video Panoptic Segmentation (DVPS) data to sharded
+  TFRecord file format with tf.train.Example protos.
 
 The expected directory structure of the DVPS dataset should be as follows:
 
@@ -21,6 +22,8 @@ The expected directory structure of the DVPS dataset should be as follows:
     + train | val
       - *_depth.png
       - *_gtFine_instanceTrainIds.png
+      - *_leftImg8bit.png
+    + test
       - *_leftImg8bit.png
 
 The ground-truth panoptic map is encoded as the following in PNG format:
@@ -84,7 +87,7 @@ from deeplab2.data import data_utils
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_string('dvps_root', None, 'STEP dataset root folder.')
+flags.DEFINE_string('dvps_root', None, 'DVPS dataset root folder.')
 
 flags.DEFINE_string('output_dir', None,
                     'Path to save converted TFRecord of TensorFlow examples.')
@@ -92,8 +95,11 @@ flags.DEFINE_integer('panoptic_divisor', 1000,
                      'The divisor used to encode semantic and instance IDs.')
 
 _PANOPTIC_DEPTH_FORMAT = 'raw'
-_NUM_SHARDS = 10
+_NUM_SHARDS = 1000
 _TF_RECORD_PATTERN = '%s-%05d-of-%05d.tfrecord'
+_IMAGE_POSTFIX = "_leftImg8bit.png"
+_LABEL_POSTFIX = "_gtFine_instanceTrainIds.png"
+_DEPTH_POSTFIX = "_depth.png"
 
 
 def _get_image_info_from_path(image_path: str) -> Tuple[str, str]:
@@ -119,13 +125,13 @@ def _get_images(dvps_root: str, dataset_split: str) -> Sequence[str]:
   """Gets files for the specified data type and dataset split.
 
   Args:
-    dvps_root: String, Path to DVPS dataset root folder.
-    dataset_split: String, dataset split ('train', 'val')
+    dvps_root: String, path to DVPS dataset root folder.
+    dataset_split: String, dataset split ('train', 'val', 'test')
 
   Returns:
     A list of sorted file names under dvps_root and dataset_split.
   """
-  search_files = os.path.join(dvps_root, dataset_split, '*_leftImg8bit.png',)
+  search_files = os.path.join(dvps_root, dataset_split, '*' + _IMAGE_POSTFIX)
   filenames = tf.io.gfile.glob(search_files)
   return sorted(filenames)
 
@@ -148,7 +154,20 @@ def _decode_panoptic_or_depth_map(map_path: str) -> Optional[str]:
 
 
 def _get_next_frame_path(image_path: str) -> Optional[str]:
-  """Gets next frame path. If not exists, return None."""
+  """Gets next frame path. If not exists, return None.
+
+  The files are named {sequence_id}_{frame_id}*. To get the path of the next
+  frame, this function keeps sequence_id and increase the frame_id by 1. It
+  finds all the files matching this pattern, and returns the corresponding
+  file path matching the input type.
+
+  Args:
+    image_path: String, path to the image.
+
+  Returns:
+    A string for the path of the next frame of the given image path or None if
+      the given image path is the last frame of the sequence.
+  """
   dir_name, image_name = os.path.split(image_path)
   image_name_split = image_name.split('_')[0:2]
   image_name_split[1] = '{:06d}'.format(int(image_name_split[1]) + 1)
@@ -160,12 +179,14 @@ def _get_next_frame_path(image_path: str) -> Optional[str]:
     return None
   next_image_name_search = [
       os.path.basename(path) for path in next_image_path_search]
-  if 'leftImg8bit' in image_name:
-    next_image_name = [
-      name for name in next_image_name_search if name.endswith('bit.png')][0]
+  if image_name.endswith(_IMAGE_POSTFIX):
+    next_image_name = [name for name in next_image_name_search
+                       if name.endswith(_IMAGE_POSTFIX)][0]
+  elif image_name.endswith(_LABEL_POSTFIX):
+    next_image_name = [name for name in next_image_name_search
+                       if name.endswith(_LABEL_POSTFIX)][0]
   else:
-    next_image_name = [
-      name for name in next_image_name_search if name.endswith('Ids.png')][0]
+    return None
   next_image_path = os.path.join(dir_name, next_image_name)
   return next_image_path
 
@@ -220,8 +241,8 @@ def _convert_dataset(dvps_root: str, dataset_split: str, output_dir: str,
   """Converts the specified dataset split to TFRecord format.
 
   Args:
-    dvps_root: String, Path to DVPS dataset root folder.
-    dataset_split: String, the dataset split (e.g., train, val).
+    dvps_root: String, path to DVPS dataset root folder.
+    dataset_split: String, the dataset split (e.g., train, val, test).
     output_dir: String, directory to write output TFRecords to.
     panoptic_divisor: Integer, the divisor to encode semantic and instance.
   """
@@ -239,10 +260,10 @@ def _convert_dataset(dvps_root: str, dataset_split: str, output_dir: str,
       for i in range(start_idx, end_idx):
         image_path = image_files[i]
         sequence_id, image_id = _get_image_info_from_path(image_path)
-        panoptic_map_path = image_path.replace('leftImg8bit',
-                                               'gtFine_instanceTrainIds')
-        depth_map_path = image_path.replace('leftImg8bit',
-                                            'depth')
+        panoptic_map_path = image_path.replace(_IMAGE_POSTFIX,
+                                               _LABEL_POSTFIX)
+        depth_map_path = image_path.replace(_IMAGE_POSTFIX,
+                                            _DEPTH_POSTFIX)
         example = _create_tfexample(image_path,
                                     panoptic_map_path,
                                     depth_map_path)
@@ -254,7 +275,7 @@ def main(argv: Sequence[str]) -> None:
   if len(argv) > 1:
     raise app.UsageError('Too many command-line arguments.')
   tf.io.gfile.makedirs(FLAGS.output_dir)
-  for dataset_split in ('train', 'val'):
+  for dataset_split in ('train', 'val', 'test'):
     logging.info('Starts to processing DVPS dataset split %s.', dataset_split)
     _convert_dataset(FLAGS.dvps_root, dataset_split, FLAGS.output_dir,
                      FLAGS.panoptic_divisor)
