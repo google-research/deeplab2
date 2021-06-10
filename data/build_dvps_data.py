@@ -65,8 +65,7 @@ Example to run the scipt:
 
    python deeplab2/data/build_dvps_data.py \
      --dvps_root=${DVPS_ROOT} \
-     --output_dir=${OUTPUT_DIR} \
-     --panoptic_divisor=1000
+     --output_dir=${OUTPUT_DIR}
 """
 
 import math
@@ -91,15 +90,13 @@ flags.DEFINE_string('dvps_root', None, 'DVPS dataset root folder.')
 
 flags.DEFINE_string('output_dir', None,
                     'Path to save converted TFRecord of TensorFlow examples.')
-flags.DEFINE_integer('panoptic_divisor', 1000,
-                     'The divisor used to encode semantic and instance IDs.')
 
 _PANOPTIC_DEPTH_FORMAT = 'raw'
 _NUM_SHARDS = 1000
 _TF_RECORD_PATTERN = '%s-%05d-of-%05d.tfrecord'
-_IMAGE_POSTFIX = "_leftImg8bit.png"
-_LABEL_POSTFIX = "_gtFine_instanceTrainIds.png"
-_DEPTH_POSTFIX = "_depth.png"
+_IMAGE_POSTFIX = '_leftImg8bit.png'
+_LABEL_POSTFIX = '_gtFine_instanceTrainIds.png'
+_DEPTH_POSTFIX = '_depth.png'
 
 
 def _get_image_info_from_path(image_path: str) -> Tuple[str, str]:
@@ -237,15 +234,13 @@ def _create_tfexample(image_path: str, panoptic_map_path: str,
       depth_format=_PANOPTIC_DEPTH_FORMAT)
 
 
-def _convert_dataset(dvps_root: str, dataset_split: str, output_dir: str,
-                     panoptic_divisor: int):
+def _convert_dataset(dvps_root: str, dataset_split: str, output_dir: str):
   """Converts the specified dataset split to TFRecord format.
 
   Args:
     dvps_root: String, path to DVPS dataset root folder.
     dataset_split: String, the dataset split (e.g., train, val, test).
     output_dir: String, directory to write output TFRecords to.
-    panoptic_divisor: Integer, the divisor to encode semantic and instance.
   """
   image_files = _get_images(dvps_root, dataset_split)
   num_images = len(image_files)
@@ -278,8 +273,7 @@ def main(argv: Sequence[str]) -> None:
   tf.io.gfile.makedirs(FLAGS.output_dir)
   for dataset_split in ('train', 'val', 'test'):
     logging.info('Starts to processing DVPS dataset split %s.', dataset_split)
-    _convert_dataset(FLAGS.dvps_root, dataset_split, FLAGS.output_dir,
-                     FLAGS.panoptic_divisor)
+    _convert_dataset(FLAGS.dvps_root, dataset_split, FLAGS.output_dir)
 
 
 if __name__ == '__main__':
