@@ -191,11 +191,7 @@ def create_video_tfexample(image_data,
                            label_data=None,
                            label_format=None,
                            prev_image_data=None,
-                           prev_label_data=None,
-                           next_image_data=None,
-                           next_label_data=None,
-                           depth_data=None,
-                           depth_format=None):
+                           prev_label_data=None):
   """Converts one video frame/panoptic segmentation pair to TF example.
 
   Args:
@@ -212,12 +208,6 @@ def create_video_tfexample(image_data,
       data.
     prev_label_data: An optional string or byte stream of (potentially) encoded
       previous label data.
-    next_image_data: An optional string or byte stream of encoded next image
-      data.
-    next_label_data: An optional string or byte stream of (potentially) encoded
-      next label data.
-    depth_data: An optional string or byte sream of encoded depth data.
-    depth_format: String, depth data format, should be either 'png' or 'raw'.
 
   Returns:
     TF example proto.
@@ -234,6 +224,48 @@ def create_video_tfexample(image_data,
   if prev_label_data is not None:
     feature_dict[common.KEY_ENCODED_PREV_LABEL] = _bytes_list_feature(
         prev_label_data)
+  return tf.train.Example(features=tf.train.Features(feature=feature_dict))
+
+
+def create_video_and_depth_tfexample(image_data,
+                                     image_format,
+                                     filename,
+                                     sequence_id,
+                                     image_id,
+                                     label_data=None,
+                                     label_format=None,
+                                     next_image_data=None,
+                                     next_label_data=None,
+                                     depth_data=None,
+                                     depth_format=None):
+  """Converts one video frame/panoptic segmentation pair to TF example.
+
+  Args:
+    image_data: String or byte stream of encoded image data.
+    image_format: String, image data format, should be either 'jpeg' or 'png'.
+    filename: String, image filename.
+    sequence_id: ID of the video sequence as a string.
+    image_id: ID of the image as a string.
+    label_data: String or byte stream of (potentially) encoded label data. If
+      None, we skip to write it to tf.train.Example.
+    label_format: String, label data format, should be either 'png' or 'raw'. If
+      None, we skip to write it to tf.train.Example.
+    next_image_data: An optional string or byte stream of encoded next image
+      data.
+    next_label_data: An optional string or byte stream of (potentially) encoded
+      next label data.
+    depth_data: An optional string or byte sream of encoded depth data.
+    depth_format: String, depth data format, should be either 'png' or 'raw'.
+
+  Returns:
+    TF example proto.
+  """
+  feature_dict = create_features(image_data, image_format, filename, label_data,
+                                 label_format)
+  feature_dict.update({
+      common.KEY_SEQUENCE_ID: _bytes_list_feature(sequence_id),
+      common.KEY_FRAME_ID: _bytes_list_feature(image_id)
+  })
   if next_image_data is not None:
     feature_dict[common.KEY_ENCODED_NEXT_IMAGE] = _bytes_list_feature(
         next_image_data)

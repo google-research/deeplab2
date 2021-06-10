@@ -20,11 +20,11 @@ The expected directory structure of the DVPS dataset should be as follows:
 
   + DVPS_ROOT
     + train | val
-      - *_depth.png
-      - *_gtFine_instanceTrainIds.png
-      - *_leftImg8bit.png
+      - ground-truth depth maps (*_depth.png)
+      - ground-truth panoptic maps (*_gtFine_instanceTrainIds.png)
+      - images (*_leftImg8bit.png)
     + test
-      - *_leftImg8bit.png
+      - images (*_leftImg8bit.png)
 
 The ground-truth panoptic map is encoded as the following in PNG format:
 
@@ -170,8 +170,9 @@ def _get_next_frame_path(image_path: str) -> Optional[str]:
   """
   dir_name, image_name = os.path.split(image_path)
   image_name_split = image_name.split('_')[0:2]
-  image_name_split[1] = '{:06d}'.format(int(image_name_split[1]) + 1)
-  next_image_name = '_'.join(image_name_split) + '*'
+  next_image_name_split = image_name_split
+  next_image_name_split[1] = '{:06d}'.format(int(image_name_split[1]) + 1)
+  next_image_name = '_'.join(next_image_name_split) + '*'
   next_image_path = os.path.join(dir_name, next_image_name)
   next_image_path_search = tf.io.gfile.glob(next_image_path)
   # If the last frame, return None.
@@ -222,7 +223,7 @@ def _create_tfexample(image_path: str, panoptic_map_path: str,
   # Next panoptic map.
   next_panoptic_map_path = _get_next_frame_path(panoptic_map_path)
   next_label_data = _decode_panoptic_or_depth_map(next_panoptic_map_path)
-  return data_utils.create_video_tfexample(
+  return data_utils.create_video_and_depth_tfexample(
       image_data,
       image_format,
       image_name,
