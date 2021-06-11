@@ -238,8 +238,10 @@ def create_video_and_depth_tfexample(image_data,
                                      next_label_data=None,
                                      depth_data=None,
                                      depth_format=None):
-  """Converts a pair of image/segmentation of the current frame and the next
-    frame and the depth label of the current frame to TF example.
+  """Converts an image/segmentation pair and depth of first frame to TF example.
+
+    The image pair contains the current frame and the next frame with the
+    current frame including depth label.
 
   Args:
     image_data: String or byte stream of encoded image data.

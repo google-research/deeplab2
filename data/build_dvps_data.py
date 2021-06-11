@@ -13,8 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-r"""Converts Depth-aware Video Panoptic Segmentation (DVPS) data to sharded
-  TFRecord file format with tf.train.Example protos.
+r"""Converts Depth-aware Video Panoptic Segmentation (DVPS) data to sharded TFRecord file format with tf.train.Example protos.
 
 The expected directory structure of the DVPS dataset should be as follows:
 
@@ -94,9 +93,9 @@ flags.DEFINE_string('output_dir', None,
 _PANOPTIC_DEPTH_FORMAT = 'raw'
 _NUM_SHARDS = 1000
 _TF_RECORD_PATTERN = '%s-%05d-of-%05d.tfrecord'
-_IMAGE_POSTFIX = '_leftImg8bit.png'
-_LABEL_POSTFIX = '_gtFine_instanceTrainIds.png'
-_DEPTH_POSTFIX = '_depth.png'
+_IMAGE_SUFFIX = '_leftImg8bit.png'
+_LABEL_SUFFIX = '_gtFine_instanceTrainIds.png'
+_DEPTH_SUFFIX = '_depth.png'
 
 
 def _get_image_info_from_path(image_path: str) -> Tuple[str, str]:
@@ -113,9 +112,7 @@ def _get_image_info_from_path(image_path: str) -> Tuple[str, str]:
     sequence_id, and image_id as strings.
   """
   image_path = os.path.basename(image_path)
-  sequence_id = image_path.split('_')[0]
-  image_id = image_path.split('_')[1]
-  return sequence_id, image_id
+  return tuple(image_path.split('_')[:2])
 
 
 def _get_images(dvps_root: str, dataset_split: str) -> Sequence[str]:
@@ -123,12 +120,12 @@ def _get_images(dvps_root: str, dataset_split: str) -> Sequence[str]:
 
   Args:
     dvps_root: String, path to DVPS dataset root folder.
-    dataset_split: String, dataset split ('train', 'val', 'test')
+    dataset_split: String, dataset split ('train', 'val', 'test').
 
   Returns:
     A list of sorted file names under dvps_root and dataset_split.
   """
-  search_files = os.path.join(dvps_root, dataset_split, '*' + _IMAGE_POSTFIX)
+  search_files = os.path.join(dvps_root, dataset_split, '*' + _IMAGE_SUFFIX)
   filenames = tf.io.gfile.glob(search_files)
   return sorted(filenames)
 
@@ -151,7 +148,9 @@ def _decode_panoptic_or_depth_map(map_path: str) -> Optional[str]:
 
 
 def _get_next_frame_path(image_path: str) -> Optional[str]:
-  """Gets next frame path. If not exists, return None.
+  """Gets next frame path.
+
+  If not exists, return None.
 
   The files are named {sequence_id}_{frame_id}*. To get the path of the next
   frame, this function keeps sequence_id and increase the frame_id by 1. It
@@ -165,27 +164,16 @@ def _get_next_frame_path(image_path: str) -> Optional[str]:
     A string for the path of the next frame of the given image path or None if
       the given image path is the last frame of the sequence.
   """
-  dir_name, image_name = os.path.split(image_path)
-  image_name_split = image_name.split('_')[0:2]
-  next_image_name_split = image_name_split
-  next_image_name_split[1] = '{:06d}'.format(int(image_name_split[1]) + 1)
-  next_image_name = '_'.join(next_image_name_split) + '*'
-  next_image_path = os.path.join(dir_name, next_image_name)
-  next_image_path_search = tf.io.gfile.glob(next_image_path)
-  # If the last frame, return None.
-  if not next_image_path_search:
-    return None
-  next_image_name_search = [
-      os.path.basename(path) for path in next_image_path_search]
-  if image_name.endswith(_IMAGE_POSTFIX):
-    next_image_name = [name for name in next_image_name_search
-                       if name.endswith(_IMAGE_POSTFIX)][0]
-  elif image_name.endswith(_LABEL_POSTFIX):
-    next_image_name = [name for name in next_image_name_search
-                       if name.endswith(_LABEL_POSTFIX)][0]
-  else:
-    return None
-  next_image_path = os.path.join(dir_name, next_image_name)
+  sequence_id, image_id = _get_image_info_from_path(image_path)
+  next_image_id = '{:06d}'.format(int(image_id) + 1)
+  next_image_name = sequence_id + '_' + next_image_id
+  next_image_path = None
+  for suffix in (_IMAGE_SUFFIX, _LABEL_SUFFIX):
+    if image_path.endswith(suffix):
+      next_image_path = os.path.join(
+          os.path.dirname(image_path), next_image_name + suffix)
+      if not tf.io.gfile.exists(next_image_path):
+        return None
   return next_image_path
 
 
@@ -255,13 +243,9 @@ def _convert_dataset(dvps_root: str, dataset_split: str, output_dir: str):
       end_idx = min((shard_id + 1) * num_per_shard, num_images)
       for i in range(start_idx, end_idx):
         image_path = image_files[i]
-        sequence_id, image_id = _get_image_info_from_path(image_path)
-        panoptic_map_path = image_path.replace(_IMAGE_POSTFIX,
-                                               _LABEL_POSTFIX)
-        depth_map_path = image_path.replace(_IMAGE_POSTFIX,
-                                            _DEPTH_POSTFIX)
-        example = _create_tfexample(image_path,
-                                    panoptic_map_path,
+        panoptic_map_path = image_path.replace(_IMAGE_SUFFIX, _LABEL_SUFFIX)
+        depth_map_path = image_path.replace(_IMAGE_SUFFIX, _DEPTH_SUFFIX)
+        example = _create_tfexample(image_path, panoptic_map_path,
                                     depth_map_path)
         if example is not None:
           tfrecord_writer.write(example.SerializeToString())
