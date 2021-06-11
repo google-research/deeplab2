@@ -60,6 +60,7 @@ SEQUENCE_ID = 'sequence_id'
 # TfExample keys.
 KEY_ENCODED_IMAGE = 'image/encoded'
 KEY_ENCODED_PREV_IMAGE = 'prev_image/encoded'
+KEY_ENCODED_NEXT_IMAGE = 'next_image/encoded'
 KEY_IMAGE_FILENAME = 'image/filename'
 KEY_IMAGE_FORMAT = 'image/format'
 KEY_IMAGE_HEIGHT = 'image/height'
@@ -67,9 +68,12 @@ KEY_IMAGE_WIDTH = 'image/width'
 KEY_IMAGE_CHANNELS = 'image/channels'
 KEY_ENCODED_LABEL = 'image/segmentation/class/encoded'
 KEY_ENCODED_PREV_LABEL = 'prev_image/segmentation/class/encoded'
+KEY_ENCODED_NEXT_LABEL = 'next_image/segmentation/class/encoded'
 KEY_LABEL_FORMAT = 'image/segmentation/class/format'
 KEY_SEQUENCE_ID = 'video/sequence_id'
 KEY_FRAME_ID = 'video/frame_id'
+KEY_ENCODED_DEPTH = 'image/depth/encoded'
+KEY_DEPTH_FORMAT = 'image/depth/format'
 
 # Checkpoint Items
 # All models
