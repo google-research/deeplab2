@@ -184,6 +184,10 @@ MOTCHALLENGE_STEP_INFORMATION = DatasetDescriptor(
 
 CITYSCAPES_DVPS_INFORMATION = DatasetDescriptor(
     dataset_name=_CITYSCAPES_DVPS,
+    # The numbers of images are 2400/300/300 for train/val/test. Here, the
+    # sizes are the number of consecutive frame pairs. As each sequence has 6
+    # frames, the number of pairs for the train split is 2400 / 6 * 5 = 2000.
+    # Similarly, we get 250 pairs for the val split and the test split.
     splits_to_sizes={'train': 2000,
                      'val': 250,
                      'test': 250},
