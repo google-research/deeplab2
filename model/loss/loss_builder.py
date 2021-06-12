@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This file contains loss classes used in the DeepLab model."""
+"""This file contains loss builder classes used in the DeepLab model."""
 
 import collections
 from typing import Any, Dict, Text
