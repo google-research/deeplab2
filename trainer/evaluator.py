@@ -89,8 +89,10 @@ class Evaluator(orbit.StandardEvaluator):
 
     self._dataset_info = dataset.MAP_NAME_TO_DATASET_INFO[
         config.eval_dataset_options.dataset]
-    self._eval_loss_metric = tf.keras.metrics.Mean(
-        'eval_loss', dtype=tf.float32)
+
+    # Create eval loss metrics.
+    self._eval_loss_metric_dict = runner_utils.create_loss_metric_dict(
+        loss.get_loss_names(), prefix='eval_')
     # Create metrics (PQ, IoU).
     self._ignore_label = self._dataset_info.ignore_label
     self._eval_iou_metric = tf.keras.metrics.MeanIoU(
@@ -116,7 +118,8 @@ class Evaluator(orbit.StandardEvaluator):
           offset=_PANOPTIC_METRIC_OFFSET * 256)
 
   def _reset(self):
-    self._eval_loss_metric.reset_states()
+    for metric in self._eval_loss_metric_dict.values():
+      metric.reset_states()
     self._eval_iou_metric.reset_states()
     if self._is_panoptic:
       self._eval_pq_metric.reset_states()
@@ -181,9 +184,15 @@ class Evaluator(orbit.StandardEvaluator):
                                                        raw_size)
     step_outputs = {}
     if self._decode_groundtruth_label:
-      losses = tf.reduce_sum(
-          tf.reduce_mean(self._loss(inputs, outputs), axis=0))
-      self._eval_loss_metric.update_state(losses)
+
+      loss_dict = self._loss(inputs, outputs)
+      # Average over the batch.
+      average_loss_dict = {
+          key: tf.reduce_mean(value) for key, value in loss_dict.items()}
+
+      for name, value in average_loss_dict.items():
+        self._eval_loss_metric_dict[name].update_state(value)
+
       self._eval_iou_metric.update_state(
           tf.where(
               tf.equal(inputs[common.GT_SEMANTIC_RAW], self._ignore_label),
@@ -221,10 +230,12 @@ class Evaluator(orbit.StandardEvaluator):
     """
     if not self._decode_groundtruth_label:
       return {}
-    eval_logs = {'losses/' + self._eval_loss_metric.name:
-                     self._eval_loss_metric.result(),
-                 'evaluation/iou/' + self._eval_iou_metric.name:
-                     self._eval_iou_metric.result()}
+
+    eval_logs = {}
+    for loss_metric in self._eval_loss_metric_dict.values():
+      eval_logs['losses/' + loss_metric.name] = loss_metric.result()
+    eval_logs['evaluation/iou/' + self._eval_iou_metric.name] = (
+        self._eval_iou_metric.result())
     if self._is_panoptic:
       pq_results = self._eval_pq_metric.result()
       eval_logs['evaluation/pq/PQ'] = pq_results[0]

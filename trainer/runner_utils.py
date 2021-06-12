@@ -124,3 +124,23 @@ def create_dataset(dataset_config: config_pb2.DatasetOptions,
       is_training=is_training)
 
   return reader(dataset_config.batch_size)
+
+
+def create_loss_metric_dict(loss_names, prefix='train_'):
+  """Creates a loss metric dict.
+
+  This function creates a metric for each loss name.
+
+  Args:
+    loss_names: A string list of N loss names.
+    prefix: A string prefix, e.g., 'train_' or 'eval_'.
+
+  Returns:
+    loss_metric_dict: A dictionary of N tf.keras.metrics.Mean.
+  """
+  loss_metric_dict = {}
+  for loss_name in loss_names:
+    loss_metric = tf.keras.metrics.Mean(
+        prefix + loss_name, dtype=tf.float32)
+    loss_metric_dict[loss_name] = loss_metric
+  return loss_metric_dict

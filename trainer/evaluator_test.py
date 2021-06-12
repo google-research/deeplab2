@@ -24,8 +24,10 @@ import tensorflow as tf
 from google.protobuf import text_format
 from deeplab2 import common
 from deeplab2 import config_pb2
+from deeplab2 import trainer_pb2
 from deeplab2.data import dataset
 from deeplab2.model import deeplab
+from deeplab2.model.loss import loss_builder
 from deeplab2.trainer import evaluator
 from deeplab2.trainer import runner_utils
 
@@ -38,6 +40,26 @@ def _read_proto_file(filename, proto):
   filename = filename  # OSS: removed internal filename loading.
   with tf.io.gfile.GFile(filename, 'r') as proto_file:
     return text_format.ParseLines(proto_file, proto)
+
+
+def _create_loss():
+  ignore_label = 255
+  num_classes = 19
+  semantic_loss_options = trainer_pb2.LossOptions.SingleLossOptions(
+      name='softmax_cross_entropy')
+  center_loss_options = trainer_pb2.LossOptions.SingleLossOptions(name='mse')
+  regression_loss_options = trainer_pb2.LossOptions.SingleLossOptions(
+      name='l1')
+  loss_options = trainer_pb2.LossOptions(
+      semantic_loss=semantic_loss_options,
+      center_loss=center_loss_options,
+      regression_loss=regression_loss_options)
+
+  loss_layer = loss_builder.DeepLabFamilyLoss(
+      loss_options,
+      num_classes=num_classes,
+      ignore_label=ignore_label)
+  return loss_layer
 
 
 class EvaluatorTest(tf.test.TestCase):
@@ -76,8 +98,7 @@ class EvaluatorTest(tf.test.TestCase):
     pool_size = (33, 65)
     model.set_pool_size(pool_size)
 
-    loss = mock.Mock(spec=tf.keras.losses.Loss)
-    loss.return_value = tf.zeros([1])
+    loss_layer = _create_loss()
     global_step = tf.Variable(initial_value=0, dtype=tf.int64)
 
     fake_datum = {
@@ -101,12 +122,19 @@ class EvaluatorTest(tf.test.TestCase):
             tf.zeros([1, 1025, 2049, 2], dtype=tf.float32),
         common.IMAGE_NAME:
             'fake',
+        common.SEMANTIC_LOSS_WEIGHT_KEY:
+            tf.zeros([1, 1025, 2049], dtype=tf.float32),
+        common.CENTER_LOSS_WEIGHT_KEY:
+            tf.zeros([1, 1025, 2049], dtype=tf.float32),
+        common.REGRESSION_LOSS_WEIGHT_KEY:
+            tf.zeros([1, 1025, 2049], dtype=tf.float32),
     }
     fake_data = [fake_datum]
 
     with tempfile.TemporaryDirectory() as model_dir:
       with mock.patch.object(runner_utils, 'create_dataset'):
-        ev = evaluator.Evaluator(config, model, loss, global_step, model_dir)
+        ev = evaluator.Evaluator(
+            config, model, loss_layer, global_step, model_dir)
 
         state = ev.eval_begin()
         # Verify that output directories are created.
@@ -118,7 +146,10 @@ class EvaluatorTest(tf.test.TestCase):
         result = ev.eval_end(state)
 
     expected_metric_keys = {
-        'losses/eval_loss',
+        'losses/eval_total_loss',
+        'losses/eval_semantic_loss',
+        'losses/eval_center_loss',
+        'losses/eval_regression_loss',
         'evaluation/iou/IoU',
         'evaluation/pq/PQ',
         'evaluation/pq/SQ',
@@ -130,8 +161,8 @@ class EvaluatorTest(tf.test.TestCase):
     }
     self.assertCountEqual(result.keys(), expected_metric_keys)
 
-    self.assertSequenceEqual(result['losses/eval_loss'].shape, ())
-    self.assertEqual(result['losses/eval_loss'].numpy(), 0.0)
+    self.assertSequenceEqual(result['losses/eval_total_loss'].shape, ())
+    self.assertEqual(result['losses/eval_total_loss'].numpy(), 0.0)
 
 
 if __name__ == '__main__':

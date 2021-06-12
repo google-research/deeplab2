@@ -45,6 +45,13 @@ GT_SEMANTIC_RAW = 'semantic_raw'
 GT_IS_CROWD_RAW = 'is_crowd_raw'
 GT_SIZE_RAW = 'size_raw'
 
+# Loss keys.
+SEMANTIC_LOSS = 'semantic_loss'
+CENTER_LOSS = 'center_loss'
+REGRESSION_LOSS = 'regression_loss'
+MOTION_LOSS = 'motion_loss'
+TOTAL_LOSS = 'total_loss'
+
 # Weight keys used by the model.
 SEMANTIC_LOSS_WEIGHT_KEY = 'semantic_loss_weight'
 CENTER_LOSS_WEIGHT_KEY = 'center_loss_weight'

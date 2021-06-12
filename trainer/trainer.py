@@ -124,12 +124,11 @@ class Trainer(orbit.StandardTrainer):
       global_step: A tf.Variable that records the global training step.
     """
     self._strategy = tf.distribute.get_strategy()
-    self._has_instance_loss = (
-        config.model_options.panoptic_deeplab.instance.enable)
+    enable_instance = config.model_options.panoptic_deeplab.instance.enable
     train_dataset = runner_utils.create_dataset(
         config.train_dataset_options,
         is_training=True,
-        only_semantic_annotations=not self._has_instance_loss)
+        only_semantic_annotations=not enable_instance)
     train_dataset = orbit.utils.make_distributed_dataset(
         self.strategy, train_dataset)
     super(Trainer, self).__init__(train_dataset)
@@ -148,34 +147,15 @@ class Trainer(orbit.StandardTrainer):
         )
     self._has_motion_loss = isinstance(model, motion_deeplab.MotionDeepLab)
 
-    self._train_total_loss_metric = tf.keras.metrics.Mean(
-        'train_total_loss', dtype=tf.float32)
-    self._train_semantic_loss_metric = tf.keras.metrics.Mean(
-        'train_semantic_loss', dtype=tf.float32)
-
-    if self._has_instance_loss:
-      self._train_center_loss_metric = tf.keras.metrics.Mean(
-          'train_center_loss', dtype=tf.float32)
-      self._train_regression_loss_metric = tf.keras.metrics.Mean(
-          'train_regression_loss', dtype=tf.float32)
-
-    self._train_metric_list = [
-        self._train_total_loss_metric, self._train_semantic_loss_metric
-    ]
-    if self._has_instance_loss:
-      self._train_metric_list.append(self._train_center_loss_metric)
-      self._train_metric_list.append(self._train_regression_loss_metric)
-    if self._has_motion_loss:
-      self._train_motion_loss_metric = tf.keras.metrics.Mean(
-          'train_motion_loss', dtype=tf.float32)
-      self._train_metric_list.append(self._train_motion_loss_metric)
+    self._train_loss_metric_dict = runner_utils.create_loss_metric_dict(
+        loss.get_loss_names(), prefix='train_')
 
   def train_loop_begin(self):
     """Called once at the beginning of the training loop.
 
     This method is called before dataset iterators creation.
     """
-    for metric in self._train_metric_list:
+    for metric in self._train_loss_metric_dict.values():
       metric.reset_states()
 
   def train_step(self, iterator):
@@ -211,11 +191,12 @@ class Trainer(orbit.StandardTrainer):
       # replicas. This ensures that we don't end up multiplying our loss by the
       # number of workers - gradients are summed, not averaged, across replicas
       # during the apply_gradients call.
-      losses = tf.reduce_mean(self._loss(inputs, outputs), axis=0)
-      loss_list = [losses[0], losses[1], losses[2], losses[3]]
-      losses = tf.reduce_sum(losses)
-      loss_list = [losses] + loss_list
-      scaled_loss = losses / self.strategy.num_replicas_in_sync
+      loss_dict = self._loss(inputs, outputs)
+      # Average over the batch.
+      average_loss_dict = {
+          key: tf.reduce_mean(value) for key, value in loss_dict.items()}
+      total_loss = average_loss_dict[common.TOTAL_LOSS]
+      scaled_loss = total_loss / self.strategy.num_replicas_in_sync
 
     training_vars = self._model.trainable_variables
     gradients = tape.gradient(scaled_loss, training_vars)
@@ -225,8 +206,8 @@ class Trainer(orbit.StandardTrainer):
       gradients, _ = tf.clip_by_global_norm(gradients, self._clip_gradient_norm)
     self._optimizer.apply_gradients(list(zip(gradients, training_vars)))
 
-    for i, loss_metric in enumerate(self._train_metric_list):
-      loss_metric.update_state(loss_list[i])
+    for name, value in average_loss_dict.items():
+      self._train_loss_metric_dict[name].update_state(value)
 
   def train_loop_end(self) -> Dict[Text, tf.Tensor]:
     """Called at the end of the training loop.
@@ -239,7 +220,7 @@ class Trainer(orbit.StandardTrainer):
       TensorBoard summaries.
     """
     train_logs = {}
-    for loss_metric in self._train_metric_list:
+    for loss_metric in self._train_loss_metric_dict.values():
       train_logs['losses/' + loss_metric.name] = loss_metric.result()
 
     if callable(self._optimizer.learning_rate):

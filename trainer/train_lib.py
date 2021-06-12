@@ -26,7 +26,7 @@ from deeplab2 import common
 from deeplab2 import config_pb2
 from deeplab2.data import dataset
 from deeplab2.model import deeplab
-from deeplab2.model import loss
+from deeplab2.model.loss import loss_builder
 from deeplab2.trainer import distribution_utils
 from deeplab2.trainer import evaluator as evaluator_lib
 from deeplab2.trainer import runner_utils
@@ -42,23 +42,6 @@ _INSTANCE_LAYER_NAMES = (common.CKPT_MOTION_REGRESSION_HEAD_LAST_LAYER,
 _TWO_FRAME_MOTION_DEEPLAB_INPUT_CHANNELS = 6
 # All other networks use 3 channels as input (RGB).
 _SINGLE_FRAME_INPUT_CHANNELS = 3
-
-
-def _create_losses(loss_options: config_pb2.LossOptions, num_classes: int,
-                   ignore_label: int):
-  """Creates loss based on the config."""
-  center_loss_options = None
-  if loss_options.HasField('center_loss'):
-    center_loss_options = loss_options.center_loss
-  regression_loss_options = None
-  if loss_options.HasField('regression_loss'):
-    regression_loss_options = loss_options.regression_loss
-  motion_loss_options = None
-  if loss_options.HasField('motion_loss'):
-    motion_loss_options = loss_options.motion_loss
-  return loss.DeepLabFamilyLoss(
-      loss_options.semantic_loss, center_loss_options,
-      regression_loss_options, motion_loss_options, num_classes, ignore_label)
 
 
 def create_deeplab_model(
@@ -127,8 +110,8 @@ def run_experiment(mode: Text, config: config_pb2.ExperimentOptions,
     deeplab_model = create_deeplab_model(
         config,
         dataset.MAP_NAME_TO_DATASET_INFO[dataset_name])
-    losses = _create_losses(config.trainer_options.loss_options, num_classes,
-                            ignore_label)
+    losses = loss_builder.DeepLabFamilyLoss(config.trainer_options.loss_options,
+                                            num_classes, ignore_label)
     global_step = orbit.utils.create_global_step()
     if 'train' in mode:
       trainer = trainer_lib.Trainer(config, deeplab_model, losses, global_step)

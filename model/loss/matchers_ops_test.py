@@ -19,7 +19,7 @@ import numpy as np
 from scipy import optimize
 import tensorflow as tf
 
-from deeplab2.model import matchers_ops
+from deeplab2.model.loss import matchers_ops
 
 
 class MatchersOpsTest(tf.test.TestCase):

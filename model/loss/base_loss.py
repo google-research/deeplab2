@@ -13,14 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This file contains loss classes used in the DeepLab model."""
+"""This file contains basic loss classes used in the DeepLab model."""
 
-from typing import Text, Dict, Callable, Any
+from typing import Text, Dict, Callable
 
 import tensorflow as tf
-
-from deeplab2 import common
-from deeplab2 import config_pb2
 
 
 def compute_average_top_k_loss(loss: tf.Tensor,
@@ -221,53 +218,6 @@ def is_one_hot(gt: tf.Tensor, pred: tf.Tensor):
   return gt.shape.as_list() == pred.shape.as_list()
 
 
-def _create_loss(loss_options: config_pb2.LossOptions.SingleLossOptions,
-                 gt_key: Text, pred_key: Text, weight_key: Text,
-                 **kwargs: Any) -> tf.keras.losses.Loss:
-  """Creates a loss from loss options.
-
-  Args:
-    loss_options: Loss options as defined by
-      config_pb2.LossOptions.SingleLossOptions or None.
-    gt_key: A key to extract the ground-truth from a dictionary.
-    pred_key: A key to extract the prediction from a dictionary.
-    weight_key: A key to extract the per-pixel weights from a dictionary.
-    **kwargs: Additional parameters to initialize the loss.
-
-  Returns:
-    A tuple of an instance of tf.keras.losses.Loss and its corresponding weight
-    as an integer.
-
-  Raises:
-    ValueError: An error occurs when the loss name is not a valid loss.
-  """
-  if loss_options is None:
-    return None, 0
-  if loss_options.name == 'softmax_cross_entropy':
-    return TopKCrossEntropyLoss(
-        gt_key,
-        pred_key,
-        weight_key,
-        top_k_percent_pixels=loss_options.top_k_percent,
-        **kwargs), loss_options.weight
-  elif loss_options.name == 'l1':
-    return TopKGeneralLoss(
-        mean_absolute_error,
-        gt_key,
-        pred_key,
-        weight_key,
-        top_k_percent_pixels=loss_options.top_k_percent), loss_options.weight
-  elif loss_options.name == 'mse':
-    return TopKGeneralLoss(
-        mean_squared_error,
-        gt_key,
-        pred_key,
-        weight_key,
-        top_k_percent_pixels=loss_options.top_k_percent), loss_options.weight
-
-  raise ValueError('Loss %s is not a valid loss.' % loss_options.name)
-
-
 def _ensure_topk_value_is_percentage(top_k_percentage: float):
   """Checks if top_k_percentage is between 0.0 and 1.0.
 
@@ -277,112 +227,6 @@ def _ensure_topk_value_is_percentage(top_k_percentage: float):
   if top_k_percentage < 0.0 or top_k_percentage > 1.0:
     raise ValueError('The top-k percentage parameter must lie within 0.0 and '
                      '1.0, but %f was given' % top_k_percentage)
-
-
-class DeepLabFamilyLoss(tf.keras.losses.Loss):
-  """This class contains code to build and call losses for DeepLabFamilyLoss."""
-
-  def __init__(
-      self,
-      semantic_loss_options: config_pb2.LossOptions.SingleLossOptions,
-      center_loss_options: config_pb2.LossOptions.SingleLossOptions,
-      regression_loss_options: config_pb2.LossOptions.SingleLossOptions,
-      motion_loss_options: config_pb2.LossOptions.SingleLossOptions,
-      num_classes: int,
-      ignore_label: int = 255):
-    """Initializes the losses for Panoptic-DeepLab.
-
-    Args:
-      semantic_loss_options: Loss options as defined by
-        config_pb2.LossOptions.SingleLossOptions.
-      center_loss_options: Loss options as defined by
-        config_pb2.LossOptions.SingleLossOptions or None.
-      regression_loss_options: Loss options as defined by
-        config_pb2.LossOptions.SingleLossOptions or None.
-      motion_loss_options: Loss options as defined by
-        config_pb2.LossOptions.SingleLossOptions or None.
-      num_classes: An integer specifying the number of classes in the dataset.
-      ignore_label: An optional integer specifying the ignore label or 'None'
-        (default: 255).
-
-    Raises:
-      ValueError: An error occurs when the semantic loss is not defined
-        correctly.
-    """
-    super(DeepLabFamilyLoss,
-          self).__init__(reduction=tf.keras.losses.Reduction.NONE)
-
-    self._semantic_loss, self._semantic_weight = _create_loss(
-        semantic_loss_options,
-        common.GT_SEMANTIC_KEY,
-        common.PRED_SEMANTIC_LOGITS_KEY,
-        common.SEMANTIC_LOSS_WEIGHT_KEY,
-        num_classes=num_classes,
-        ignore_label=ignore_label)
-
-    if self._semantic_loss is None:
-      raise ValueError('The semantic loss must always be set.')
-
-    self._center_loss, self._center_weight = _create_loss(
-        center_loss_options,
-        common.GT_INSTANCE_CENTER_KEY,
-        common.PRED_CENTER_HEATMAP_KEY,
-        common.CENTER_LOSS_WEIGHT_KEY)
-    self._regression_loss, self._regression_weight = _create_loss(
-        regression_loss_options,
-        common.GT_INSTANCE_REGRESSION_KEY,
-        common.PRED_OFFSET_MAP_KEY,
-        common.REGRESSION_LOSS_WEIGHT_KEY)
-
-    # Currently, only used for Motion-DeepLab.
-    self._motion_loss, self._motion_weight = _create_loss(
-        motion_loss_options, common.GT_FRAME_OFFSET_KEY,
-        common.PRED_FRAME_OFFSET_MAP_KEY,
-        common.FRAME_REGRESSION_LOSS_WEIGHT_KEY)
-
-  def call(self, y_true: Dict[Text, tf.Tensor],
-           y_pred: Dict[Text, tf.Tensor]) -> tf.Tensor:
-    """Performs the loss computations given ground-truth and predictions.
-
-    The loss is computed for each sample separately. Currently, smoothed
-    ground-truth labels are not supported.
-
-    Args:
-      y_true: A dictionary of tf.Tensor containing all ground-truth data to
-        compute the loss. Depending on the configuration, the dict has to
-        contain common.GT_SEMANTIC_KEY, and optionally
-        common.GT_INSTANCE_CENTER_KEY, common.GT_INSTANCE_REGRESSION_KEY, and
-        common.GT_FRAME_OFFSET_KEY.
-      y_pred: A dicitionary of tf.Tensor containing all predictions to compute
-        the loss. Depending on the configuration, the dict has to contain
-        common.PRED_SEMANTIC_LOGITS_KEY, and optionally
-        common.PRED_CENTER_HEATMAP_KEY, common.PRED_OFFSET_MAP_KEY, and
-        common.PRED_FRAME_OFFSET_MAP_KEY.
-
-    Returns:
-      The loss as tf.Tensor with shape [batch, 4] containing the following:
-      - [:, 0] the semantic loss.
-      - [:, 1] the center loss.
-      - [:, 2] the offset regression loss.
-      - [:, 3] the frame offset regression loss. Non-zero values when motion
-      loss is used.
-    """
-    semantic_loss = self._semantic_loss(y_true, y_pred, self._semantic_weight)
-
-    center_loss = tf.zeros_like(semantic_loss)
-    if self._center_loss is not None:
-      center_loss = self._center_loss(y_true, y_pred, self._center_weight)
-
-    regression_loss = tf.zeros_like(semantic_loss)
-    if self._regression_loss is not None:
-      regression_loss = self._regression_loss(y_true, y_pred,
-                                              self._regression_weight)
-
-    motion_loss = tf.zeros_like(semantic_loss)
-    if self._motion_loss is not None:
-      motion_loss = self._motion_loss(y_true, y_pred, self._motion_weight)
-    return tf.stack([semantic_loss, center_loss, regression_loss, motion_loss],
-                    axis=1)
 
 
 class TopKGeneralLoss(tf.keras.losses.Loss):
