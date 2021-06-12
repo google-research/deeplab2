@@ -525,9 +525,9 @@ class PanopticSampleGenerator:
     frame_offset_y = tf.zeros((height, width, 1), dtype=tf.int32)
 
     # Next-frame instance offsets.
+    next_offset = None
     next_offset_y = tf.zeros((height, width, 1), dtype=tf.int32)
     next_offset_x = tf.zeros((height, width, 1), dtype=tf.int32)
-    next_offset = None
 
     if prev_panoptic_label is not None:
       (prev_center, prev_unique_ids, prev_centers_x, prev_centers_y

@@ -188,7 +188,7 @@ CITYSCAPES_DVPS_INFORMATION = DatasetDescriptor(
                      'val': 250,
                      'test': 250},
     num_classes=19,
-    ignore_label=32,
+    ignore_label=255,
     panoptic_label_divisor=1000,
     class_has_instances_list=tuple(range(11, 19)),
     is_video_dataset=True,
