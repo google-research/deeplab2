@@ -80,4 +80,8 @@ message DatasetOptions {
   // together when enabling generation of thing_id_mask_annotations (= True),
   // representing the maximum thing ID encoded in the thing_id_mask.
   optional int32 max_thing_id = 16 [default = 128];
+  // Set whether to use the next frame for video panoptic segmentation.
+  // use_two_frames uses the previous frame for motion-deeplab.
+  // use_next_frame uses the next frame for ViP-DeepLab.
+  optional bool use_next_frame = 17 [default = false];
 }
