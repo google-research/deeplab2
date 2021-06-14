@@ -78,7 +78,7 @@ If you find DeepLab2 useful for your project, please consider citing
 
 ```
 @article{deeplab2_2021,
-  author={Weber Mark and Huiyu Wang and Siyuan Qiao and Jun Xie and Maxwell D. Collins and Yukun Zhu and Liangzhe Yuan and Dahun Kim and Daniel Cremers and Laura Leal-Taixe and Alan L. Yuille and Hartwig Adam and Liang-Chieh Chen},
+  author={Weber Mark and Huiyu Wang and Siyuan Qiao and Jun Xie and Maxwell D. Collins and Yukun Zhu and Liangzhe Yuan and Dahun Kim and Qihang Yu and Daniel Cremers and Laura Leal-Taixe and Alan L. Yuille and Florian Schroff and Hartwig Adam and Liang-Chieh Chen},
   title={{DeepLab2: A TensorFlow Library for Deep Labeling}},
   journal={arXiv},
   year={2021}
