@@ -147,6 +147,8 @@ class PanopticSampleGenerator:
       - `sequence`: An optional string specifying the sequence name.
       - `prev_image`: An optional tensor of the same shape as `image`.
       - `prev_label`: An optional tensor of the same shape as `label`.
+      - `next_image`: An optional next-frame tensor of the shape of `image`.
+      - `next_label`: An optional next-frame tensor of the shape of `label`.
 
     Returns:
       sample: A dictionary storing required data for panoptic segmentation.
@@ -161,7 +163,9 @@ class PanopticSampleGenerator:
            width,
            sequence='',
            prev_image=None,
-           prev_label=None):
+           prev_label=None,
+           next_image=None,
+           next_label=None):
     """Gets a sample.
 
     Args:
@@ -173,6 +177,8 @@ class PanopticSampleGenerator:
       sequence: An optional string specifying the sequence name.
       prev_image: An optional tensor of shape [image_height, image_width, 3].
       prev_label: An optional tensor of shape [label_height, label_width, 1].
+      next_image: An optional tensor of shape [image_height, image_width, 3].
+      next_label: An optional tensor of shape [label_height, label_width, 1].
 
     Returns:
       sample: A dictionary storing required data for panoptic segmentation.
@@ -186,15 +192,23 @@ class PanopticSampleGenerator:
       label.get_shape().assert_is_compatible_with(
           tf.TensorShape([None, None, 1]))
       original_label = tf.cast(label, dtype=tf.int32, name='original_label')
-
-    resized_image, image, label, prev_image, prev_label = (
-        self._preprocessing_fn(
-            image, label, prev_image=prev_image, prev_label=prev_label))
+    # Reusing the preprocessing function for both next and prev samples.
+    if next_image is not None:
+      resized_image, image, label, next_image, next_label = (
+          self._preprocessing_fn(
+              image, label, prev_image=next_image, prev_label=next_label))
+    else:
+      resized_image, image, label, prev_image, prev_label = (
+          self._preprocessing_fn(
+              image, label, prev_image=prev_image, prev_label=prev_label))
     sample = {
         common.IMAGE: image
     }
     if prev_image is not None:
       sample[common.IMAGE] = tf.concat([image, prev_image], axis=2)
+    if next_image is not None:
+      sample[common.NEXT_IMAGE] = next_image
+      sample[common.IMAGE] = tf.concat([image, next_image], axis=2)
     if label is not None:
       # Panoptic label for crowd regions will be ignore_label.
       semantic_label, panoptic_label, thing_mask, crowd_region = (
@@ -222,18 +236,33 @@ class PanopticSampleGenerator:
             non_crowd_things, tf.float32), axis=2)
 
         prev_panoptic_label = None
+        next_panoptic_label = None
         if prev_label is not None:
           _, prev_panoptic_label, _, _ = (
               dataset_utils.get_semantic_and_panoptic_label(
                   self._dataset_info, prev_label, self._ignore_label))
+        if next_label is not None:
+          _, next_panoptic_label, _, _ = (
+              dataset_utils.get_semantic_and_panoptic_label(
+                  self._dataset_info, next_label, self._ignore_label))
         (sample[common.GT_INSTANCE_CENTER_KEY],
          sample[common.GT_INSTANCE_REGRESSION_KEY],
-         sample[common.SEMANTIC_LOSS_WEIGHT_KEY], prev_center_map,
-         frame_center_offsets) = self._generate_gt_center_and_offset(
-             panoptic_label, semantic_weights, prev_panoptic_label)
+         sample[common.SEMANTIC_LOSS_WEIGHT_KEY],
+         prev_center_map,
+         frame_center_offsets,
+         next_offset) = self._generate_gt_center_and_offset(
+             panoptic_label, semantic_weights, prev_panoptic_label,
+             next_panoptic_label)
 
         sample[common.GT_INSTANCE_REGRESSION_KEY] = tf.cast(
             sample[common.GT_INSTANCE_REGRESSION_KEY], tf.float32)
+
+        if next_label is not None:
+          sample[common.GT_NEXT_INSTANCE_REGRESSION_KEY] = tf.cast(
+              next_offset, tf.float32)
+          sample[common.NEXT_REGRESSION_LOSS_WEIGHT_KEY] = tf.cast(
+              tf.greater(tf.reduce_sum(tf.abs(next_offset), axis=2), 0),
+              tf.float32)
 
         # Only squeeze center map and semantic loss weights, as regression map
         # has two channels (x and y offsets).
@@ -455,7 +484,8 @@ class PanopticSampleGenerator:
   def _generate_gt_center_and_offset(self,
                                      panoptic_label,
                                      semantic_weights,
-                                     prev_panoptic_label=None):
+                                     prev_panoptic_label=None,
+                                     next_panoptic_label=None):
     """Generates the ground-truth center and offset from the panoptic labels.
 
     Additionally, the per-pixel weights for the semantic branch are increased
@@ -467,11 +497,13 @@ class PanopticSampleGenerator:
       panoptic_label: A tf.Tensor of shape [height, width, 1].
       semantic_weights: A tf.Tensor of shape [height, width, 1].
       prev_panoptic_label: An optional tf.Tensor of shape [height, width, 1].
+      next_panoptic_label: An optional tf.Tensor of shape [height, width, 1].
 
     Returns:
-      A tuple (center, offsets, weights, prev_center, frame_offset*) with each
-      being a tf.Tensor of shape [height, width, 1 (2*)] if prev_panoptic_label
-      is passed, otherwise prev_center and frame_offset are None.
+      A tuple (center, offsets, weights, prev_center, frame_offset*,
+      next_offset) with each being a tf.Tensor of shape [height, width, 1 (2*)].
+      If prev_panoptic_label is None, prev_center and frame_offset are None.
+      If next_panoptic_label is None, next_offset is None.
     """
     height = tf.shape(panoptic_label)[0]
     width = tf.shape(panoptic_label)[1]
@@ -493,6 +525,11 @@ class PanopticSampleGenerator:
     frame_offset_x = tf.zeros((height, width, 1), dtype=tf.int32)
     frame_offset_y = tf.zeros((height, width, 1), dtype=tf.int32)
 
+    # Next-frame instance offsets.
+    next_offset = None
+    next_offset_y = tf.zeros((height, width, 1), dtype=tf.int32)
+    next_offset_x = tf.zeros((height, width, 1), dtype=tf.int32)
+
     if prev_panoptic_label is not None:
       (prev_center, prev_unique_ids, prev_centers_x, prev_centers_y
       ) = self._generate_prev_centers_with_noise(prev_panoptic_label)
@@ -510,6 +547,15 @@ class PanopticSampleGenerator:
       mask_index = tf.transpose(tf.where(panoptic_label == panoptic_id))
       mask_y_index = mask_index[0]
       mask_x_index = mask_index[1]
+
+      next_mask_index = None
+      next_mask_y_index = None
+      next_mask_x_index = None
+      if next_panoptic_label is not None:
+        next_mask_index = tf.transpose(
+            tf.where(next_panoptic_label == panoptic_id))
+        next_mask_y_index = next_mask_index[0]
+        next_mask_x_index = next_mask_index[1]
 
       instance_area = tf.shape(mask_x_index)
       if instance_area < self._instance_area_threshold:
@@ -563,6 +609,17 @@ class PanopticSampleGenerator:
               tf.transpose(mask_index),
               prev_center_x - tf.cast(mask_x_index, tf.int32),
               name='frame_offset_x_scatter')
+      if next_panoptic_label is not None:
+        next_offset_y = tf.tensor_scatter_nd_update(
+            next_offset_y,
+            tf.transpose(next_mask_index),
+            center_y - tf.cast(next_mask_y_index, tf.int32),
+            name='next_offset_y_scatter')
+        next_offset_x = tf.tensor_scatter_nd_update(
+            next_offset_x,
+            tf.transpose(next_mask_index),
+            center_x - tf.cast(next_mask_x_index, tf.int32),
+            name='next_offset_x_scatter')
 
     offset = tf.concat([offset_y, offset_x], axis=2)
     center = center[center_pad_begin:(center_pad_begin + height),
@@ -570,4 +627,7 @@ class PanopticSampleGenerator:
     center = tf.expand_dims(center, -1)
     if prev_panoptic_label is not None:
       frame_offsets = tf.concat([frame_offset_y, frame_offset_x], axis=2)
-    return center, offset, semantic_weights, prev_center, frame_offsets
+    if next_panoptic_label is not None:
+      next_offset = tf.concat([next_offset_y, next_offset_x], axis=2)
+    return (center, offset, semantic_weights, prev_center, frame_offsets,
+            next_offset)

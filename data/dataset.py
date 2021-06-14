@@ -39,6 +39,10 @@ Panoptic segmentation annotations for MSCOCO dataset. Note that we convert the
 provided MSCOCO panoptic segmentation format to the following one:
 panoptic label = semantic label * 256 + instance id.
 
+5. Cityscapes-DVPS (https://github.com/joe-siyuan-qiao/ViP-DeepLab)
+The Cityscapes-DVPS dataset augments Cityscapes-VPS
+(https://github.com/mcahny/vps) with depth annotations.
+
 
 References:
 
@@ -67,6 +71,13 @@ References:
   Adam, Bradley Green, Andreas Geiger, Bastian Leibe, Daniel Cremers, Aljosa
   Osep, Laura Leal-Taixe, and Liang-Chieh Chen, "STEP: Segmenting and Tracking
   Every Pixel." arXiv: 2102.11859, 2021.
+
+- Dahun Kim, Sanghyun Woo, Joon-Young Lee, and In So Kweon. "Video panoptic
+  segmentation." In CVPR, 2020.
+
+- Siyuan Qiao, Yukun Zhu, Hartwig Adam, Alan Yuille, and Liang-Chieh Chen.
+  "ViP-DeepLab: Learning Visual Perception with Depth-aware Video Panoptic
+  Segmentation." In CVPR, 2021.
 """
 
 import collections
@@ -77,6 +88,7 @@ _CITYSCAPES = 'cityscapes'
 _CITYSCAPES_PANOPTIC = 'cityscapes_panoptic'
 _KITTI_STEP = 'kitti_step'
 _MOTCHALLENGE_STEP = 'motchallenge_step'
+_CITYSCAPES_DVPS = 'cityscapes_dvps'
 
 # Colormap names.
 _CITYSCAPES_COLORMAP = 'cityscapes'
@@ -105,6 +117,8 @@ DatasetDescriptor = collections.namedtuple(
         # A string specifying the colormap that should be used for
         # visualization. E.g. 'cityscapes'.
         'colormap',
+        # A flag indicating whether the dataset contains depth annotation.
+        'is_depth_dataset',
     ]
 )
 
@@ -122,6 +136,7 @@ CITYSCAPES_INFORMATION = DatasetDescriptor(
     class_has_instances_list=None,
     is_video_dataset=False,
     colormap=_CITYSCAPES_COLORMAP,
+    is_depth_dataset=False,
 )
 
 CITYSCAPES_PANOPTIC_INFORMATION = DatasetDescriptor(
@@ -136,6 +151,7 @@ CITYSCAPES_PANOPTIC_INFORMATION = DatasetDescriptor(
     class_has_instances_list=tuple(range(11, 19)),
     is_video_dataset=False,
     colormap=_CITYSCAPES_COLORMAP,
+    is_depth_dataset=False,
 )
 
 KITTI_STEP_INFORMATION = DatasetDescriptor(
@@ -149,6 +165,7 @@ KITTI_STEP_INFORMATION = DatasetDescriptor(
     class_has_instances_list=(11, 13),
     is_video_dataset=True,
     colormap=_CITYSCAPES_COLORMAP,
+    is_depth_dataset=False,
 )
 
 MOTCHALLENGE_STEP_INFORMATION = DatasetDescriptor(
@@ -162,13 +179,33 @@ MOTCHALLENGE_STEP_INFORMATION = DatasetDescriptor(
     class_has_instances_list=(4,),
     is_video_dataset=True,
     colormap=_MOTCHALLENGE_COLORMAP,
+    is_depth_dataset=False,
+)
+
+CITYSCAPES_DVPS_INFORMATION = DatasetDescriptor(
+    dataset_name=_CITYSCAPES_DVPS,
+    # The numbers of images are 2400/300/300 for train/val/test. Here, the
+    # sizes are the number of consecutive frame pairs. As each sequence has 6
+    # frames, the number of pairs for the train split is 2400 / 6 * 5 = 2000.
+    # Similarly, we get 250 pairs for the val split and the test split.
+    splits_to_sizes={'train': 2000,
+                     'val': 250,
+                     'test': 250},
+    num_classes=19,
+    ignore_label=255,
+    panoptic_label_divisor=1000,
+    class_has_instances_list=tuple(range(11, 19)),
+    is_video_dataset=True,
+    colormap=_CITYSCAPES_COLORMAP,
+    is_depth_dataset=True,
 )
 
 MAP_NAME_TO_DATASET_INFO = {
     _CITYSCAPES: CITYSCAPES_INFORMATION,
     _CITYSCAPES_PANOPTIC: CITYSCAPES_PANOPTIC_INFORMATION,
     _KITTI_STEP: KITTI_STEP_INFORMATION,
-    _MOTCHALLENGE_STEP: MOTCHALLENGE_STEP_INFORMATION
+    _MOTCHALLENGE_STEP: MOTCHALLENGE_STEP_INFORMATION,
+    _CITYSCAPES_DVPS: CITYSCAPES_DVPS_INFORMATION,
 }
 
 MAP_NAMES = list(MAP_NAME_TO_DATASET_INFO.keys())

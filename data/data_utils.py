@@ -290,10 +290,12 @@ class SegmentationDecoder(object):
                is_panoptic_dataset=True,
                is_video_dataset=False,
                use_two_frames=False,
+               use_next_frame=False,
                decode_groundtruth_label=True):
     self._is_panoptic_dataset = is_panoptic_dataset
     self._is_video_dataset = is_video_dataset
     self._use_two_frames = use_two_frames
+    self._use_next_frame = use_next_frame
     self._decode_groundtruth_label = decode_groundtruth_label
     string_feature = tf.io.FixedLenFeature((), tf.string)
     int_feature = tf.io.FixedLenFeature((), tf.int64)
@@ -315,6 +317,11 @@ class SegmentationDecoder(object):
       self._keys_to_features[common.KEY_ENCODED_PREV_IMAGE] = string_feature
       if decode_groundtruth_label:
         self._keys_to_features[common.KEY_ENCODED_PREV_LABEL] = string_feature
+    # Next-frame specific processing.
+    if self._use_next_frame:
+      self._keys_to_features[common.KEY_ENCODED_NEXT_IMAGE] = string_feature
+      if decode_groundtruth_label:
+        self._keys_to_features[common.KEY_ENCODED_NEXT_LABEL] = string_feature
 
   def _decode_image(self, parsed_tensors, key):
     """Decodes image udner key from parsed tensors."""
@@ -367,4 +374,10 @@ class SegmentationDecoder(object):
       if self._decode_groundtruth_label:
         return_dict['prev_label'] = self._decode_label(
             parsed_tensors, common.KEY_ENCODED_PREV_LABEL)
+    if self._use_next_frame:
+      return_dict['next_image'] = self._decode_image(
+          parsed_tensors, common.KEY_ENCODED_NEXT_IMAGE)
+      if self._decode_groundtruth_label:
+        return_dict['next_label'] = self._decode_label(
+            parsed_tensors, common.KEY_ENCODED_NEXT_LABEL)
     return return_dict

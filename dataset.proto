@@ -62,8 +62,8 @@ message DatasetOptions {
   optional int32 small_instance_threshold = 11 [default = 4096];
   // Set the small instance weight.
   optional float small_instance_weight = 12 [default = 3.0];
-  // Set whether to use 2 frames togetehr as input for video panoptic
-  // segmentation.
+  // Set whether to use two frames togetehr (current frame + previous frame) as
+  // input for video panoptic segmentation.
   optional bool use_two_frames = 13 [default = false];
   // Whether to decode the groundtruth label. Some dataset splits (e.g., test
   // set) may not contain any groundtruth label. In that case, set this field
@@ -80,4 +80,9 @@ message DatasetOptions {
   // together when enabling generation of thing_id_mask_annotations (= True),
   // representing the maximum thing ID encoded in the thing_id_mask.
   optional int32 max_thing_id = 16 [default = 128];
+  // Set whether to use the next frame together with the current frame for video
+  // panoptic segmentation (VPS). This field also controls using two-frame as
+  // input for VPS. Note that `use_two_frames` is adopted in Motion-DeepLab,
+  // while `use_next_frame` is used in ViP-DeepLab.
+  optional bool use_next_frame = 17 [default = false];
 }

@@ -28,6 +28,7 @@ PRED_INSTANCE_SCORES_KEY = 'instance_scores'
 PRED_CENTER_HEATMAP_KEY = 'center_heatmap'
 PRED_OFFSET_MAP_KEY = 'offset_map'
 PRED_FRAME_OFFSET_MAP_KEY = 'frame_offset_map'
+PRED_NEXT_OFFSET_MAP_KEY = 'next_offset_map'
 
 # Ground-truth keys used by the model.
 GT_PANOPTIC_KEY = 'panoptic_gt'
@@ -38,6 +39,7 @@ GT_FRAME_OFFSET_KEY = 'frame_offset_gt'
 GT_IS_CROWD = 'is_crowd_gt'
 GT_THING_ID_MASK_KEY = 'thing_id_mask_gt'
 GT_THING_ID_CLASS_KEY = 'thing_id_class_gt'
+GT_NEXT_INSTANCE_REGRESSION_KEY = 'next_instance_regression_gt'
 
 # Raw labels.
 GT_PANOPTIC_RAW = 'panoptic_raw'
@@ -57,12 +59,14 @@ SEMANTIC_LOSS_WEIGHT_KEY = 'semantic_loss_weight'
 CENTER_LOSS_WEIGHT_KEY = 'center_loss_weight'
 REGRESSION_LOSS_WEIGHT_KEY = 'regression_loss_weight'
 FRAME_REGRESSION_LOSS_WEIGHT_KEY = 'frame_regression_loss_weight'
+NEXT_REGRESSION_LOSS_WEIGHT_KEY = 'next_regression_loss_weight'
 
 # Misc.
 RESIZED_IMAGE = 'resized_image'
 IMAGE = 'image'
 IMAGE_NAME = 'image_name'
 SEQUENCE_ID = 'sequence_id'
+NEXT_IMAGE = 'next_image'
 
 # TfExample keys.
 KEY_ENCODED_IMAGE = 'image/encoded'
