@@ -78,7 +78,7 @@ Example to run the scipt:
 import math
 import os
 
-from typing import Sequence, Tuple, Optional
+from typing import Iterator, Sequence, Tuple, Optional
 
 from absl import app
 from absl import flags
@@ -130,20 +130,39 @@ def _get_image_info_from_path(image_path: str) -> Tuple[str, str]:
   return sequence_id, image_id
 
 
-def _get_images(step_root: str, dataset_split: str) -> Sequence[str]:
+def _get_images_per_shard(step_root: str, dataset_split: str,
+                          sharded_by_sequence: bool) -> Iterator[Sequence[str]]:
   """Gets files for the specified data type and dataset split.
 
   Args:
     step_root: String, Path to STEP dataset root folder.
     dataset_split: String, dataset split ('train', 'val', 'test')
+    sharded_by_sequence: Whether the images should be sharded by sequence or
+      even split.
 
-  Returns:
-    A list of sorted file names under step_root and dataset_split.
+  Yields:
+    A list of sorted file lists. Each inner list corresponds to one shard and is
+    a list of files for this shard.
   """
   search_files = os.path.join(step_root, _IMAGE_FOLDER_NAME, dataset_split, '*',
                               '*')
-  filenames = tf.io.gfile.glob(search_files)
-  return sorted(filenames)
+  filenames = sorted(tf.io.gfile.glob(search_files))
+  num_per_even_shard = int(math.ceil(len(filenames) / _NUM_SHARDS))
+
+  sequence_ids = [os.path.basename(os.path.dirname(name)) for name in filenames]
+  images_per_shard = []
+  for i, name in enumerate(filenames):
+    images_per_shard.append(name)
+    shard_data = (i == len(filenames) - 1)
+    # Sharded by sequence id.
+    shard_data = shard_data or (sharded_by_sequence and
+                                sequence_ids[i + 1] != sequence_ids[i])
+    # Sharded evenly.
+    shard_data = shard_data or (not sharded_by_sequence and
+                                len(images_per_shard) == num_per_even_shard)
+    if shard_data:
+      yield images_per_shard
+      images_per_shard = []
 
 
 def _decode_panoptic_map(panoptic_map_path: str) -> Optional[str]:
@@ -182,21 +201,26 @@ def _get_previous_frame_path(image_path: str) -> str:
   return prev_image_path
 
 
-def _create_panoptic_tfexample(image_path: str, panoptic_map_path: str,
-                               use_two_frames: bool) -> tf.train.Example:
+def _create_panoptic_tfexample(image_path: str,
+                               panoptic_map_path: str,
+                               use_two_frames: bool,
+                               is_testing: bool = False) -> tf.train.Example:
   """Creates a TF example for each image.
 
   Args:
     image_path: Path to the image.
     panoptic_map_path: Path to the panoptic map (as an image file).
     use_two_frames: Whether to encode consecutive two frames in the Example.
+    is_testing: Whether it is testing data. If so, skip adding label data.
 
   Returns:
     TF example proto.
   """
   with tf.io.gfile.GFile(image_path, 'rb') as f:
     image_data = f.read()
-  label_data = _decode_panoptic_map(panoptic_map_path)
+  label_data = None
+  if not is_testing:
+    label_data = _decode_panoptic_map(panoptic_map_path)
   image_name = os.path.basename(image_path)
   image_format = image_name.split('.')[1].lower()
   sequence_id, frame_id = _get_image_info_from_path(image_path)
@@ -208,8 +232,9 @@ def _create_panoptic_tfexample(image_path: str, panoptic_map_path: str,
     with tf.io.gfile.GFile(prev_image_path, 'rb') as f:
       prev_image_data = f.read()
     # Previous panoptic map.
-    prev_panoptic_map_path = _get_previous_frame_path(panoptic_map_path)
-    prev_label_data = _decode_panoptic_map(prev_panoptic_map_path)
+    if not is_testing:
+      prev_panoptic_map_path = _get_previous_frame_path(panoptic_map_path)
+      prev_label_data = _decode_panoptic_map(prev_panoptic_map_path)
   return data_utils.create_video_tfexample(
       image_data,
       image_format,
@@ -222,7 +247,9 @@ def _create_panoptic_tfexample(image_path: str, panoptic_map_path: str,
       prev_label_data=prev_label_data)
 
 
-def _convert_dataset(step_root: str, dataset_split: str, output_dir: str,
+def _convert_dataset(step_root: str,
+                     dataset_split: str,
+                     output_dir: str,
                      use_two_frames: bool = False):
   """Converts the specified dataset split to TFRecord format.
 
@@ -232,25 +259,28 @@ def _convert_dataset(step_root: str, dataset_split: str, output_dir: str,
     output_dir: String, directory to write output TFRecords to.
     use_two_frames: Whether to encode consecutive two frames in the Example.
   """
-  image_files = _get_images(step_root, dataset_split)
-  num_images = len(image_files)
+  # For val and test set, if we run with use_two_frames, we should create a
+  # sorted tfrecord per sequence.
+  create_tfrecord_per_sequence = ('train'
+                                  not in dataset_split) and use_two_frames
+  is_testing = 'test' in dataset_split
 
-  num_per_shard = int(math.ceil(len(image_files) / _NUM_SHARDS))
+  image_files_per_shard = list(
+      _get_images_per_shard(step_root, dataset_split,
+                            sharded_by_sequence=create_tfrecord_per_sequence))
+  num_shards = len(image_files_per_shard)
 
-  for shard_id in range(_NUM_SHARDS):
-    shard_filename = _TF_RECORD_PATTERN % (dataset_split, shard_id, _NUM_SHARDS)
+  for shard_id, image_list in enumerate(image_files_per_shard):
+    shard_filename = _TF_RECORD_PATTERN % (dataset_split, shard_id, num_shards)
     output_filename = os.path.join(output_dir, shard_filename)
     with tf.io.TFRecordWriter(output_filename) as tfrecord_writer:
-      start_idx = shard_id * num_per_shard
-      end_idx = min((shard_id + 1) * num_per_shard, num_images)
-      for i in range(start_idx, end_idx):
-        image_path = image_files[i]
+      for image_path in image_list:
         sequence_id, image_id = _get_image_info_from_path(image_path)
         panoptic_map_path = os.path.join(
             step_root, _PANOPTIC_MAP_FOLDER_NAME, dataset_split, sequence_id,
             '%s.%s' % (image_id, _LABEL_MAP_FORMAT))
         example = _create_panoptic_tfexample(image_path, panoptic_map_path,
-                                             use_two_frames)
+                                             use_two_frames, is_testing)
         tfrecord_writer.write(example.SerializeToString())
 
 

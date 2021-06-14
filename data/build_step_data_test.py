@@ -34,13 +34,14 @@ class BuildStepDataTest(tf.test.TestCase):
     self.data_dir = FLAGS.test_tmpdir
     self.height = 100
     self.width = 100
-    self.split = 'train'
     self.sequence_id = '010'
+
+  def _create_images(self, split):
     image_path = os.path.join(self.data_dir, build_step_data._IMAGE_FOLDER_NAME,
-                              self.split, self.sequence_id)
+                              split, self.sequence_id)
     panoptic_map_path = os.path.join(self.data_dir,
                                      build_step_data._PANOPTIC_MAP_FOLDER_NAME,
-                                     self.split, self.sequence_id)
+                                     split, self.sequence_id)
 
     tf.io.gfile.makedirs(image_path)
     tf.io.gfile.makedirs(panoptic_map_path)
@@ -72,13 +73,17 @@ class BuildStepDataTest(tf.test.TestCase):
     return decoded_panoptic_map
 
   def test_build_step_dataset_correct(self):
+    split = 'train'
+    self._create_images(split)
     build_step_data._convert_dataset(
         step_root=self.data_dir,
-        dataset_split=self.split,
+        dataset_split=split,
         output_dir=FLAGS.test_tmpdir)
+    # We will have 2 shards with each shard containing 1 image.
+    num_shards = 2
     output_record = os.path.join(
         FLAGS.test_tmpdir, build_step_data._TF_RECORD_PATTERN %
-        (self.split, 0, build_step_data._NUM_SHARDS))
+        (split, 0, num_shards))
     self.assertTrue(tf.io.gfile.exists(output_record))
 
     # Parses tf record.
@@ -99,14 +104,17 @@ class BuildStepDataTest(tf.test.TestCase):
           example.features.feature['video/frame_id'].bytes_list.value[0],
           b'%06d' % image_id)
 
-  def test_build_step_dataset_correct_two_frames(self):
+  def test_build_step_dataset_correct_with_two_frames(self):
+    split = 'train'
+    self._create_images(split)
     build_step_data._convert_dataset(
         step_root=self.data_dir,
-        dataset_split=self.split,
+        dataset_split=split,
         output_dir=FLAGS.test_tmpdir, use_two_frames=True)
+    num_shards = 2
     output_record = os.path.join(
         FLAGS.test_tmpdir, build_step_data._TF_RECORD_PATTERN %
-        (self.split, 0, build_step_data._NUM_SHARDS))
+        (split, 0, num_shards))
     self.assertTrue(tf.io.gfile.exists(output_record))
 
     # Parses tf record.
@@ -136,6 +144,20 @@ class BuildStepDataTest(tf.test.TestCase):
       self.assertEqual(
           example.features.feature['video/frame_id'].bytes_list.value[0],
           b'%06d' % image_id)
+
+  def test_build_step_dataset_with_two_frames_shared_by_sequence(self):
+    split = 'val'
+    self._create_images(split)
+    build_step_data._convert_dataset(
+        step_root=self.data_dir,
+        dataset_split=split,
+        output_dir=FLAGS.test_tmpdir, use_two_frames=True)
+    # Only one shard since there is only one sequence for the val set.
+    num_shards = 1
+    output_record = os.path.join(
+        FLAGS.test_tmpdir, build_step_data._TF_RECORD_PATTERN %
+        (split, 0, num_shards))
+    self.assertTrue(tf.io.gfile.exists(output_record))
 
 
 if __name__ == '__main__':
