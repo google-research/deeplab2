@@ -32,6 +32,7 @@ from deeplab2.trainer import evaluator as evaluator_lib
 from deeplab2.trainer import runner_utils
 from deeplab2.trainer import trainer as trainer_lib
 from deeplab2.video import motion_deeplab
+from deeplab2.video import vip_deeplab
 
 _INSTANCE_LAYER_NAMES = (common.CKPT_MOTION_REGRESSION_HEAD_LAST_LAYER,
                          common.CKPT_INSTANCE_REGRESSION_HEAD_LAST_LAYER,
@@ -50,6 +51,8 @@ def create_deeplab_model(
   """Creates DeepLab model based on config."""
   if config.model_options.WhichOneof('meta_architecture') == 'motion_deeplab':
     return motion_deeplab.MotionDeepLab(config, dataset_descriptor)
+  elif config.model_options.WhichOneof('meta_architecture') == 'vip_deeplab':
+    return vip_deeplab.ViPDeepLab(config, dataset_descriptor)
   else:
     return deeplab.DeepLab(config, dataset_descriptor)
 
@@ -58,7 +61,8 @@ def build_deeplab_model(
     deeplab_model: tf.keras.Model, crop_size: Sequence[int],
     batch_size: Optional[int] = None):
   """Builds DeepLab model with input crop size."""
-  if isinstance(deeplab_model, motion_deeplab.MotionDeepLab):
+  if isinstance(deeplab_model, motion_deeplab.MotionDeepLab) or isinstance(
+        deeplab_model, vip_deeplab.ViPDeepLab):
     input_shape = list(crop_size) + [_TWO_FRAME_MOTION_DEEPLAB_INPUT_CHANNELS]
     deeplab_model(tf.keras.Input(input_shape, batch_size=batch_size),
                   training=False)

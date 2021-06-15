@@ -21,6 +21,7 @@ from deeplab2.model.decoder import deeplabv3
 from deeplab2.model.decoder import deeplabv3plus
 from deeplab2.model.decoder import motion_deeplab_decoder
 from deeplab2.model.decoder import panoptic_deeplab
+from deeplab2.model.decoder import vip_deeplab_decoder
 from deeplab2.model.encoder import axial_resnet_instances
 from deeplab2.model.encoder import mobilenet
 
@@ -157,6 +158,11 @@ def create_decoder(model_options: config_pb2.ModelOptions,
     return motion_deeplab_decoder.MotionDeepLabDecoder(
         model_options.decoder,
         model_options.motion_deeplab,
+        bn_layer=bn_layer)
+  elif meta_architecture == 'vip_deeplab':
+    return vip_deeplab_decoder.ViPDeepLabDecoder(
+        model_options.decoder,
+        model_options.vip_deeplab,
         bn_layer=bn_layer)
   raise ValueError('The specified meta architecture %s is not implemented.' %
                    meta_architecture)

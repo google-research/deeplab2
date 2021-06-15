@@ -29,6 +29,8 @@ PRED_CENTER_HEATMAP_KEY = 'center_heatmap'
 PRED_OFFSET_MAP_KEY = 'offset_map'
 PRED_FRAME_OFFSET_MAP_KEY = 'frame_offset_map'
 PRED_NEXT_OFFSET_MAP_KEY = 'next_offset_map'
+PRED_NEXT_PANOPTIC_KEY = 'next_panoptic_pred'
+PRED_CONCAT_NEXT_PANOPTIC_KEY = 'concat_next_panoptic_pred'
 
 # Ground-truth keys used by the model.
 GT_PANOPTIC_KEY = 'panoptic_gt'
@@ -46,12 +48,14 @@ GT_PANOPTIC_RAW = 'panoptic_raw'
 GT_SEMANTIC_RAW = 'semantic_raw'
 GT_IS_CROWD_RAW = 'is_crowd_raw'
 GT_SIZE_RAW = 'size_raw'
+GT_NEXT_PANOPTIC_RAW = 'next_panoptic_raw'
 
 # Loss keys.
 SEMANTIC_LOSS = 'semantic_loss'
 CENTER_LOSS = 'center_loss'
 REGRESSION_LOSS = 'regression_loss'
 MOTION_LOSS = 'motion_loss'
+NEXT_REGRESSION_LOSS = 'next_regression_loss'
 TOTAL_LOSS = 'total_loss'
 
 # Weight keys used by the model.
@@ -115,3 +119,11 @@ CKPT_INSTANCE_REGRESSION_HEAD_LAST_LAYER = 'instance_regression_head_last_layer'
 CKPT_MOTION_REGRESSION_HEAD_WITHOUT_LAST_LAYER = ('motion_regression_head'
                                                   '_without_last_layer')
 CKPT_MOTION_REGRESSION_HEAD_LAST_LAYER = 'motion_regression_head_last_layer'
+
+# ViP-DeepLab
+CKPT_NEXT_INSTANCE_DECODER = 'next_instance_decoder'
+CKPT_NEXT_INSTANCE_REGRESSION_HEAD_WITHOUT_LAST_LAYER = ('next_instance_'
+                                                         'regression_head_'
+                                                         'without_last_layer')
+CKPT_NEXT_INSTANCE_REGRESSION_HEAD_LAST_LAYER = ('next_instance_regression_head'
+                                                 '_last_layer')

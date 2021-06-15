@@ -123,6 +123,15 @@ class DeepLabFamilyLoss(tf.keras.layers.Layer):
               common.PRED_FRAME_OFFSET_MAP_KEY,
               common.FRAME_REGRESSION_LOSS_WEIGHT_KEY)
 
+    # Next-frame regression loss used in ViP-DeepLab.
+    if loss_options.HasField(common.NEXT_REGRESSION_LOSS):
+      self._loss_func_and_weight_dict[
+          common.NEXT_REGRESSION_LOSS] = _create_loss(
+              next_regression_loss_options,
+              common.GT_NEXT_INSTANCE_REGRESSION_KEY,
+              common.PRED_NEXT_OFFSET_MAP_KEY,
+              common.NEXT_REGRESSION_LOSS_WEIGHT_KEY)
+
   def get_loss_names(self):
     # Keep track of all the keys that will be returned in self.call().
     loss_names = list(self._loss_func_and_weight_dict.keys())
@@ -153,6 +162,7 @@ class DeepLabFamilyLoss(tf.keras.layers.Layer):
       - common.CENTER_LOSS: [batch].
       - common.REGRESSION_LOSS: [batch].
       - common.MOTION_LOSS: [batch], the frame offset regression loss.
+      - common.NEXT_REGRESSION_LOSS: [batch], the next regression loss.
 
     Raises:
       AssertionError: If the keys of the resulting_dict do not match
