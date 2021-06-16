@@ -127,7 +127,7 @@ class DeepLabFamilyLoss(tf.keras.layers.Layer):
     if loss_options.HasField(common.NEXT_REGRESSION_LOSS):
       self._loss_func_and_weight_dict[
           common.NEXT_REGRESSION_LOSS] = _create_loss_and_weight(
-              loss_options.next_regression_loss_options,
+              loss_options.next_regression_loss,
               common.GT_NEXT_INSTANCE_REGRESSION_KEY,
               common.PRED_NEXT_OFFSET_MAP_KEY,
               common.NEXT_REGRESSION_LOSS_WEIGHT_KEY)
