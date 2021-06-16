@@ -139,6 +139,8 @@ class ViPDeepLab(tf.keras.Model):
       if self._add_flipped_images:
         pred_dict_reverse = self._decoder(
             self._encoder(tf.reverse(scaled_images, [2]), training=training),
+            self._encoder(
+                tf.reverse(next_scaled_images, [2]), training=training),
             training=training)
         pred_dict_reverse = self._resize_predictions(
             pred_dict_reverse,
@@ -166,7 +168,8 @@ class ViPDeepLab(tf.keras.Model):
 
     Args:
       input_tensor: An input tensor of type tf.Tensor with shape [batch, height,
-        width, channels]. The input tensor should contain batches of RGB images.
+        width, channels]. The input tensor should contain batches of RGB images
+        pairs. The channel dimension is expected to encode two RGB pixels.
       training: A boolean flag indicating whether training behavior should be
         used (default: False).
 
@@ -197,8 +200,15 @@ class ViPDeepLab(tf.keras.Model):
           target_w=input_w)
     else:
       result_dict = self._inference(input_tensor, next_input_tensor, training)
+      # To get panoptic prediction of the next frame, we reverse the
+      # input_tensor and next_input_tensor and use them as the input.
+      # The second input can be anything. In sequence evaluation, we can wait
+      # for the results of the next pair. Here, we need to compute the panoptic
+      # predictions of the next frame to do pair evaluation.
       next_result_dict = self._inference(
           next_input_tensor, input_tensor, training)
+      # Here, we horizontally concat the raw predictions of the current frame
+      # and the next frame to perform two-frame panoptic post-processing.
       concat_result_dict = collections.defaultdict(list)
       concat_result_dict[common.PRED_SEMANTIC_PROBS_KEY] = tf.concat([
           result_dict[common.PRED_SEMANTIC_PROBS_KEY],
@@ -210,6 +220,9 @@ class ViPDeepLab(tf.keras.Model):
       next_regression_y, next_regression_x = tf.split(
           result_dict[common.PRED_NEXT_OFFSET_MAP_KEY],
           num_or_size_splits=2, axis=3)
+      # The predicted horizontal offsets of the next frame need to subtract the
+      # image width to point to the object centers in the current frame because
+      # the two frames are horizontally concatenated.
       next_regression_x -= tf.constant(input_w, dtype=tf.float32)
       next_regression = tf.concat(
           [next_regression_y, next_regression_x], axis=3)

@@ -63,6 +63,10 @@ def build_deeplab_model(
   """Builds DeepLab model with input crop size."""
   if isinstance(deeplab_model, motion_deeplab.MotionDeepLab) or isinstance(
         deeplab_model, vip_deeplab.ViPDeepLab):
+    # Motion-DeepLab and ViP-DeepLab use the input differently despite that
+    # the input_shape is the same: Motion-DeepLab uses two frames as one input,
+    # while ViP-DeepLab splits the two frames first and passes them individually
+    # to the backbone encoder.
     input_shape = list(crop_size) + [_TWO_FRAME_MOTION_DEEPLAB_INPUT_CHANNELS]
     deeplab_model(tf.keras.Input(input_shape, batch_size=batch_size),
                   training=False)

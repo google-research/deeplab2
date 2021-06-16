@@ -41,7 +41,8 @@ class ViPDeepLabDecoder(layers.Layer):
   segmentation. On top of the decoders, three heads are used to predict semantic
   segmentation, instance center probabilities, and instance center regression
   per pixel. It also has a branch to predict the next-frame instance center
-  regression.
+  regression. Different from the ViP-DeepLab paper which uses Cascade-ASPP, this
+  reimplementation only uses ASPP.
   """
 
   def __init__(self,
@@ -262,6 +263,8 @@ class ViPDeepLabDecoder(layers.Layer):
       results.update(instance_regression_predictions)
 
     if self._next_instance_decoder is not None:
+      # We update the high level features in next_features with the concated
+      # features of the high level features in both features and next_features.
       high_level_feature_name = (
           self._next_instance_decoder._high_level_feature_name)
       high_level_features = features[high_level_feature_name]

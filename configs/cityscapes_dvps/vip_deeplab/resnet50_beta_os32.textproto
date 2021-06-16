@@ -126,7 +126,6 @@ train_dataset_options {
   batch_size: 4
   crop_size: 513
   crop_size: 1025
-  # crop_size: 2049
   # Skip resizing.
   min_resize_value: 0
   max_resize_value: 0

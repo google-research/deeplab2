@@ -126,8 +126,8 @@ class DeepLabFamilyLoss(tf.keras.layers.Layer):
     # Next-frame regression loss used in ViP-DeepLab.
     if loss_options.HasField(common.NEXT_REGRESSION_LOSS):
       self._loss_func_and_weight_dict[
-          common.NEXT_REGRESSION_LOSS] = _create_loss(
-              next_regression_loss_options,
+          common.NEXT_REGRESSION_LOSS] = _create_loss_and_weight(
+              loss_options.next_regression_loss_options,
               common.GT_NEXT_INSTANCE_REGRESSION_KEY,
               common.PRED_NEXT_OFFSET_MAP_KEY,
               common.NEXT_REGRESSION_LOSS_WEIGHT_KEY)
