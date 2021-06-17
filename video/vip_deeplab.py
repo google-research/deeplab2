@@ -27,7 +27,6 @@ from deeplab2.data import dataset
 from deeplab2.model import builder
 from deeplab2.model import post_processing
 from deeplab2.model import utils
-from deeplab2.model.decoder import vip_deeplab_decoder
 
 _OFFSET_OUTPUT = 'offset'
 

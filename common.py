@@ -122,8 +122,7 @@ CKPT_MOTION_REGRESSION_HEAD_LAST_LAYER = 'motion_regression_head_last_layer'
 
 # ViP-DeepLab
 CKPT_NEXT_INSTANCE_DECODER = 'next_instance_decoder'
-CKPT_NEXT_INSTANCE_REGRESSION_HEAD_WITHOUT_LAST_LAYER = ('next_instance_'
-                                                         'regression_head_'
-                                                         'without_last_layer')
-CKPT_NEXT_INSTANCE_REGRESSION_HEAD_LAST_LAYER = ('next_instance_regression_head'
-                                                 '_last_layer')
+CKPT_NEXT_INSTANCE_REGRESSION_HEAD_WITHOUT_LAST_LAYER = (
+    'next_instance_regression_head_without_last_layer')
+CKPT_NEXT_INSTANCE_REGRESSION_HEAD_LAST_LAYER = (
+    'next_instance_regression_head_last_layer')

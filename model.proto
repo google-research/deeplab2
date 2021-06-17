@@ -89,7 +89,7 @@ message InstanceOptions {
 }
 
 // Configure the model options.
-// Next ID: 11
+// Next ID: 12
 message ModelOptions {
   // Configure model backbone.
   message BackboneOptions {

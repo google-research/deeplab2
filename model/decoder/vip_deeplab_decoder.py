@@ -19,14 +19,9 @@ Reference:
   - [ViP-DeepLab: Learning Visual Perception with Depth-aware Video
       Panoptic Segmentation](https://arxiv.org/abs/2012.05258)
 """
-from absl import logging
-
 import tensorflow as tf
 
 from deeplab2 import common
-from deeplab2.model import utils
-from deeplab2.model.decoder import aspp
-from deeplab2.model.layers import convolutions
 from deeplab2.model.decoder import panoptic_deeplab
 
 
@@ -165,6 +160,7 @@ class ViPDeepLabDecoder(layers.Layer):
                 conv_type=(vip_deeplab_options.instance.next_regression_head
                            .head_conv_type),
                 bn_layer=bn_layer))
+        self._next_high_level_feature_name = decoder_options.feature_key
 
   def reset_pooling_layer(self):
     """Resets the ASPP pooling layers to global average pooling."""
@@ -265,8 +261,7 @@ class ViPDeepLabDecoder(layers.Layer):
     if self._next_instance_decoder is not None:
       # We update the high level features in next_features with the concated
       # features of the high level features in both features and next_features.
-      high_level_feature_name = (
-          self._next_instance_decoder._high_level_feature_name)
+      high_level_feature_name = self._next_high_level_feature_name
       high_level_features = features[high_level_feature_name]
       next_high_level_features = next_features[high_level_feature_name]
       next_high_level_features = tf.concat(
