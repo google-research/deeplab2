@@ -57,9 +57,9 @@ def create_deeplab_model(
     return deeplab.DeepLab(config, dataset_descriptor)
 
 
-def build_deeplab_model(
-    deeplab_model: tf.keras.Model, crop_size: Sequence[int],
-    batch_size: Optional[int] = None):
+def build_deeplab_model(deeplab_model: tf.keras.Model,
+                        crop_size: Sequence[int],
+                        batch_size: Optional[int] = None):
   """Builds DeepLab model with input crop size."""
   if isinstance(deeplab_model, motion_deeplab.MotionDeepLab) or isinstance(
       deeplab_model, vip_deeplab.ViPDeepLab):
@@ -68,12 +68,12 @@ def build_deeplab_model(
     # while ViP-DeepLab splits the two frames first and passes them individually
     # to the backbone encoder.
     input_shape = list(crop_size) + [_TWO_FRAME_MOTION_DEEPLAB_INPUT_CHANNELS]
-    deeplab_model(tf.keras.Input(input_shape, batch_size=batch_size),
-                  training=False)
+    deeplab_model(
+        tf.keras.Input(input_shape, batch_size=batch_size), training=False)
   else:
     input_shape = list(crop_size) + [_SINGLE_FRAME_INPUT_CHANNELS]
-    deeplab_model(tf.keras.Input(input_shape, batch_size=batch_size),
-                  training=False)
+    deeplab_model(
+        tf.keras.Input(input_shape, batch_size=batch_size), training=False)
   return input_shape
 
 
@@ -87,7 +87,7 @@ def run_experiment(mode: Text, config: config_pb2.ExperimentOptions,
     config: A config_pb2.ExperimentOptions configuration.
     model_dir: A path to store all checkpoints and other experimental artifacts.
     tpu: The name or address of the tpu to connect to, if any.
-    num_gpus: An integer specifying the number of GPUs to use. If mode contains 
+    num_gpus: An integer specifying the number of GPUs to use. If mode contains
       `eval`, num_gpus must be less or equal to 1.
 
   Raises:
@@ -111,7 +111,7 @@ def run_experiment(mode: Text, config: config_pb2.ExperimentOptions,
       raise ValueError('Using difference dataset_names in train_and_eval mode.')
     if num_gpus > 1:
       raise ValueError(
-        'Using more than one GPU for evaluation is not supported.')
+          'Using more than one GPU for evaluation is not supported.')
   else:
     dataset_name = config.train_dataset_options.dataset
 
@@ -122,8 +122,7 @@ def run_experiment(mode: Text, config: config_pb2.ExperimentOptions,
   evaluator = None
   with strategy.scope():
     deeplab_model = create_deeplab_model(
-        config,
-        dataset.MAP_NAME_TO_DATASET_INFO[dataset_name])
+        config, dataset.MAP_NAME_TO_DATASET_INFO[dataset_name])
     losses = loss_builder.DeepLabFamilyLoss(config.trainer_options.loss_options,
                                             num_classes, ignore_label)
     global_step = orbit.utils.create_global_step()
@@ -149,10 +148,9 @@ def run_experiment(mode: Text, config: config_pb2.ExperimentOptions,
     for layer_name in _INSTANCE_LAYER_NAMES:
       if layer_name in init_dict:
         del init_dict[layer_name]
-  init_fn = functools.partial(
-      runner_utils.maybe_load_checkpoint,
-      config.model_options.initial_checkpoint,
-      init_dict)
+  init_fn = functools.partial(runner_utils.maybe_load_checkpoint,
+                              config.model_options.initial_checkpoint,
+                              init_dict)
   checkpoint_manager = tf.train.CheckpointManager(
       checkpoint,
       directory=model_dir,
@@ -186,8 +184,7 @@ def run_experiment(mode: Text, config: config_pb2.ExperimentOptions,
       # Interleave training and evaluation.
       controller.train_and_evaluate(
           train_steps=(
-              config.trainer_options.solver_options.training_number_of_steps
-              ),
+              config.trainer_options.solver_options.training_number_of_steps),
           eval_steps=config.evaluator_options.eval_steps,
           eval_interval=config.evaluator_options.eval_interval)
     elif mode == 'eval':
@@ -199,7 +196,6 @@ def run_experiment(mode: Text, config: config_pb2.ExperimentOptions,
         # Wait forever
         timeout = None
       controller.evaluate_continuously(
-          steps=config.evaluator_options.eval_steps,
-          timeout=timeout)
+          steps=config.evaluator_options.eval_steps, timeout=timeout)
     else:
       raise ValueError('Mode %s is not a valid mode.' % mode)

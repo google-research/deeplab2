@@ -60,31 +60,21 @@ different from the official evaluation code (e.g.,
 **A4**: In order to run everything end-to-end in the TensorFlow system (e.g.,
 the on-line evaluation during training), we re-implemented the evaluation codes
 in TensorFlow. Additionally, our whole system, including the training and
-evaluation pipelines, uses the panoptic label format (i.e., `panoptic_label
-= semantic_label * label_divisor + instance_id`, where the `label_divisor`
-should be larger than the maximum number of instances per image), instead of
-the JSON [COCO formats](https://cocodataset.org/#format-data). These two changes
-along with rounding and similar issues result in some minor differences.
-Therefore, our re-implemented evaluation code is mainly used for TensorFlow
-integration (e.g., the support of on-line evaluation in TensorBoard). The users
-should run the corresponding official evaluation code in order to compare with
-other published papers.
+evaluation pipelines, uses the panoptic label format (i.e., `panoptic_label =
+semantic_label * label_divisor + instance_id`, where the `label_divisor` should
+be larger than the maximum number of instances per image), instead of the JSON
+[COCO formats](https://cocodataset.org/#format-data). These two changes along
+with rounding and similar issues result in some minor differences. Therefore,
+our re-implemented evaluation code is mainly used for TensorFlow integration
+(e.g., the support of on-line evaluation in TensorBoard). The users should run
+the corresponding official evaluation code in order to compare with other
+published papers. Note that all the reported numbers in our papers are evaluated
+with the official evaluation code.
 
-To run the official evaluation code, you need to do the following things.
-
-1. Save the prediction results in a two-channel format (where R-channel saves
-semantic segmentation and G-channel saves instance segmentation),
-
-2. Run the official COCO [format converter](https://github.com/cocodataset/panopticapi/blob/master/converters/2channels2panoptic_coco_format.py)
-   from two-channel format to COCO format.
-
-3. Run the corresponding official evaluation code (e.g., COCO official
-[evaluation code](https://github.com/cocodataset/panopticapi) or
-Cityscapes official
-[evaluation code](https://github.com/mcordts/cityscapesScripts)).
-
-Note that all the reported numbers in our papers are evaluated with the
-official evaluation code.
+To facilitate the conversion between prediction formats, we also provide
+instructions for running the official evaluation codes on
+[Cityscapes](setup/cityscapes_test_server_evaluation.md) and
+[COCO](setup/coco_test_server_evaluation.md).
 
 ___
 **Q5: What should I do, if I could not manage to compile TensorFlow along
@@ -92,13 +82,12 @@ with the provided efficient merging operation
 `merge_semantic_and_instance_maps`?**
 
 **A5**: In this case, we provide another fallback solution, which
-implements the merging operation with `tf.py_function`, resulting in
-a similar performance. This fallback solution does not require any
-TensorFlow compilation. However, note that its inference speed will be
-slower than our provided TensorFlow merging operation
-`merge_semantic_and_instance_maps`.
+implements the merging operation with pure tf functions. This fallback
+solution does not require any TensorFlow compilation. However, note that
+compared to our provided TensorFlow merging operation
+`merge_semantic_and_instance_maps`, its inference speed is slower and
+the resulting segmentation performance may also be slightly lower.
 
-To use the `tf.py_function` version of `merge_semantic_and_instance_maps`,
+To use the pure-tf-function version of `merge_semantic_and_instance_maps`,
 set `merge_semantic_instance_with_tf_op` to `false` in your config's
 `evaluator_options`.
-

@@ -59,6 +59,8 @@ reporting the issues.<br>
 * Maxwell D. Collins, github: [mcollinswisc](https://github.com/mcollinswisc)
 * YuKun Zhu, github: [yknzhu](https://github.com/YknZhu)
 * Liangzhe Yuan, github: [yuanliangzhe](https://github.com/yuanliangzhe)
+* Dahun Kim, github: [mcahny](https://github.com/mcahny)
+* Qihang Yu, github: [yucornetto](https://github.com/yucornetto)
 * Liang-Chieh Chen, github: [aquariusjay](https://github.com/aquariusjay)
 
 ## Disclaimer
