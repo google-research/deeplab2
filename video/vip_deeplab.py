@@ -37,8 +37,7 @@ class ViPDeepLab(tf.keras.Model):
   This class supports the architecture of ViP-DeepLab.
   """
 
-  def __init__(self,
-               config: config_pb2.ExperimentOptions,
+  def __init__(self, config: config_pb2.ExperimentOptions,
                dataset_descriptor: dataset.DatasetDescriptor):
     """Initializes a ViP-DeepLab architecture.
 
@@ -62,7 +61,8 @@ class ViPDeepLab(tf.keras.Model):
           epsilon=config.trainer_options.solver_options.batchnorm_epsilon)
 
     self._encoder = builder.create_encoder(
-        config.model_options.backbone, bn_layer,
+        config.model_options.backbone,
+        bn_layer,
         conv_kernel_weight_decay=(
             config.trainer_options.solver_options.weight_decay / 2))
 
@@ -97,9 +97,7 @@ class ViPDeepLab(tf.keras.Model):
 
     self._label_divisor = dataset_descriptor.panoptic_label_divisor
 
-  def _inference(self,
-                 input_tensor: tf.Tensor,
-                 next_input_tensor: tf.Tensor,
+  def _inference(self, input_tensor: tf.Tensor, next_input_tensor: tf.Tensor,
                  training: bool) -> Dict[Text, Any]:
     """Performs an inference pass and returns raw predictions."""
     _, input_h, input_w, _ = input_tensor.get_shape().as_list()
@@ -110,23 +108,21 @@ class ViPDeepLab(tf.keras.Model):
     for eval_scale in self._eval_scales:
       # Get the scaled images/pool_size for each scale.
       scaled_images, scaled_pool_size = (
-          self._scale_images_and_pool_size(
-              input_tensor, list(scale_1_pool_size), eval_scale))
+          self._scale_images_and_pool_size(input_tensor,
+                                           list(scale_1_pool_size), eval_scale))
       next_scaled_images, _ = (
-          self._scale_images_and_pool_size(
-              next_input_tensor, list(scale_1_pool_size), eval_scale))
+          self._scale_images_and_pool_size(next_input_tensor,
+                                           list(scale_1_pool_size), eval_scale))
       # Update the ASPP pool size for different eval scales.
       self.set_pool_size(tuple(scaled_pool_size))
-      logging.info('Eval scale %s; setting pooling size to %s',
-                   eval_scale, scaled_pool_size)
+      logging.info('Eval scale %s; setting pooling size to %s', eval_scale,
+                   scaled_pool_size)
       pred_dict = self._decoder(
           self._encoder(scaled_images, training=training),
           self._encoder(next_scaled_images, training=training),
           training=training)
       pred_dict = self._resize_predictions(
-          pred_dict,
-          target_h=input_h,
-          target_w=input_w)
+          pred_dict, target_h=input_h, target_w=input_w)
       # Change the semantic logits to probabilities with softmax. Note
       # one should remove semantic logits for faster inference. We still
       # keep them since they will be used to compute evaluation loss.
@@ -142,10 +138,7 @@ class ViPDeepLab(tf.keras.Model):
                 tf.reverse(next_scaled_images, [2]), training=training),
             training=training)
         pred_dict_reverse = self._resize_predictions(
-            pred_dict_reverse,
-            target_h=input_h,
-            target_w=input_w,
-            reverse=True)
+            pred_dict_reverse, target_h=input_h, target_w=input_w, reverse=True)
         # Change the semantic logits to probabilities with softmax.
         pred_dict_reverse[common.PRED_SEMANTIC_PROBS_KEY] = tf.nn.softmax(
             pred_dict_reverse[common.PRED_SEMANTIC_LOGITS_KEY])
@@ -194,9 +187,7 @@ class ViPDeepLab(tf.keras.Model):
       result_dict = self._decoder(
           encoder_features, next_encoder_features, training=training)
       result_dict = self._resize_predictions(
-          result_dict,
-          target_h=input_h,
-          target_w=input_w)
+          result_dict, target_h=input_h, target_w=input_w)
     else:
       result_dict = self._inference(input_tensor, next_input_tensor, training)
       # To get panoptic prediction of the next frame, we reverse the
@@ -204,6 +195,7 @@ class ViPDeepLab(tf.keras.Model):
       # The second input can be anything. In sequence evaluation, we can wait
       # for the results of the next pair. Here, we need to compute the panoptic
       # predictions of the next frame to do pair evaluation.
+      # pylint: disable=arguments-out-of-order
       next_result_dict = self._inference(
           next_input_tensor, input_tensor, training)
       # Here, we horizontally concat the raw predictions of the current frame
@@ -211,22 +203,26 @@ class ViPDeepLab(tf.keras.Model):
       concat_result_dict = collections.defaultdict(list)
       concat_result_dict[common.PRED_SEMANTIC_PROBS_KEY] = tf.concat([
           result_dict[common.PRED_SEMANTIC_PROBS_KEY],
-          next_result_dict[common.PRED_SEMANTIC_PROBS_KEY]], axis=2)
+          next_result_dict[common.PRED_SEMANTIC_PROBS_KEY]
+      ],
+                                                                     axis=2)
       concat_result_dict[common.PRED_CENTER_HEATMAP_KEY] = tf.concat([
           result_dict[common.PRED_CENTER_HEATMAP_KEY],
-          tf.zeros_like(
-              next_result_dict[common.PRED_CENTER_HEATMAP_KEY])], axis=2)
+          tf.zeros_like(next_result_dict[common.PRED_CENTER_HEATMAP_KEY])
+      ],
+                                                                     axis=2)
       next_regression_y, next_regression_x = tf.split(
           result_dict[common.PRED_NEXT_OFFSET_MAP_KEY],
-          num_or_size_splits=2, axis=3)
+          num_or_size_splits=2,
+          axis=3)
       # The predicted horizontal offsets of the next frame need to subtract the
       # image width to point to the object centers in the current frame because
       # the two frames are horizontally concatenated.
       next_regression_x -= tf.constant(input_w, dtype=tf.float32)
-      next_regression = tf.concat(
-          [next_regression_y, next_regression_x], axis=3)
-      concat_result_dict[common.PRED_OFFSET_MAP_KEY] = tf.concat([
-          result_dict[common.PRED_OFFSET_MAP_KEY], next_regression], axis=2)
+      next_regression = tf.concat([next_regression_y, next_regression_x],
+                                  axis=3)
+      concat_result_dict[common.PRED_OFFSET_MAP_KEY] = tf.concat(
+          [result_dict[common.PRED_OFFSET_MAP_KEY], next_regression], axis=2)
       (concat_result_dict[common.PRED_PANOPTIC_KEY],
        concat_result_dict[common.PRED_SEMANTIC_KEY],
        concat_result_dict[common.PRED_INSTANCE_KEY],
@@ -247,20 +243,21 @@ class ViPDeepLab(tf.keras.Model):
           next_result_dict[common.PRED_OFFSET_MAP_KEY])
       result_dict[common.PRED_NEXT_PANOPTIC_KEY] = next_result_dict[
           common.PRED_PANOPTIC_KEY]
-      for result_key in [common.PRED_PANOPTIC_KEY,
-                         common.PRED_SEMANTIC_KEY,
-                         common.PRED_INSTANCE_KEY,
-                         common.PRED_INSTANCE_CENTER_KEY,
-                         common.PRED_INSTANCE_SCORES_KEY]:
+      for result_key in [
+          common.PRED_PANOPTIC_KEY, common.PRED_SEMANTIC_KEY,
+          common.PRED_INSTANCE_KEY, common.PRED_INSTANCE_CENTER_KEY,
+          common.PRED_INSTANCE_SCORES_KEY
+      ]:
         result_dict[result_key], next_result_dict[result_key] = tf.split(
             concat_result_dict[result_key], num_or_size_splits=2, axis=2)
       result_dict[common.PRED_CONCAT_NEXT_PANOPTIC_KEY] = next_result_dict[
           common.PRED_PANOPTIC_KEY]
       result_dict[common.PRED_NEXT_PANOPTIC_KEY] = tf.numpy_function(
           func=post_processing.vip_deeplab_stitch,
-          inp=[result_dict[common.PRED_CONCAT_NEXT_PANOPTIC_KEY],
-               result_dict[common.PRED_NEXT_PANOPTIC_KEY],
-               self._label_divisor],
+          inp=[
+              result_dict[common.PRED_CONCAT_NEXT_PANOPTIC_KEY],
+              result_dict[common.PRED_NEXT_PANOPTIC_KEY], self._label_divisor
+          ],
           Tout=tf.int32)
       result_dict[common.PRED_NEXT_PANOPTIC_KEY].set_shape(
           result_dict[common.PRED_CONCAT_NEXT_PANOPTIC_KEY].get_shape())
@@ -318,17 +315,18 @@ class ViPDeepLab(tf.keras.Model):
         result_dict[key] = utils.resize_and_rescale_offsets(
             value, [target_h, target_w])
       else:
-        result_dict[key] = utils.resize_bilinear(
-            value, [target_h, target_w])
+        result_dict[key] = utils.resize_bilinear(value, [target_h, target_w])
     return result_dict
 
   def _scale_images_and_pool_size(self, images, pool_size, scale):
-    """Scales images and pool_size w.r.t. scale.
+    """Scales images and pool_size w.r.t.
+
+    scale.
 
     Args:
       images: An input tensor with shape [batch, height, width, 3].
-      pool_size: A list with two elements, specifying the pooling size
-        of ASPP pooling layer.
+      pool_size: A list with two elements, specifying the pooling size of ASPP
+        pooling layer.
       scale: A float, used to scale the input images and pool_size.
 
     Returns:

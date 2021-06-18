@@ -123,6 +123,14 @@ def create_features(image_data,
   if image_format not in ('jpeg', 'png'):
     raise ValueError('Unsupported image format: %s' % image_format)
 
+  # Check color mode, and convert grey image to rgb image.
+  image = read_image(image_data)
+  if image.mode != 'RGB':
+    image = image.convert('RGB')
+    image_data = io.BytesIO()
+    image.save(image_data, format=image_format)
+    image_data = image_data.getvalue()
+
   height, width = get_image_dims(image_data, check_is_rgb=True)
 
   feature_dict = {

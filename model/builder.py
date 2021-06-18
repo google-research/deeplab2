@@ -83,9 +83,6 @@ def create_mobilenet_encoder(
   else:
     raise ValueError('The specified encoder %s is not a valid encoder.' %
                      backbone_options.name)
-  # TODO(lzyuan): support backbone_options.use_squeeze_and_excite,
-  # backbone_options.drop_path_keep_prob, backbone_options.drop_path_schedule
-  # in mobilenet.
   assert backbone_options.use_squeeze_and_excite
   assert backbone_options.drop_path_keep_prob == 1
   assert backbone_options.use_sac_beyond_stride == -1

@@ -26,10 +26,16 @@ from deeplab2.model.layers import dual_path_transformer
 from deeplab2.model.layers import positional_encodings
 from deeplab2.model.layers import recompute_grad as recompute_grad_lib
 
+# We will apply 10x larger learning rates on transformer layers. This global
+# variable name will be accessed when we build the optimizers. This keyword is
+# reserved and should not be a part of the variable names in a classification
+# pretrained backbone.
+TRANSFORMER = 'transformer'
+
 
 def _get_current_names(index):
   current_name = '_block{}'.format(index + 1)
-  transformer_current_name = '_block{}_transformer'.format(index + 1)
+  transformer_current_name = '_block{}_{}'.format(index + 1, TRANSFORMER)
   return current_name, transformer_current_name
 
 

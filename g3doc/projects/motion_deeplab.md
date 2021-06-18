@@ -33,8 +33,8 @@ for KITTI-STEP experiments. Please download them and update the
 
 Model | Download | Note |
 -------- | :-----------: | :---------------: |
-Panoptic-DeepLab | [initial_checkpoint](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_os32_panoptic_deeplab_cityscapes_crowd_trainfine.tar.gz) | The initial checkpoint for single-frame baseline.
-Motion-DeepLab | [initial_checkpoint](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_os32_panoptic_deeplab_cityscapes_crowd_trainfine_netsurgery_first_layer.tar.gz) | The initial checkpoint for two-frame baseline.
+Panoptic-DeepLab | [initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_os32_panoptic_deeplab_cityscapes_crowd_trainfine.tar.gz) | The initial checkpoint for single-frame baseline.
+Motion-DeepLab | [initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_os32_panoptic_deeplab_cityscapes_crowd_trainfine_netsurgery_first_layer.tar.gz) | The initial checkpoint for two-frame baseline.
 
 We also provide checkpoints pretrained on KITTI-STEP below. If
 you would like to train those models by yourself, please find the
@@ -47,8 +47,8 @@ or
 
 Backbone | Output stride | Dataset split | PQ&dagger; | AP<sup>Mask</sup>&dagger; | mIoU
 -------- | :-----------: | :---------------: | :---: | :---: | :---:
-ResNet-50 ([config](../../configs/kitti/panoptic_deeplab/resnet50_os32.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_os32_panoptic_deeplab_kitti_train.tar.gz)) | 32 | KITTI-STEP train set | 47.29 | 40.88 | 71.19
-ResNet-50 ([config](../../configs/kitti/panoptic_deeplab/resnet50_os32_trainval.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_os32_panoptic_deeplab_kitti_trainval.tar.gz))| 32 | KITTI-STEP trainval set | - | - | -
+ResNet-50 ([config](../../configs/kitti/panoptic_deeplab/resnet50_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_os32_panoptic_deeplab_kitti_train.tar.gz)) | 32 | KITTI-STEP train set | 47.29 | 40.88 | 71.19
+ResNet-50 ([config](../../configs/kitti/panoptic_deeplab/resnet50_os32_trainval.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_os32_panoptic_deeplab_kitti_trainval.tar.gz))| 32 | KITTI-STEP trainval set | - | - | -
 
 &dagger;: See Q4 in [FAQ](../faq.md).
 
@@ -60,8 +60,8 @@ from one frame to another, as shown in our STEP paper.
 
 Backbone | Output stride | Dataset split | PQ&dagger; | AP<sup>Mask</sup>&dagger; | mIoU | STQ
 -------- | :-----------: | :---------------: | :---: | :---: | :---: | :---:
-ResNet-50 ([config](../../configs/kitti/motion_deeplab/resnet50_os32.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_os32_motion_deeplab_kitti_train.tar.gz)) | 32 | KITTI-STEP train set | 42.08 | 37.52 | 63.15 | 57.7
-ResNet-50 ([config](../../configs/kitti/motion_deeplab/resnet50_os32_trainval.textproto), [ckpt](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_os32_motion_deeplab_kitti_trainval.tar.gz))| 32 | KITTI-STEP trainval set | - | - | - | -
+ResNet-50 ([config](../../configs/kitti/motion_deeplab/resnet50_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_os32_motion_deeplab_kitti_train.tar.gz)) | 32 | KITTI-STEP train set | 42.08 | 37.52 | 63.15 | 57.7
+ResNet-50 ([config](../../configs/kitti/motion_deeplab/resnet50_os32_trainval.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_os32_motion_deeplab_kitti_trainval.tar.gz))| 32 | KITTI-STEP trainval set | - | - | - | -
 
 &dagger;: See Q4 in [FAQ](../faq.md).
 
@@ -73,8 +73,8 @@ for MOTChallenge-STEP experiments. Please download them and update the
 
 Model | Download | Note |
 -------- | :-----------: | :---------------: |
-Panoptic-DeepLab | [initial_checkpoint](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_os32_panoptic_deeplab_cityscapes_crowd_trainfine_netsurgery_last_layer.tar.gz) | The initial checkpoint for single-frame baseline.
-Motion-DeepLab | [initial_checkpoint](http://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_os32_panoptic_deeplab_cityscapes_crowd_trainfine_netsurgery_first_and_last_layer.tar.gz) | The initial checkpoint for two-frame baseline.
+Panoptic-DeepLab | [initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_os32_panoptic_deeplab_cityscapes_crowd_trainfine_netsurgery_last_layer.tar.gz) | The initial checkpoint for single-frame baseline.
+Motion-DeepLab | [initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_os32_panoptic_deeplab_cityscapes_crowd_trainfine_netsurgery_first_and_last_layer.tar.gz) | The initial checkpoint for two-frame baseline.
 
 We also provide checkpoints pretrained on MOTChallenge-STEP below.
 If you would like to train those models by yourself, please find the

@@ -89,10 +89,12 @@ _CITYSCAPES_PANOPTIC = 'cityscapes_panoptic'
 _KITTI_STEP = 'kitti_step'
 _MOTCHALLENGE_STEP = 'motchallenge_step'
 _CITYSCAPES_DVPS = 'cityscapes_dvps'
+_COCO_PANOPTIC = 'coco_panoptic'
 
 # Colormap names.
 _CITYSCAPES_COLORMAP = 'cityscapes'
 _MOTCHALLENGE_COLORMAP = 'motchallenge'
+_COCO_COLORMAP = 'coco'
 
 
 # Named tuple to describe dataset properties.
@@ -200,12 +202,27 @@ CITYSCAPES_DVPS_INFORMATION = DatasetDescriptor(
     is_depth_dataset=True,
 )
 
+COCO_PANOPTIC_INFORMATION = DatasetDescriptor(
+    dataset_name=_COCO_PANOPTIC,
+    splits_to_sizes={'train': 118287,
+                     'val': 5000,
+                     'test': 40670},
+    num_classes=134,
+    ignore_label=0,
+    panoptic_label_divisor=256,
+    class_has_instances_list=tuple(range(1, 81)),
+    is_video_dataset=False,
+    colormap=_COCO_COLORMAP,
+    is_depth_dataset=False,
+)
+
 MAP_NAME_TO_DATASET_INFO = {
     _CITYSCAPES: CITYSCAPES_INFORMATION,
     _CITYSCAPES_PANOPTIC: CITYSCAPES_PANOPTIC_INFORMATION,
     _KITTI_STEP: KITTI_STEP_INFORMATION,
     _MOTCHALLENGE_STEP: MOTCHALLENGE_STEP_INFORMATION,
     _CITYSCAPES_DVPS: CITYSCAPES_DVPS_INFORMATION,
+    _COCO_PANOPTIC: COCO_PANOPTIC_INFORMATION,
 }
 
 MAP_NAMES = list(MAP_NAME_TO_DATASET_INFO.keys())

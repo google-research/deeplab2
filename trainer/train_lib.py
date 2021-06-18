@@ -62,7 +62,7 @@ def build_deeplab_model(
     batch_size: Optional[int] = None):
   """Builds DeepLab model with input crop size."""
   if isinstance(deeplab_model, motion_deeplab.MotionDeepLab) or isinstance(
-        deeplab_model, vip_deeplab.ViPDeepLab):
+      deeplab_model, vip_deeplab.ViPDeepLab):
     # Motion-DeepLab and ViP-DeepLab use the input differently despite that
     # the input_shape is the same: Motion-DeepLab uses two frames as one input,
     # while ViP-DeepLab splits the two frames first and passes them individually
