@@ -15,6 +15,7 @@
 
 """This file contains code to run a model."""
 
+import os
 from absl import app
 from absl import flags
 from absl import logging
@@ -33,8 +34,9 @@ flags.DEFINE_enum(
 flags.DEFINE_string(
     'model_dir',
     default=None,
-    help='The directory where the model and training/evaluation summaries'
-    'are stored.')
+    help='The base directory where the model and training/evaluation summaries'
+    'are stored. The path will be combined with the `experiment_name` defined '
+    'in the config file to create a folder under which all files are stored.')
 
 flags.DEFINE_string(
     'config_file',
@@ -65,7 +67,8 @@ def main(_):
     config = text_format.ParseLines(proto_file, config_pb2.ExperimentOptions())
 
   logging.info('Starting the experiment.')
-  train_lib.run_experiment(FLAGS.mode, config, FLAGS.model_dir, FLAGS.master,
+  combined_model_dir = os.path.join(FLAGS.model_dir, config.experiment_name)
+  train_lib.run_experiment(FLAGS.mode, config, combined_model_dir, FLAGS.master,
                            FLAGS.num_gpus)
 
 
