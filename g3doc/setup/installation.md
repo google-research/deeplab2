@@ -219,6 +219,8 @@ deeplab2/compile.sh gpu
 package. We therefore do not provide support for installing deeplab2 via conda
 at this stage.
 
+________________________________________________________________________________
+
 **Q2: How can I specify a specific nvcc to use a specific gcc version?**
 
 **A2:** At the moment, tensorflow requires a gcc version < 9. If your default
@@ -238,3 +240,30 @@ ${TF_CFLAGS[@]} -D GOOGLE_CUDA=1 -x cu -Xcompiler -fPIC -ccbin=/usr/bin/g++-7 \
 g++-7 -std=c++14 -shared -o ${OP_NAME}.so ${OP_NAME}.cc ${OP_NAME}_kernel.cc \
 ${OP_NAME}_kernel.cu.o ${TF_CFLAGS[@]} -fPIC -lcudart ${TF_LFLAGS[@]}
 ```
+
+________________________________________________________________________________
+
+**Q3: I got the following errors while compiling the efficient merging
+operation:**
+
+```
+fatal error: third_party/gpus/cuda/include/cuda_fp16.h: No such file or directory
+```
+
+**A3:** It sounds like that CUDA headers are not linked. To resolve this issue,
+you need to tell tensorflow where to find the CUDA headers:
+
+1.  Find the CUDA installation directory ${CUDA_DIR} which contains the
+    `include` folder (For example, `~/CUDA/gpus/cuda_11_0`).
+2.  Go to the directory where tensorflow package is installed. (You can find it
+    via `pip show tensorflow`.)
+3.  Then `cd` to `tensorflow/include/third_party/gpus/`. (If it doesn't exist,
+    create one.)
+4.  Symlink your CUDA include directory here:
+
+```
+ln -s ${CUDA_DIR} ./cuda
+```
+
+There have been similar issues and solutions discussed here:
+https://github.com/tensorflow/tensorflow/issues/31912#issuecomment-547475301
