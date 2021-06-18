@@ -69,6 +69,8 @@ message LossOptions {
   optional SingleLossOptions regression_loss = 3;
   // Set the loss options for the motion head.
   optional SingleLossOptions motion_loss = 4;
+  // Set the loss options for the next regression head.
+  optional SingleLossOptions next_regression_loss = 5;
 }
 
 // Configure the trainer options.

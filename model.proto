@@ -83,10 +83,13 @@ message InstanceOptions {
   optional HeadOptions center_head = 4;
   // Configure instance regression head.
   optional HeadOptions regression_head = 5;
+
+  // Configure next-frame instance regression head.
+  optional HeadOptions next_regression_head = 6;
 }
 
 // Configure the model options.
-// Next ID: 11
+// Next ID: 12
 message ModelOptions {
   // Configure model backbone.
   message BackboneOptions {
@@ -178,6 +181,7 @@ message ModelOptions {
     PanopticDeeplabOptions panoptic_deeplab = 5;
     MotionDeepLabOptions motion_deeplab = 7;
     MaXDeepLabOptions max_deeplab = 10;
+    PanopticDeeplabOptions vip_deeplab = 11;
   }
   // Set the checkpoint to load.
   optional string initial_checkpoint = 6;
