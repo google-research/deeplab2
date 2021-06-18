@@ -66,19 +66,15 @@ sequences are further split into training set (12 sequences) and validation set
 
 In the following, we provide a step-by-step walk through to prepare the data.
 
-1. Create the KITTI-STEP directory:
-    ```bash
-    mkdir ${KITTI_STEP_ROOT}/images
-    cd ${KITTI_STEP_ROOT}/images
-    ```
+1.  Create the KITTI-STEP directory: `bash mkdir ${KITTI_STEP_ROOT}/images cd
+    ${KITTI_STEP_ROOT}/images`
 
-2.  Download KITTI images from their [website](http://www.cvlibs.net/datasets/kitti/index.php) and unzip.
-    ```bash
-    wget ${KITTI_LINK}
-    unzip ${KITTI_IMAGES}.zip
-    ```
+2.  Download KITTI images from their
+    [website](http://www.cvlibs.net/datasets/kitti/index.php) and unzip. `bash
+    wget ${KITTI_LINK} unzip ${KITTI_IMAGES}.zip`
 
-3. To prepare the dataset for our scripts, we need to move and rename some directories:
+3.  To prepare the dataset for our scripts, we need to move and rename some
+    directories:
 
     ```bash
     mv testing/image_02/ test/
@@ -101,7 +97,8 @@ In the following, we provide a step-by-step walk through to prepare the data.
     rm -r training
     ```
 
-4.  Download groundtruth KITTI-STEP panoptic maps from [here](http://storage.googleapis.com/gresearch/tf-deeplab/data/kitti-step.tar.gz).
+4.  Download groundtruth KITTI-STEP panoptic maps from
+    [here](http://storage.googleapis.com/gresearch/tf-deeplab/data/kitti-step.tar.gz).
 
     ```bash
     # Goto ${KITTI_STEP_ROOT}
@@ -166,10 +163,10 @@ training and evaluation.
 Optionally, you can also specify with `--use_two_frames` to encode two
 consecutive frames into the tfrecord files.
 
-
 ## Citing KITTI-STEP
 
-If you find this dataset helpful in your research, please use the following BibTeX entry.
+If you find this dataset helpful in your research, please use the following
+BibTeX entry.
 
 ```
 @article{step_2021,
@@ -178,3 +175,4 @@ If you find this dataset helpful in your research, please use the following BibT
   journal={arXiv:2102.11859},
   year={2021}
 }
+```

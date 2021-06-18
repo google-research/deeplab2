@@ -45,7 +45,8 @@ We list a few projects that use DeepLab2.
 
 ## Running DeepLab2
 
-See [Getting Started](g3doc/setup/getting_started.md). In short, run the following command:
+See [Getting Started](g3doc/setup/getting_started.md). In short, run the
+following command:
 
 To run DeepLab2 on GPUs, the following command should be used:
 

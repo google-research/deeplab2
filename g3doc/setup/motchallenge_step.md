@@ -45,10 +45,10 @@ The groundtruth panoptic map is encoded in the same way as described in
 You should follow the same folder structure and run the command line script in
 [KITTI-STEP dataset](./kitti_step.md) to prepare MOTChallenge-STEP dataset.
 
-
 ## Citing MOTChallenge-STEP
 
-If you find this dataset helpful in your research, please use the following BibTeX entry.
+If you find this dataset helpful in your research, please use the following
+BibTeX entry.
 
 ```
 @article{step_2021,
@@ -57,3 +57,4 @@ If you find this dataset helpful in your research, please use the following BibT
   journal={arXiv:2102.11859},
   year={2021}
 }
+```
