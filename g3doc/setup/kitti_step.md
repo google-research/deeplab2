@@ -64,11 +64,54 @@ sequences for training and testing, respectively). Similarly, the training
 sequences are further split into training set (12 sequences) and validation set
 (9 sequences).
 
-To prepare the dataset, you need to:
+In the following, we provide a step-by-step walk through to prepare the data.
 
-1.  Download KITTI images from http://www.cvlibs.net/datasets/kitti/index.php
-2.  Download groundtruth KITTI-STEP panoptic maps from
-    http://storage.googleapis.com/gresearch/tf-deeplab/data/kitti-step.tar.gz
+1. Create the KITTI-STEP directory:
+    ```bash
+    mkdir ${KITTI_STEP_ROOT}/images
+    cd ${KITTI_STEP_ROOT}/images
+    ```
+
+2.  Download KITTI images from their [website](http://www.cvlibs.net/datasets/kitti/index.php) and unzip.
+    ```bash
+    wget ${KITTI_LINK}
+    unzip ${KITTI_IMAGES}.zip
+    ```
+
+3. To prepare the dataset for our scripts, we need to move and rename some directories:
+
+    ```bash
+    mv testing/image_02/ test/
+    rm -r testing/
+
+    # Move all validation sequences:
+    mkdir val
+    mv training/image_02/0002 val/
+    mv training/image_02/0006 val/
+    mv training/image_02/0007 val/
+    mv training/image_02/0008 val/
+    mv training/image_02/0010 val/
+    mv training/image_02/0013 val/
+    mv training/image_02/0014 val/
+    mv training/image_02/0016 val/
+    mv training/image_02/0018 val/
+
+    # Move training sequences
+    mv training/image_02/ train/
+    rm -r training
+    ```
+
+4.  Download groundtruth KITTI-STEP panoptic maps from [here](http://storage.googleapis.com/gresearch/tf-deeplab/data/kitti-step.tar.gz).
+
+    ```bash
+    # Goto ${KITTI_STEP_ROOT}
+    cd ..
+
+    wget http://storage.googleapis.com/gresearch/tf-deeplab/data/kitti-step.tar.gz
+    tar -xvf kitti-step.tar.gz
+    mv kitti-step/panoptic_maps panoptic_maps
+    rm -r kitti-step
+    ```
 
 The groundtruth panoptic map is encoded as follows in PNG format:
 
@@ -78,7 +121,7 @@ G = instance_id // 256
 B = instance % 256
 ```
 
-This section assumes you have the following folder structure:
+Following the above guide, your data structure should look like this:
 
 ```
 .(KITTI_STEP_ROOT)
@@ -122,3 +165,16 @@ training and evaluation.
 
 Optionally, you can also specify with `--use_two_frames` to encode two
 consecutive frames into the tfrecord files.
+
+
+## Citing KITTI-STEP
+
+If you find this dataset helpful in your research, please use the following BibTeX entry.
+
+```
+@article{step_2021,
+  author={Mark Weber and Jun Xie and Maxwell Collins and Yukun Zhu and Paul Voigtlaender and Hartwig Adam and Bradley Green and Andreas Geiger and Bastian Leibe and Daniel Cremers and Aljosa Osep and Laura Leal-Taixe and Liang-Chieh Chen},
+  title={{STEP}: Segmenting and Tracking Every Pixel},
+  journal={arXiv:2102.11859},
+  year={2021}
+}

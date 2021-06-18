@@ -44,3 +44,16 @@ The groundtruth panoptic map is encoded in the same way as described in
 
 You should follow the same folder structure and run the command line script in
 [KITTI-STEP dataset](./kitti_step.md) to prepare MOTChallenge-STEP dataset.
+
+
+## Citing MOTChallenge-STEP
+
+If you find this dataset helpful in your research, please use the following BibTeX entry.
+
+```
+@article{step_2021,
+  author={Mark Weber and Jun Xie and Maxwell Collins and Yukun Zhu and Paul Voigtlaender and Hartwig Adam and Bradley Green and Andreas Geiger and Bastian Leibe and Daniel Cremers and Aljosa Osep and Laura Leal-Taixe and Liang-Chieh Chen},
+  title={{STEP}: Segmenting and Tracking Every Pixel},
+  journal={arXiv:2102.11859},
+  year={2021}
+}
