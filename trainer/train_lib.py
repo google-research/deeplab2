@@ -87,7 +87,8 @@ def run_experiment(mode: Text, config: config_pb2.ExperimentOptions,
     config: A config_pb2.ExperimentOptions configuration.
     model_dir: A path to store all checkpoints and other experimental artifacts.
     tpu: The name or address of the tpu to connect to, if any.
-    num_gpus: An integer specifying the number of GPUs to use.
+    num_gpus: An integer specifying the number of GPUs to use. If mode contains 
+      `eval`, num_gpus must be less or equal to 1.
 
   Raises:
     ValueError: If mode is none of `train`, `train_and_eval`, `eval`, or
@@ -96,6 +97,8 @@ def run_experiment(mode: Text, config: config_pb2.ExperimentOptions,
       specified for training and evaluation. This error could be relaxed for
       applications like domain transferring learning (e.g., synthetic to real
       datasets), which has not been fully tested yet.
+    ValueError: If mode includes `eval` and num_gpus > 1. Currently, evaluation
+      is not supported on more than a single GPU.
   """
   strategy = distribution_utils.create_strategy(tpu, num_gpus)
   logging.info('Using strategy %s with %d replicas', type(strategy),
@@ -106,6 +109,9 @@ def run_experiment(mode: Text, config: config_pb2.ExperimentOptions,
     if (mode == 'train_and_eval' and
         dataset_name != config.train_dataset_options.dataset):
       raise ValueError('Using difference dataset_names in train_and_eval mode.')
+    if num_gpus > 1:
+      raise ValueError(
+        'Using more than one GPU for evaluation is not supported.')
   else:
     dataset_name = config.train_dataset_options.dataset
 
