@@ -117,7 +117,7 @@ results, please use the following BibTeX entry.
 * STEP (Motion-DeepLab):
 
 ```
-@article{motion_deeplab_2021,
+@article{step_2021,
   author={Mark Weber and Jun Xie and Maxwell Collins and Yukun Zhu and Paul Voigtlaender and Hartwig Adam and Bradley Green and Andreas Geiger and Bastian Leibe and Daniel Cremers and Aljosa Osep and Laura Leal-Taixe and Liang-Chieh Chen},
   title={{STEP}: Segmenting and Tracking Every Pixel},
   journal={arXiv:2102.11859},

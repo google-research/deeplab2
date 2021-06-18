@@ -43,6 +43,20 @@ We list a few projects that use DeepLab2.
 
 *   <a href='https://colab.research.google.com/github/google-research/deeplab2/blob/main/DeepLab_Demo.ipynb'>Colab notebook for off-the-shelf inference.</a><br>
 
+## Running DeepLab2
+
+See [Getting Started](g3doc/setup/getting_started.md). In short, run the following command:
+
+To run DeepLab2 on GPUs, the following command should be used:
+
+```bash
+python training/train.py \
+    --config_file=${CONFIG_FILE} \
+    --mode={train | eval | train_and_eval | continuous_eval} \
+    --model_dir=${BASE_MODEL_DIRECTORY} \
+    --num_gpus=${NUM_GPUS}
+```
+
 ## Change logs
 
 See [Change logs](g3doc/change_logs.md) for recent updates.
