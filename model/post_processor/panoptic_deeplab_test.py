@@ -13,11 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Test for post_processing.py."""
+"""Test for panoptic_deeplab.py."""
 import numpy as np
 import tensorflow as tf
 
-from deeplab2.model import post_processing
+from deeplab2.model.post_processor import panoptic_deeplab
 
 
 class PostProcessingTest(tf.test.TestCase):
@@ -38,7 +38,7 @@ class PostProcessingTest(tf.test.TestCase):
     label_divisor = 256
     stuff_area_limit = 3
     void_label = 255
-    panoptic_prediction = post_processing._merge_semantic_and_instance_maps(
+    panoptic_prediction = panoptic_deeplab._merge_semantic_and_instance_maps(
         semantic_prediction, instance_maps, thing_class_ids, label_divisor,
         stuff_area_limit, void_label)
     self.assertListEqual(semantic_prediction.get_shape().as_list(),
@@ -72,7 +72,7 @@ class PostProcessingTest(tf.test.TestCase):
           [0, 2 * label_divisor + 1, 2 * label_divisor + 1, 0],
           [2 * label_divisor + 2, 2 * label_divisor + 2, 3 * label_divisor + 1,
            3 * label_divisor + 1]]], dtype=tf.int32)
-    panoptic_prediction = post_processing._merge_semantic_and_instance_maps(
+    panoptic_prediction = panoptic_deeplab._merge_semantic_and_instance_maps(
         semantic_prediction, instance_maps, thing_class_ids, label_divisor,
         stuff_area_limit, void_label)
     np.testing.assert_equal(expected_panoptic_prediction.numpy(),
@@ -108,7 +108,7 @@ class PostProcessingTest(tf.test.TestCase):
     keep_k_centers = 2
     merge_semantic_and_instance_with_tf_op = True
 
-    result = post_processing.get_panoptic_predictions(
+    result = panoptic_deeplab._get_panoptic_predictions(
         semantic_logits, center_heatmap, center_offsets, center_threshold,
         thing_class_ids, label_divisor, stuff_area_limit, void_label,
         nms_kernel_size, keep_k_centers, merge_semantic_and_instance_with_tf_op)

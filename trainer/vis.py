@@ -21,6 +21,7 @@ import numpy as np
 import tensorflow as tf
 
 from deeplab2 import common
+from deeplab2.data import coco_constants
 from deeplab2.data import dataset
 from deeplab2.trainer import vis_utils
 
@@ -45,6 +46,7 @@ _ANALYSIS_FORMAT = '%06d_semantic_error'
 _CITYSCAPES_TRAIN_ID_TO_EVAL_ID = (
     7, 8, 11, 12, 13, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 31, 32, 33, 0
 )
+_COCO_TRAIN_ID_TO_EVAL_ID = coco_constants.get_id_mapping_inverse()
 
 
 def _crop_like(tensor_to_crop: np.ndarray,
@@ -53,8 +55,8 @@ def _crop_like(tensor_to_crop: np.ndarray,
   return tensor_to_crop[:h, :w, ...]
 
 
-def _convert_cityscapes_train_id_to_eval_id(
-    prediction: np.ndarray) -> np.ndarray:
+def _convert_train_id_to_eval_id(
+    prediction: np.ndarray, dataset_name: str) -> np.ndarray:
   """Converts the predicted label for evaluation.
 
   There are cases where the training labels are not equal to the evaluation
@@ -63,15 +65,27 @@ def _convert_cityscapes_train_id_to_eval_id(
 
   Args:
     prediction: Semantic segmentation prediction.
+    dataset_name: Dataset name.
 
   Returns:
     Semantic segmentation prediction whose labels have been changed.
+
+  Raises:
+    ValueError: If the dataset is not supported.
   """
-  length = np.maximum(256, len(_CITYSCAPES_TRAIN_ID_TO_EVAL_ID))
+  if 'cityscapes' in dataset_name:
+    train_id_to_eval_id = _CITYSCAPES_TRAIN_ID_TO_EVAL_ID
+  elif 'coco' in dataset_name:
+    train_id_to_eval_id = _COCO_TRAIN_ID_TO_EVAL_ID
+  else:
+    raise ValueError(
+        'Unsupported dataset %s for converting semantic class IDs.' %
+        dataset_name)
+  length = np.maximum(256, len(train_id_to_eval_id))
   to_eval_id_map = np.zeros((length), dtype=prediction.dtype)
-  cityscapes_ids = np.asarray(
-      _CITYSCAPES_TRAIN_ID_TO_EVAL_ID, dtype=prediction.dtype)
-  to_eval_id_map[:len(_CITYSCAPES_TRAIN_ID_TO_EVAL_ID)] = cityscapes_ids
+  dataset_ids = np.asarray(
+      train_id_to_eval_id, dtype=prediction.dtype)
+  to_eval_id_map[:len(train_id_to_eval_id)] = dataset_ids
   return to_eval_id_map[prediction]
 
 
@@ -132,7 +146,6 @@ def store_raw_predictions(predictions: Dict[str, Any],
     ValueError: An error occurs when semantic label or instance ID is larger
       than the values supported by the 'two_channel_png' or 'three_channel_png'
       format. Or, if the raw_panoptic_format is not supported.
-    ValueError: If convert_to_eval is True, but the dataset is not supported.
   """
   # Note: predictions[key] contains a tuple of length 1.
   predictions = {key: predictions[key][0] for key in predictions}
@@ -143,13 +156,8 @@ def store_raw_predictions(predictions: Dict[str, Any],
   # Store raw semantic prediction.
   semantic_prediction = predictions[common.PRED_SEMANTIC_KEY]
   if convert_to_eval:
-    if 'cityscapes' in dataset_info.dataset_name:
-      semantic_prediction = _convert_cityscapes_train_id_to_eval_id(
-          semantic_prediction)
-    else:
-      raise ValueError(
-          'Unsupported dataset %s for converting semantic class IDs.' %
-          dataset_info.dataset_name)
+    semantic_prediction = _convert_train_id_to_eval_id(
+        semantic_prediction, dataset_info.dataset_name)
   output_folder = os.path.join(save_dir, 'raw_semantic')
   if dataset_info.is_video_dataset:
     sequence = sequence.numpy().decode('utf-8')
@@ -172,8 +180,8 @@ def store_raw_predictions(predictions: Dict[str, Any],
     predicted_semantic_labels = (
         panoptic_prediction // dataset_info.panoptic_label_divisor)
     if convert_to_eval:
-      predicted_semantic_labels = _convert_cityscapes_train_id_to_eval_id(
-          predicted_semantic_labels)
+      predicted_semantic_labels = _convert_train_id_to_eval_id(
+          predicted_semantic_labels, dataset_info.dataset_name)
     predicted_instance_labels = predictions[
         common.PRED_PANOPTIC_KEY] % dataset_info.panoptic_label_divisor
 
@@ -258,7 +266,7 @@ def store_predictions(predictions: Dict[str, Any], inputs: Dict[str, Any],
       add_colormap=True,
       colormap_name=colormap_name)
 
-  if common.PRED_PANOPTIC_KEY in predictions:
+  if common.PRED_CENTER_HEATMAP_KEY in predictions:
     # 3. Save center heatmap.
     vis_utils.save_annotation(
         vis_utils.overlay_heatmap_on_image(
@@ -275,6 +283,7 @@ def store_predictions(predictions: Dict[str, Any], inputs: Dict[str, Any],
         _CENTER_LABEL_FORMAT % image_id,
         add_colormap=False)
 
+  if common.PRED_OFFSET_MAP_KEY in predictions:
     # 4. Save center offsets.
     center_offset_prediction = _crop_like(
         predictions[common.PRED_OFFSET_MAP_KEY],
@@ -300,6 +309,7 @@ def store_predictions(predictions: Dict[str, Any], inputs: Dict[str, Any],
         _OFFSET_LABEL_FORMAT % image_id,
         add_colormap=False)
 
+  if common.PRED_INSTANCE_KEY in predictions:
     # 5. Save instance map.
     vis_utils.save_annotation(
         vis_utils.create_rgb_from_instance_map(
@@ -308,6 +318,7 @@ def store_predictions(predictions: Dict[str, Any], inputs: Dict[str, Any],
         _INSTANCE_PREDICTION_FORMAT % image_id,
         add_colormap=False)
 
+  if common.PRED_PANOPTIC_KEY in predictions:
     # 6. Save panoptic segmentation.
     vis_utils.save_parsing_result(
         predictions[common.PRED_PANOPTIC_KEY],

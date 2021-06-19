@@ -33,8 +33,7 @@ def _create_deeplabv3_model(feature_key, decoder_channels, aspp_channels,
       atrous_rates=atrous_rates)
   deeplabv3_options = config_pb2.ModelOptions.DeeplabV3Options(
       num_classes=num_classes)
-  return deeplabv3.DeepLabV3Decoder(decoder_options, deeplabv3_options,
-                                    **kwargs)
+  return deeplabv3.DeepLabV3(decoder_options, deeplabv3_options, **kwargs)
 
 
 class Deeplabv3Test(tf.test.TestCase):

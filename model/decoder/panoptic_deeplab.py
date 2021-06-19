@@ -260,7 +260,7 @@ class PanopticDeepLabSingleHead(layers.Layer):
     return {self._pred_key: self.final_conv(x)}
 
 
-class PanopticDeepLabDecoder(layers.Layer):
+class PanopticDeepLab(layers.Layer):
   """A Panoptic-DeepLab decoder layer.
 
   This layer takes low- and high-level features as input and uses a dual-ASPP
@@ -283,7 +283,7 @@ class PanopticDeepLabDecoder(layers.Layer):
       bn_layer: An optional tf.keras.layers.Layer that computes the
         normalization (default: tf.keras.layers.BatchNormalization).
     """
-    super(PanopticDeepLabDecoder, self).__init__(name='PanopticDeepLab')
+    super(PanopticDeepLab, self).__init__(name='PanopticDeepLab')
 
     low_level_feature_keys = [
         item.feature_key for item in panoptic_deeplab_options.low_level

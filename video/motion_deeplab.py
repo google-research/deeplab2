@@ -25,8 +25,9 @@ from deeplab2 import common
 from deeplab2 import config_pb2
 from deeplab2.data import dataset
 from deeplab2.model import builder
-from deeplab2.model import post_processing
 from deeplab2.model import utils
+from deeplab2.model.post_processor import motion_deeplab
+from deeplab2.model.post_processor import post_processor_builder
 
 
 class MotionDeepLab(tf.keras.Model):
@@ -66,7 +67,8 @@ class MotionDeepLab(tf.keras.Model):
         conv_kernel_weight_decay=(
             config.trainer_options.solver_options.weight_decay))
 
-    self._decoder = builder.create_decoder(config.model_options, bn_layer)
+    self._decoder = builder.create_decoder(config.model_options, bn_layer,
+                                           dataset_descriptor.ignore_label)
 
     self._prev_center_prediction = tf.Variable(
         0.0,
@@ -88,26 +90,15 @@ class MotionDeepLab(tf.keras.Model):
         dtype=tf.int32,
         name='next+_tracking_id')
 
-    self._post_processing_fn = functools.partial(
-        post_processing.get_panoptic_predictions,
-        center_threshold=config.evaluator_options.center_score_threshold,
-        thing_class_ids=tf.convert_to_tensor(
-            dataset_descriptor.class_has_instances_list),
-        label_divisor=dataset_descriptor.panoptic_label_divisor,
-        stuff_area_limit=config.evaluator_options.stuff_area_limit,
-        void_label=dataset_descriptor.ignore_label,
-        nms_kernel_size=config.evaluator_options.nms_kernel,
-        keep_k_centers=config.evaluator_options.keep_k_centers,
-        merge_semantic_and_instance_with_tf_op=(
-            config.evaluator_options.merge_semantic_and_instance_with_tf_op),
-    )
+    self._post_processor = post_processor_builder.get_post_processor(
+        config, dataset_descriptor)
     self._render_fn = functools.partial(
-        post_processing.render_panoptic_map_as_heatmap,
+        motion_deeplab.render_panoptic_map_as_heatmap,
         sigma=8,
         label_divisor=dataset_descriptor.panoptic_label_divisor,
         void_label=dataset_descriptor.ignore_label)
     self._track_fn = functools.partial(
-        post_processing.assign_instances_to_previous_tracks,
+        motion_deeplab.assign_instances_to_previous_tracks,
         label_divisor=dataset_descriptor.panoptic_label_divisor)
     # The ASPP pooling size is always set to train crop size, which is found to
     # be experimentally better.
@@ -161,15 +152,7 @@ class MotionDeepLab(tf.keras.Model):
     result_dict[common.PRED_SEMANTIC_PROBS_KEY] = tf.nn.softmax(
         result_dict[common.PRED_SEMANTIC_LOGITS_KEY])
     if not training:
-      (result_dict[common.PRED_PANOPTIC_KEY],
-       result_dict[common.PRED_SEMANTIC_KEY],
-       result_dict[common.PRED_INSTANCE_KEY],
-       result_dict[common.PRED_INSTANCE_CENTER_KEY],
-       result_dict[common.PRED_INSTANCE_SCORES_KEY]
-      ) = self._post_processing_fn(
-          result_dict[common.PRED_SEMANTIC_PROBS_KEY],
-          result_dict[common.PRED_CENTER_HEATMAP_KEY],
-          result_dict[common.PRED_OFFSET_MAP_KEY])
+      result_dict.update(self._post_processor(result_dict))
 
       next_heatmap, next_centers = self._render_fn(
           result_dict[common.PRED_PANOPTIC_KEY])

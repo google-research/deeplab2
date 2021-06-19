@@ -177,5 +177,25 @@ class UtilsTest(tf.test.TestCase):
     output_3 = utils.pad_sequence_with_none(sequence, target_length=3)
     self.assertEqual(output_3, [1, 2, None])
 
+  def test_strided_downsample(self):
+    inputs = tf.zeros([2, 11, 11])
+    output = utils.strided_downsample(inputs, target_size=[6, 6])
+    self.assertEqual(output.get_shape().as_list(), [2, 6, 6])
+
+  def test_get_stuff_class_ids(self):
+    # num_thing_stuff_classes does not include `void` class.
+    num_thing_stuff_classes = 5
+    thing_class_ids = [3, 4]
+    void_label_list = [5, 0]
+    expected_stuff_class_ids_list = [
+        [0, 1, 2], [1, 2, 5]
+    ]
+    for void_label, expected_stuff_class_ids in zip(
+        void_label_list, expected_stuff_class_ids_list):
+      stuff_class_ids = utils.get_stuff_class_ids(
+          num_thing_stuff_classes, thing_class_ids, void_label)
+      np.testing.assert_equal(stuff_class_ids,
+                              expected_stuff_class_ids)
+
 if __name__ == '__main__':
   tf.test.main()

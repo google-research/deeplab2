@@ -38,9 +38,8 @@ def _create_deeplabv3plus_model(high_level_feature_name, low_level_feature_name,
           feature_key=low_level_feature_name,
           channels_project=low_level_channels_project),
       num_classes=num_classes)
-  return deeplabv3plus.DeepLabV3PlusDecoder(decoder_options,
-                                            deeplabv3plus_options,
-                                            **kwargs)
+  return deeplabv3plus.DeepLabV3Plus(decoder_options, deeplabv3plus_options,
+                                     **kwargs)
 
 
 class Deeplabv3PlusTest(tf.test.TestCase):

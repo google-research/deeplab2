@@ -21,8 +21,8 @@ import tensorflow as tf
 
 from deeplab2 import common
 from deeplab2 import config_pb2
+from deeplab2.model import utils
 from deeplab2.trainer import runner_utils
-from deeplab2.video import motion_deeplab
 
 
 class WarmUp(tf.keras.optimizers.schedules.LearningRateSchedule):
@@ -63,11 +63,14 @@ class WarmUp(tf.keras.optimizers.schedules.LearningRateSchedule):
 
 
 def _create_optimizer(
-    solver_config: config_pb2.SolverOptions) -> tf.keras.optimizers.Optimizer:
+    solver_config: config_pb2.SolverOptions,
+    learning_rate_multiplier: float = 1.0) -> tf.keras.optimizers.Optimizer:
   """Creates an Optimizer based on the configuration.
 
   Args:
     solver_config: A trainer_pb2.SolverOptions configuration.
+    learning_rate_multiplier: A float, the learning rate multiplier applied on
+      top of the base learning rate. Default to 1.0.
 
   Returns:
     A tf.keras.optimizer.Optimizer.
@@ -76,16 +79,17 @@ def _create_optimizer(
     ValueError: An error occurs when the desired optimizer or learning rate
       scheduler is not supported.
   """
+  learning_rate = (solver_config.base_learning_rate * learning_rate_multiplier)
   if solver_config.learning_policy == 'poly':
     lr_scheduler = tf.keras.optimizers.schedules.PolynomialDecay(
-        initial_learning_rate=solver_config.base_learning_rate,
+        initial_learning_rate=learning_rate,
         decay_steps=solver_config.training_number_of_steps,
         end_learning_rate=solver_config.poly_end_learning_rate,
         power=solver_config.poly_learning_power,
         cycle=False)
   elif solver_config.learning_policy == 'cosine':
     lr_scheduler = tf.keras.experimental.CosineDecay(
-        initial_learning_rate=solver_config.base_learning_rate,
+        initial_learning_rate=learning_rate,
         decay_steps=solver_config.training_number_of_steps,
         alpha=0.0)
   else:
@@ -94,7 +98,7 @@ def _create_optimizer(
 
   if solver_config.warmup_steps:
     lr_scheduler = WarmUp(
-        initial_learning_rate=solver_config.base_learning_rate,
+        initial_learning_rate=learning_rate,
         decay_schedule_fn=lr_scheduler,
         warmup_steps=solver_config.warmup_steps,
         name='linear_warmup')
@@ -124,11 +128,13 @@ class Trainer(orbit.StandardTrainer):
       global_step: A tf.Variable that records the global training step.
     """
     self._strategy = tf.distribute.get_strategy()
-    enable_instance = config.model_options.panoptic_deeplab.instance.enable
+
+    support_panoptic = (common.TASK_PANOPTIC_SEGMENTATION in
+                        utils.get_supported_tasks(config))
     train_dataset = runner_utils.create_dataset(
         config.train_dataset_options,
         is_training=True,
-        only_semantic_annotations=not enable_instance)
+        only_semantic_annotations=not support_panoptic)
     train_dataset = orbit.utils.make_distributed_dataset(
         self.strategy, train_dataset)
     super(Trainer, self).__init__(train_dataset)
@@ -137,15 +143,17 @@ class Trainer(orbit.StandardTrainer):
     self._model = model
     self._loss = loss
 
-    self._optimizer = _create_optimizer(config.trainer_options.solver_options)
+    solver_options = config.trainer_options.solver_options
+    self._optimizer = _create_optimizer(solver_options)
+    self._backbone_optimizer = None
+    if solver_options.HasField('backbone_learning_rate_multiplier'):
+      self._backbone_optimizer = _create_optimizer(
+          solver_options, learning_rate_multiplier=(
+              solver_options.backbone_learning_rate_multiplier))
+
     self._global_step = global_step
-    self._use_gradient_clipping = (
-        config.trainer_options.solver_options.use_gradient_clipping
-        )
-    self._clip_gradient_norm = (
-        config.trainer_options.solver_options.clip_gradient_norm
-        )
-    self._has_motion_loss = isinstance(model, motion_deeplab.MotionDeepLab)
+    self._use_gradient_clipping = solver_options.use_gradient_clipping
+    self._clip_gradient_norm = solver_options.clip_gradient_norm
 
     self._train_loss_metric_dict = runner_utils.create_loss_metric_dict(
         loss.get_loss_names(), prefix='train_')
@@ -157,6 +165,38 @@ class Trainer(orbit.StandardTrainer):
     """
     for metric in self._train_loss_metric_dict.values():
       metric.reset_states()
+
+  def _apply_gradients_to_optimizers(self, gradients_and_variables):
+    """Applies gradients to their optimizers.
+
+    This function divides all trainable variables (and their gradients) into
+    two groups. One group contains backbone variables that have been pretrained,
+    e.g., on ImageNet classification. The other group contains all other
+    variables that are added specifically for the dense prediction task, e.g.,
+    panoptic segmentation. Then, we apply two optimizers, optionally with two
+    learning rates, to the variables and gradients.
+
+    Args:
+      gradients_and_variables: A list of tuple of (gradient, variable) tensors.
+    """
+    if self._backbone_optimizer is None:
+      self._optimizer.apply_gradients(gradients_and_variables)
+    else:
+      optimizer_inputs = []
+      backbone_optimizer_inputs = []
+
+      encoder = self._model.checkpoint_items['encoder']
+      encoder_variable_names = [x.name for x in encoder.trainable_variables]
+      encoder_name = self._config.model_options.backbone.name
+
+      for gradient, variable in gradients_and_variables:
+        if runner_utils.check_if_variable_in_backbone(variable, encoder_name,
+                                                      encoder_variable_names):
+          backbone_optimizer_inputs.append((gradient, variable))
+        else:
+          optimizer_inputs.append((gradient, variable))
+      self._optimizer.apply_gradients(optimizer_inputs)
+      self._backbone_optimizer.apply_gradients(backbone_optimizer_inputs)
 
   def train_step(self, iterator):
     """Implements one step of training.
@@ -204,7 +244,8 @@ class Trainer(orbit.StandardTrainer):
     # Apply gradient clipping.
     if self._clip_gradient_norm > 0.0 and self._use_gradient_clipping:
       gradients, _ = tf.clip_by_global_norm(gradients, self._clip_gradient_norm)
-    self._optimizer.apply_gradients(list(zip(gradients, training_vars)))
+
+    self._apply_gradients_to_optimizers(list(zip(gradients, training_vars)))
 
     for name, value in average_loss_dict.items():
       self._train_loss_metric_dict[name].update_state(value)
@@ -233,6 +274,10 @@ class Trainer(orbit.StandardTrainer):
   @property
   def optimizer(self):
     return self._optimizer
+
+  @property
+  def backbone_optimizer(self):
+    return self._backbone_optimizer
 
   @property
   def strategy(self):

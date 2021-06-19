@@ -117,6 +117,8 @@ def run_experiment(mode: Text, config: config_pb2.ExperimentOptions,
 
   num_classes = dataset.MAP_NAME_TO_DATASET_INFO[dataset_name].num_classes
   ignore_label = dataset.MAP_NAME_TO_DATASET_INFO[dataset_name].ignore_label
+  class_has_instances_list = (
+      dataset.MAP_NAME_TO_DATASET_INFO[dataset_name].class_has_instances_list)
 
   trainer = None
   evaluator = None
@@ -124,7 +126,8 @@ def run_experiment(mode: Text, config: config_pb2.ExperimentOptions,
     deeplab_model = create_deeplab_model(
         config, dataset.MAP_NAME_TO_DATASET_INFO[dataset_name])
     losses = loss_builder.DeepLabFamilyLoss(config.trainer_options.loss_options,
-                                            num_classes, ignore_label)
+                                            num_classes, ignore_label,
+                                            class_has_instances_list)
     global_step = orbit.utils.create_global_step()
     if 'train' in mode:
       trainer = trainer_lib.Trainer(config, deeplab_model, losses, global_step)
@@ -136,6 +139,8 @@ def run_experiment(mode: Text, config: config_pb2.ExperimentOptions,
   checkpoint_dict.update(deeplab_model.checkpoint_items)
   if trainer is not None:
     checkpoint_dict['optimizer'] = trainer.optimizer
+    if trainer.backbone_optimizer is not None:
+      checkpoint_dict['backbone_optimizer'] = trainer.backbone_optimizer
   checkpoint = tf.train.Checkpoint(**checkpoint_dict)
 
   # Define items to load from initial checkpoint.

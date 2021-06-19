@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This file contains code to build a DeepLabV3Decoder.
+"""This file contains code to build a DeepLabV3.
 
 Reference:
   - [Rethinking Atrous Convolution for Semantic Image Segmentation](
@@ -29,8 +29,8 @@ from deeplab2.model.layers import convolutions
 layers = tf.keras.layers
 
 
-class DeepLabV3Decoder(layers.Layer):
-  """A DeepLabV3Decoder model.
+class DeepLabV3(layers.Layer):
+  """A DeepLabV3 model.
 
   This model takes in features from an encoder and performs multi-scale context
   aggregation with the help of an ASPP layer. Finally, a classification head is
@@ -50,7 +50,7 @@ class DeepLabV3Decoder(layers.Layer):
       bn_layer: An optional tf.keras.layers.Layer that computes the
         normalization (default: tf.keras.layers.BatchNormalization).
     """
-    super(DeepLabV3Decoder, self).__init__(name='DeepLabV3')
+    super(DeepLabV3, self).__init__(name='DeepLabV3')
 
     self._feature_name = decoder_options.feature_key
     self._aspp = aspp.ASPP(decoder_options.aspp_channels,

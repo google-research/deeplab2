@@ -20,6 +20,8 @@ import numpy as np
 import PIL
 import tensorflow as tf
 
+from deeplab2.data import coco_constants
+
 # Amount of color perturbation added to colormap.
 _COLOR_PERTURBATION = 60
 
@@ -373,6 +375,20 @@ def create_motchallenge_label_colormap():
   return colormap
 
 
+def create_coco_label_colormap():
+  """Creates a label colormap used in COCO dataset.
+
+  Returns:
+    A colormap for visualizing segmentation results.
+  """
+  # Obtain the dictionary mapping original category id to contiguous ones.
+  coco_categories = coco_constants.get_coco_reduced_meta()
+  colormap = np.zeros((256, 3), dtype=np.uint8)
+  for category in coco_categories:
+    colormap[category['id']] = category['color']
+  return colormap
+
+
 def label_to_color_image(label, colormap_name='cityscapes'):
   """Adds color defined by the colormap derived from the dataset to the label.
 
@@ -402,6 +418,8 @@ def label_to_color_image(label, colormap_name='cityscapes'):
     colormap = create_cityscapes_label_colormap()
   elif colormap_name == 'motchallenge':
     colormap = create_motchallenge_label_colormap()
+  elif colormap_name == 'coco':
+    colormap = create_coco_label_colormap()
   else:
     raise ValueError('Could not find a colormap for dataset %s.' %
                      colormap_name)
@@ -467,6 +485,8 @@ def save_parsing_result(parsing_result,
     colormap = create_cityscapes_label_colormap()
   elif colormap_name == 'motchallenge':
     colormap = create_motchallenge_label_colormap()
+  elif colormap_name == 'coco':
+    colormap = create_coco_label_colormap()
   else:
     raise ValueError('Could not find a colormap for dataset %s.' %
                      colormap_name)

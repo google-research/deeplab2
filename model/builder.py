@@ -19,6 +19,7 @@ import tensorflow as tf
 from deeplab2 import config_pb2
 from deeplab2.model.decoder import deeplabv3
 from deeplab2.model.decoder import deeplabv3plus
+from deeplab2.model.decoder import max_deeplab
 from deeplab2.model.decoder import motion_deeplab_decoder
 from deeplab2.model.decoder import panoptic_deeplab
 from deeplab2.model.decoder import vip_deeplab_decoder
@@ -125,12 +126,14 @@ def create_resnet_encoder(
 
 
 def create_decoder(model_options: config_pb2.ModelOptions,
-                   bn_layer: tf.keras.layers.Layer) -> tf.keras.Model:
+                   bn_layer: tf.keras.layers.Layer,
+                   ignore_label: int) -> tf.keras.Model:
   """Creates a DeepLab decoder.
 
   Args:
     model_options: A proto config of type config_pb2.ModelOptions.
     bn_layer: A tf.keras.layers.Layer that computes the normalization.
+    ignore_label: An integer specifying the ignore label.
 
   Returns:
     An instance of tf.keras.layers.Layer containing the decoder.
@@ -141,13 +144,13 @@ def create_decoder(model_options: config_pb2.ModelOptions,
   """
   meta_architecture = model_options.WhichOneof('meta_architecture')
   if meta_architecture == 'deeplab_v3':
-    return deeplabv3.DeepLabV3Decoder(
+    return deeplabv3.DeepLabV3(
         model_options.decoder, model_options.deeplab_v3, bn_layer=bn_layer)
   elif meta_architecture == 'deeplab_v3_plus':
-    return deeplabv3plus.DeepLabV3PlusDecoder(
+    return deeplabv3plus.DeepLabV3Plus(
         model_options.decoder, model_options.deeplab_v3_plus, bn_layer=bn_layer)
   elif meta_architecture == 'panoptic_deeplab':
-    return panoptic_deeplab.PanopticDeepLabDecoder(
+    return panoptic_deeplab.PanopticDeepLab(
         model_options.decoder,
         model_options.panoptic_deeplab,
         bn_layer=bn_layer)
@@ -160,6 +163,12 @@ def create_decoder(model_options: config_pb2.ModelOptions,
     return vip_deeplab_decoder.ViPDeepLabDecoder(
         model_options.decoder,
         model_options.vip_deeplab,
+        bn_layer=bn_layer)
+  elif meta_architecture == 'max_deeplab':
+    return max_deeplab.MaXDeepLab(
+        model_options.decoder,
+        model_options.max_deeplab,
+        ignore_label=ignore_label,
         bn_layer=bn_layer)
   raise ValueError('The specified meta architecture %s is not implemented.' %
                    meta_architecture)

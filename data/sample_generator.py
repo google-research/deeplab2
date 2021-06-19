@@ -285,10 +285,13 @@ class PanopticSampleGenerator:
                 [sample[common.IMAGE], prev_center_map], axis=2)
 
         if self._thing_id_mask_annotations:
-          if prev_image is not None or prev_label is not None:
+          if any([prev_image is not None,
+                  prev_label is not None,
+                  next_image is not None,
+                  next_label is not None]):
             raise NotImplementedError(
                 'Current implementation of Max-DeepLab does not support '
-                + 'prev_image and prev_label.')
+                + 'prev_image, prev_label, next_image, or next_label.')
           thing_id_mask, thing_id_class = (
               self._generate_thing_id_mask_and_class(
                   panoptic_label, non_crowd_things))
@@ -357,13 +360,22 @@ class PanopticSampleGenerator:
       if (semantic_id == self._dataset_info['ignore_label'] or
           panoptic_id % self._dataset_info['panoptic_label_divisor'] == 0):
         continue
-      if not tf.reduce_all(non_crowd_things[panoptic_label == panoptic_id]):
-        raise ValueError(
-            'thing-ID mask here must not contain stuff or crowd region.')
+
+      assert_stuff_crowd = tf.debugging.Assert(
+          tf.reduce_all(non_crowd_things[panoptic_label == panoptic_id]),
+          ['thing-ID mask here must not contain stuff or crowd region.'])
+      with tf.control_dependencies([assert_stuff_crowd]):
+        panoptic_id = tf.identity(panoptic_id)
+
       thing_id_mask = tf.where(panoptic_label == panoptic_id,
                                thing_count, thing_id_mask)
-      if thing_count >= self._max_thing_id:
-        raise ValueError('thing_count must be smaller than self._max_thing_id.')
+
+      assert_thing_count = tf.debugging.Assert(
+          thing_count < self._max_thing_id,
+          ['thing_count must be smaller than self._max_thing_id.'])
+      with tf.control_dependencies([assert_thing_count]):
+        thing_count = tf.identity(thing_count)
+
       thing_id_class = tf.tensor_scatter_nd_update(
           thing_id_class, [[thing_count]], [semantic_id])
       thing_count += 1

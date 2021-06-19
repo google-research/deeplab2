@@ -25,6 +25,8 @@ from deeplab2.data import data_utils
 from deeplab2.data import dataset
 from deeplab2.data import sample_generator
 from deeplab2.data.dataloader import input_reader
+from deeplab2.model.encoder import axial_resnet
+from deeplab2.model.layers import axial_block_groups
 
 
 def _load_tf_model_garden_vision_checkpoint(initial_checkpoint):
@@ -145,3 +147,40 @@ def create_loss_metric_dict(loss_names, prefix='train_'):
         prefix + loss_name, dtype=tf.float32)
     loss_metric_dict[loss_name] = loss_metric
   return loss_metric_dict
+
+
+def check_if_variable_in_backbone(
+    variable, encoder_name, encoder_variable_names):
+  """Determines whether a variable belongs to the pretrained backbone.
+
+  The use case of this function could be to find all variables in the backbone,
+  and then, we can use a smaller learning rate for them during training. For
+  example, in MaX-DeepLab, we use 0.1x learning rate for the backbone. This is
+  implemented by building a backbone optimizer (besides the base optimizer) for
+  all variables that have been pretrained on a classification task. For other
+  DeepLab variants, a smaller backbone learning rate is supported although it is
+  not used by default.
+
+  Args:
+    variable: A tf.Variable, the variable to check.
+    encoder_name: A string, the name of the DeepLab encoder.
+    encoder_variable_names: A list of strings, all variable names of the DeepLab
+      encoder.
+
+  Returns:
+    variable_in_backbone: A bool, whether the variable belongs to the backbone.
+  """
+  # Return false if the variable is not part of the encoder.
+  if variable.name not in encoder_variable_names:
+    return False
+  # The variable is part of the encoder.
+  # Return true if the encoder is not max_deeplab_s or max_deeplab_l.
+  if encoder_name not in ('max_deeplab_s', 'max_deeplab_l'):
+    return True
+  # The variable is part of a max_deeplab encoder.
+  # Return false for excluded keywords.
+  if any([axial_block_groups.TRANSFORMER in variable.name,
+          axial_resnet.EXTRA in variable.name,
+          axial_resnet.MEMORY_FEATURE in variable.name]):
+    return False
+  return True

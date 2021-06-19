@@ -186,7 +186,7 @@ class PanopticDeeplabTest(tf.test.TestCase):
     num_classes = 31
     model_options = _create_panoptic_deeplab_example_proto(
         num_classes=num_classes)
-    decoder = panoptic_deeplab.PanopticDeepLabDecoder(
+    decoder = panoptic_deeplab.PanopticDeepLab(
         panoptic_deeplab_options=model_options.panoptic_deeplab,
         decoder_options=model_options.decoder)
 
@@ -226,7 +226,7 @@ class PanopticDeeplabTest(tf.test.TestCase):
 
     with strategy.scope():
       for bn_layer in test_utils.NORMALIZATION_LAYERS:
-        decoder = panoptic_deeplab.PanopticDeepLabDecoder(
+        decoder = panoptic_deeplab.PanopticDeepLab(
             panoptic_deeplab_options=model_options.panoptic_deeplab,
             decoder_options=model_options.decoder,
             bn_layer=bn_layer)
@@ -247,7 +247,7 @@ class PanopticDeeplabTest(tf.test.TestCase):
     num_classes = 31
     model_options = _create_panoptic_deeplab_example_proto(
         num_classes=num_classes)
-    decoder = panoptic_deeplab.PanopticDeepLabDecoder(
+    decoder = panoptic_deeplab.PanopticDeepLab(
         panoptic_deeplab_options=model_options.panoptic_deeplab,
         decoder_options=model_options.decoder)
     ckpt_dict = decoder.checkpoint_items

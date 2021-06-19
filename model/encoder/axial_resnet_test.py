@@ -34,7 +34,7 @@ class AxialResNetTest(tf.test.TestCase):
     self.assertListEqual(
         endpoints['transformer_mask_feature'].get_shape().as_list(),
         [2, 128, 256])
-    self.assertListEqual(endpoints['feature_instance'].get_shape().as_list(),
+    self.assertListEqual(endpoints['feature_panoptic'].get_shape().as_list(),
                          [2, 17, 17, 256])
     self.assertListEqual(endpoints['feature_semantic'].get_shape().as_list(),
                          [2, 5, 5, 2048])

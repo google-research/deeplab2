@@ -30,11 +30,18 @@ from deeplab2.model.layers import convolutions
 from deeplab2.model.layers import resized_fuse
 from deeplab2.model.layers import stems
 
-# Add a postfix in layer names that indicate if the current layer is a part of
+# Add a suffix in layer names that indicate if the current layer is a part of
 # the backbone or an extra layer, i.e. if the current layer will be pretrained
 # or not. This name will be used when we apply 10x larger learning rates for
 # extra parameters that have not been pretrained, in panoptic segmentation.
-_EXTRA = 'extra'
+# This keyword is reserved and should not be a part of the variable names in a
+# classification pretrained backbone.
+EXTRA = 'extra'
+# Similarly, we will apply 10x larger learning rates on the memory feature.
+# This global variable name will be accessed when we build the optimizers. This
+# keyword is reserved and should not be a part of the variable names in a
+# classification pretrained backbone.
+MEMORY_FEATURE = 'memory_feature'
 
 
 class AxialResNet(tf.keras.Model):
@@ -321,7 +328,7 @@ class AxialResNet(tf.keras.Model):
       # Now that we have finished building the backbone and no stacked decoder
       # is used in the backbone, so we start to build extra (i.e., non-backbone)
       # layers for panoptic segmentation.
-      current_name = '_stage5_' + _EXTRA
+      current_name = '_stage5_' + EXTRA
       utils.safe_setattr(
           self, current_name, axial_block_groups.BlockGroup(
               filters=filters_list[-1],
@@ -406,7 +413,7 @@ class AxialResNet(tf.keras.Model):
       if not current_is_backbone:
         # Continue building an extra (i.e., non-backbone) decoder for panoptic
         # segmentation.
-        current_name = '_decoder_stage{}_{}'.format(decoder_stage, _EXTRA)
+        current_name = '_decoder_stage{}_{}'.format(decoder_stage, EXTRA)
         utils.safe_setattr(
             self, current_name, axial_block_groups.BlockGroup(
                 filters=decoder_channels // 4,
@@ -433,7 +440,7 @@ class AxialResNet(tf.keras.Model):
         extra_decoder_use_transformer_beyond_stride):
       # Build extra memory path feed forward networks for the class feature and
       # the mask feature.
-      current_name = '_class_feature_' + _EXTRA
+      current_name = '_class_feature_' + EXTRA
       utils.safe_setattr(
           self, current_name, convolutions.Conv1D(
               global_feed_forward_network_channels,
@@ -443,7 +450,7 @@ class AxialResNet(tf.keras.Model):
               bn_layer=bn_layer,
               activation=activation,
               conv_kernel_weight_decay=conv_kernel_weight_decay))
-      current_name = '_mask_feature_' + _EXTRA
+      current_name = '_mask_feature_' + EXTRA
       utils.safe_setattr(
           self, current_name, convolutions.Conv1D(
               global_feed_forward_network_channels,
@@ -458,7 +465,7 @@ class AxialResNet(tf.keras.Model):
     """Builds model weights and input shape dependent sub-layers."""
     if self._use_memory_feature:
       self._memory_feature = self.add_weight(
-          name='memory_feature',
+          name=MEMORY_FEATURE,
           shape=self._memory_feature_shape,
           initializer=self._memory_feature_initializer,
           regularizer=self._memory_feature_regularizer)
@@ -467,6 +474,9 @@ class AxialResNet(tf.keras.Model):
 
     # Go through the loop to build the ResizedFuse layers.
     current_stack = 0
+    # Track whether we are building the backbone. This will affect the backbone
+    # related arguments, local learning rate, and so on.
+    current_is_backbone = self._backbone_decoder_num_stacks != 0
     total_decoder_num_stacks = (
         self._backbone_decoder_num_stacks + self._extra_decoder_num_stacks)
     next_stride_fn = lambda x: x // 2
@@ -489,7 +499,11 @@ class AxialResNet(tf.keras.Model):
           original_resnet_input_stride * 64 * self._width_multiplier))
       decoder_height, decoder_width = utils.scale_mutable_sequence(
           input_shape[1:3], 1.0 / current_decoder_stride)
-      current_name = '_decoder_stage{}_resized_fuse'.format(decoder_stage)
+      if current_is_backbone:
+        current_name = '_decoder_stage{}_resized_fuse'.format(decoder_stage)
+      else:
+        current_name = '_decoder_stage{}_{}_resized_fuse'.format(
+            decoder_stage, EXTRA)
       utils.safe_setattr(
           self, current_name, resized_fuse.ResizedFuse(
               name=utils.get_layer_name(current_name),
@@ -500,9 +514,13 @@ class AxialResNet(tf.keras.Model):
               bn_layer=self._bn_layer,
               conv_kernel_weight_decay=self._conv_kernel_weight_decay))
       if (current_decoder_stride == self._output_stride and
-          current_stack == self._backbone_decoder_num_stacks and
-          self._classification_mode):
-        return
+          current_stack == self._backbone_decoder_num_stacks):
+        # Now that we have finished building the backbone, we either return the
+        # classification endpoints, or continue building a non-backbone decoder
+        # for panoptic segmentation.
+        if self._classification_mode:
+          return
+        current_is_backbone = False
       if current_decoder_stride == self._high_resolution_output_stride:
         next_stride_fn = lambda x: x * 2
 
@@ -595,7 +613,7 @@ class AxialResNet(tf.keras.Model):
 
     if not current_is_backbone:
       # Build extra layers if we have finished building the backbone.
-      current_name = '_stage5_' + _EXTRA
+      current_name = '_stage5_' + EXTRA
       current_output, activated_output, memory_feature = (
           getattr(self, current_name)(
               (activated_output, memory_feature), training=training))
@@ -639,7 +657,11 @@ class AxialResNet(tf.keras.Model):
           stride_to_features[current_decoder_stride][-2:])
 
       # Fuse and resize features with striding, resizing and 1x1 convolutions.
-      current_name = '_decoder_stage{}_resized_fuse'.format(decoder_stage)
+      if current_is_backbone:
+        current_name = '_decoder_stage{}_resized_fuse'.format(decoder_stage)
+      else:
+        current_name = '_decoder_stage{}_{}_resized_fuse'.format(
+            decoder_stage, EXTRA)
       activated_output = getattr(self, current_name)(
           decoder_features_list, training=training)
 
@@ -666,7 +688,7 @@ class AxialResNet(tf.keras.Model):
 
       # Apply a decoder block group for building the extra layers.
       if not current_is_backbone:
-        current_name = '_decoder_stage{}_{}'.format(decoder_stage, _EXTRA)
+        current_name = '_decoder_stage{}_{}'.format(decoder_stage, EXTRA)
         current_output, activated_output, memory_feature = (
             getattr(self, current_name)(
                 (activated_output, memory_feature), training=training))
@@ -705,17 +727,17 @@ class AxialResNet(tf.keras.Model):
         self._extra_decoder_use_transformer_beyond_stride):
       # Build extra memory path feed forward networks for the class feature and
       # the mask feature.
-      class_feature = getattr(self, '_class_feature_' + _EXTRA)(
+      class_feature = getattr(self, '_class_feature_' + EXTRA)(
           memory_feature, training=training)
-      mask_feature = getattr(self, '_mask_feature_' + _EXTRA)(
+      mask_feature = getattr(self, '_mask_feature_' + EXTRA)(
           memory_feature, training=training)
       endpoints['transformer_class_feature'] = class_feature
       endpoints['transformer_mask_feature'] = mask_feature
 
-    # Output the last high resolution feature as instance feature.
-    endpoints['feature_instance'] = high_resolution_outputs[-1]
+    # Output the last high resolution feature as panoptic feature.
+    endpoints['feature_panoptic'] = high_resolution_outputs[-1]
 
-    # Avoid sharing our instance feature with the semantic auxiliary loss. So we
+    # Avoid sharing our panoptic feature with the semantic auxiliary loss. So we
     # use the backbone feature or the decoded backbone feature for the semantic
     # segmentation head (i.e. the auxiliary loss).
     if self._extra_decoder_num_stacks:

@@ -15,11 +15,12 @@
 
 """This file contains utility functions for the model code."""
 
-from typing import Any, List, MutableMapping, MutableSequence, Optional
+from typing import Any, List, MutableMapping, MutableSequence, Optional, Set
 
 import tensorflow as tf
 
 from deeplab2 import common
+from deeplab2 import config_pb2
 
 layers = tf.keras.layers
 
@@ -364,3 +365,106 @@ def safe_setattr(obj, name, value):
 
 def pad_sequence_with_none(sequence, target_length):
   return list(sequence) + [None] * (target_length - len(sequence))
+
+
+def strided_downsample(input_tensor, target_size):
+  """Strided downsamples a tensor to the target size.
+
+  The stride_height and stride_width is computed by (height - 1) //
+  (target_height - 1) and (width - 1) // (target_width - 1). We raise an error
+  if stride_height != stride_width, since this is not intended in our current
+  use cases. But this check can be removed if different strides are desired.
+  This function supports static shape only.
+
+  Args:
+    input_tensor: A [batch, height, width] tf.Tensor to be downsampled.
+    target_size: A list of two integers, [target_height, target_width], the
+      target size after downsampling.
+
+  Returns:
+    output_tensor: A [batch, target_height, target_width] tf.Tensor, the
+      downsampled result.
+
+  Raises:
+    ValueError: If the input cannot be downsampled with integer stride, i.e.,
+      (height - 1) % (target_height - 1) != 0, or (width - 1) % (target_width -
+      1) != 0.
+    ValueError: If the height axis stride does not equal to the width axis
+      stride.
+  """
+  input_height, input_width = input_tensor.get_shape().as_list()[1:3]
+  target_height, target_width = target_size
+
+  if ((input_height - 1) % (target_height - 1) or
+      (input_width - 1) % (target_width - 1)):
+    raise ValueError('The input cannot be downsampled with integer striding. '
+                     'Please ensure (height - 1) % (target_height - 1) == 0 '
+                     'and (width - 1) % (target_width - 1) == 0.')
+  stride_height = (input_height - 1) // (target_height - 1)
+  stride_width = (input_width - 1) // (target_width - 1)
+  if stride_height != stride_width:
+    raise ValueError('The height axis stride does not equal to the width axis '
+                     'stride.')
+  if stride_height > 1 or stride_width > 1:
+    return input_tensor[:, ::stride_height, ::stride_width]
+  return input_tensor
+
+
+def get_stuff_class_ids(num_thing_stuff_classes: int,
+                        thing_class_ids: List[int],
+                        void_label: int) -> List[int]:
+  """Computes stuff_class_ids.
+
+  The stuff_class_ids are computed from the num_thing_stuff_classes, the
+  thing_class_ids and the void_label.
+
+  Args:
+    num_thing_stuff_classes: An integer specifying the number of stuff and thing
+      classes, not including `void` class.
+    thing_class_ids: A List of integers of length [num_thing_classes] containing
+      thing class indices.
+    void_label: An integer specifying the void label.
+
+  Returns:
+    stuff_class_ids: A sorted List of integers of shape [num_stuff_classes]
+      containing stuff class indices.
+  """
+  if void_label >= num_thing_stuff_classes:
+    thing_stuff_class_ids = list(range(num_thing_stuff_classes))
+  else:
+    thing_stuff_class_ids = [_ for _ in range(num_thing_stuff_classes + 1)
+                             if _ is not void_label]
+  return sorted(set(thing_stuff_class_ids) - set(thing_class_ids))
+
+
+def get_supported_tasks(
+    config: config_pb2.ExperimentOptions) -> Set[str]:
+  """Gets currently supported tasks for each meta_architecture.
+
+  Args:
+    config: A config_pb2.ExperimentOptions configuration.
+
+  Returns:
+    supported_tasks: A set of strings (see common.py), optionally
+     - common.TASK_PANOPTIC_SEGMENTATION,
+     - common.TASK_INSTANCE_SEGMENTATION,
+     - common.TASK_VIDEO_PANOPTIC_SEGMENTATION,
+  """
+  supported_tasks = set()
+  meta_architecture = config.model_options.WhichOneof('meta_architecture')
+  is_max_deeplab = meta_architecture == 'max_deeplab'
+  is_motion_deeplab = meta_architecture == 'motion_deeplab'
+  is_panoptic_deeplab = meta_architecture == 'panoptic_deeplab'
+  is_vip_deeplab = meta_architecture == 'vip_deeplab'
+  is_panoptic = (
+      (config.model_options.panoptic_deeplab.instance.enable and
+       is_panoptic_deeplab) or
+      is_motion_deeplab or is_max_deeplab or is_vip_deeplab)
+  if is_panoptic:
+    supported_tasks.add(common.TASK_PANOPTIC_SEGMENTATION)
+    # MaX-DeepLab does not support evaluating instance segmentation mask AP yet.
+    if not is_max_deeplab:
+      supported_tasks.add(common.TASK_INSTANCE_SEGMENTATION)
+  if is_motion_deeplab or is_vip_deeplab:
+    supported_tasks.add(common.TASK_VIDEO_PANOPTIC_SEGMENTATION)
+  return supported_tasks

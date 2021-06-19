@@ -34,7 +34,6 @@ from deeplab2.evaluation import segmentation_and_tracking_quality as stq
 from deeplab2.model import utils
 from deeplab2.trainer import runner_utils
 from deeplab2.trainer import vis
-from deeplab2.video import motion_deeplab
 
 
 _PANOPTIC_METRIC_OFFSET = 256 * 256
@@ -56,17 +55,13 @@ class Evaluator(orbit.StandardEvaluator):
       model_dir: A path to store all experimental artifacts.
     """
     self._strategy = tf.distribute.get_strategy()
-    self._is_motion_deeplab = isinstance(model, motion_deeplab.MotionDeepLab)
-    is_panoptic_deeplab = (config.model_options.WhichOneof('meta_architecture')
-                           == 'panoptic_deeplab')
-    self._is_panoptic = (
-        (config.model_options.panoptic_deeplab.instance.enable and
-         is_panoptic_deeplab)
-        or self._is_motion_deeplab)
+
+    self._supported_tasks = utils.get_supported_tasks(config)
     eval_dataset = runner_utils.create_dataset(
         config.eval_dataset_options,
         is_training=False,
-        only_semantic_annotations=not self._is_panoptic)
+        only_semantic_annotations=(
+            common.TASK_PANOPTIC_SEGMENTATION not in self._supported_tasks))
     eval_dataset = orbit.utils.make_distributed_dataset(self._strategy,
                                                         eval_dataset)
     evaluator_options_override = orbit.StandardEvaluatorOptions(
@@ -98,18 +93,19 @@ class Evaluator(orbit.StandardEvaluator):
     self._eval_iou_metric = tf.keras.metrics.MeanIoU(
         self._dataset_info.num_classes, 'IoU')
 
-    if self._is_panoptic:
+    if common.TASK_PANOPTIC_SEGMENTATION in self._supported_tasks:
       self._eval_pq_metric = panoptic_quality.PanopticQuality(
           self._dataset_info.num_classes,
           self._dataset_info.ignore_label,
           self._dataset_info.panoptic_label_divisor,
           offset=_PANOPTIC_METRIC_OFFSET)
+    if common.TASK_INSTANCE_SEGMENTATION in self._supported_tasks:
       self._eval_ap_metric = instance_ap.PanopticInstanceAveragePrecision(
           self._dataset_info.num_classes,
           self._dataset_info.class_has_instances_list,
           self._dataset_info.panoptic_label_divisor,
           self._dataset_info.ignore_label)
-    if self._is_motion_deeplab:
+    if common.TASK_VIDEO_PANOPTIC_SEGMENTATION in self._supported_tasks:
       self._eval_tracking_metric = stq.STQuality(
           self._dataset_info.num_classes,
           self._dataset_info.class_has_instances_list,
@@ -121,10 +117,11 @@ class Evaluator(orbit.StandardEvaluator):
     for metric in self._eval_loss_metric_dict.values():
       metric.reset_states()
     self._eval_iou_metric.reset_states()
-    if self._is_panoptic:
+    if common.TASK_PANOPTIC_SEGMENTATION in self._supported_tasks:
       self._eval_pq_metric.reset_states()
+    if common.TASK_INSTANCE_SEGMENTATION in self._supported_tasks:
       self._eval_ap_metric.reset_states()
-    if self._is_motion_deeplab:
+    if common.TASK_VIDEO_PANOPTIC_SEGMENTATION in self._supported_tasks:
       self._eval_tracking_metric.reset_states()
     self._sample_counter = 0
 
@@ -138,7 +135,7 @@ class Evaluator(orbit.StandardEvaluator):
     if self._save_raw_predictions:
       tf.io.gfile.makedirs(
           os.path.join(self._vis_dir, 'raw_semantic'))
-      if self._is_panoptic:
+      if common.TASK_PANOPTIC_SEGMENTATION in self._supported_tasks:
         tf.io.gfile.makedirs(
             os.path.join(self._vis_dir, 'raw_panoptic'))
 
@@ -203,9 +200,10 @@ class Evaluator(orbit.StandardEvaluator):
               tf.equal(inputs[common.GT_SEMANTIC_RAW], self._ignore_label),
               0.0,
               1.0))
-      if self._is_panoptic:
+      if common.TASK_PANOPTIC_SEGMENTATION in self._supported_tasks:
         step_outputs[self._eval_pq_metric.name] = (
             inputs[common.GT_PANOPTIC_RAW], outputs[common.PRED_PANOPTIC_KEY])
+      if common.TASK_INSTANCE_SEGMENTATION in self._supported_tasks:
         step_outputs[self._eval_ap_metric.name] = (
             inputs[common.GT_PANOPTIC_RAW], outputs[common.PRED_PANOPTIC_KEY],
             outputs[common.PRED_SEMANTIC_PROBS_KEY],
@@ -236,7 +234,7 @@ class Evaluator(orbit.StandardEvaluator):
       eval_logs['losses/' + loss_metric.name] = loss_metric.result()
     eval_logs['evaluation/iou/' + self._eval_iou_metric.name] = (
         self._eval_iou_metric.result())
-    if self._is_panoptic:
+    if common.TASK_PANOPTIC_SEGMENTATION in self._supported_tasks:
       pq_results = self._eval_pq_metric.result()
       eval_logs['evaluation/pq/PQ'] = pq_results[0]
       eval_logs['evaluation/pq/SQ'] = pq_results[1]
@@ -245,6 +243,7 @@ class Evaluator(orbit.StandardEvaluator):
       eval_logs['evaluation/pq/FN'] = pq_results[4]
       eval_logs['evaluation/pq/FP'] = pq_results[5]
 
+    if common.TASK_INSTANCE_SEGMENTATION in self._supported_tasks:
       ap_results = self._eval_ap_metric.result()
       eval_logs['evaluation/ap/AP_Mask'] = ap_results[0]
       if self._config.evaluator_options.detailed_ap_metrics:
@@ -260,11 +259,11 @@ class Evaluator(orbit.StandardEvaluator):
         eval_logs['evaluation/ap/AR_Mask_medium'] = ap_results[10]
         eval_logs['evaluation/ap/AR_Mask_large'] = ap_results[11]
 
-      if self._is_motion_deeplab:
-        tracking_results = self._eval_tracking_metric.result()
-        eval_logs['evaluation/step/STQ'] = tracking_results['STQ']
-        eval_logs['evaluation/step/AQ'] = tracking_results['AQ']
-        eval_logs['evaluation/step/IoU'] = tracking_results['IoU']
+    if common.TASK_VIDEO_PANOPTIC_SEGMENTATION in self._supported_tasks:
+      tracking_results = self._eval_tracking_metric.result()
+      eval_logs['evaluation/step/STQ'] = tracking_results['STQ']
+      eval_logs['evaluation/step/AQ'] = tracking_results['AQ']
+      eval_logs['evaluation/step/IoU'] = tracking_results['IoU']
     return eval_logs
 
   def eval_reduce(self, state=None, step_outputs=None):
@@ -314,7 +313,7 @@ class Evaluator(orbit.StandardEvaluator):
       self._sample_counter += 1
 
     # Accumulates PQ, AP_Mask and STQ.
-    if self._is_panoptic:
+    if common.TASK_PANOPTIC_SEGMENTATION in self._supported_tasks:
       for gt_panoptic, pred_panoptic in zip(
           step_outputs[self._eval_pq_metric.name][0],
           step_outputs[self._eval_pq_metric.name][1]):
@@ -322,10 +321,11 @@ class Evaluator(orbit.StandardEvaluator):
         for i in range(batch_size):
           self._eval_pq_metric.update_state(gt_panoptic[i], pred_panoptic[i])
           # STQ.
-          if self._is_motion_deeplab:
+          if common.TASK_VIDEO_PANOPTIC_SEGMENTATION in self._supported_tasks:
             self._eval_tracking_metric.update_state(
                 gt_panoptic[i], pred_panoptic[i],
                 step_outputs[common.SEQUENCE_ID][0][0].numpy())
+    if common.TASK_INSTANCE_SEGMENTATION in self._supported_tasks:
       # AP_Mask.
       for ap_result in zip(*tuple(step_outputs[self._eval_ap_metric.name])):
         (gt_panoptic, pred_panoptic, pred_semantic_probs, pred_instance_scores,

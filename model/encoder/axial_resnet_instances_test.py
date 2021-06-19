@@ -98,7 +98,7 @@ class AxialResnetInstancesTest(tf.test.TestCase, parameterized.TestCase):
     self.assertListEqual(
         endpoints['transformer_mask_feature'].get_shape().as_list(),
         [None, 128, 256])
-    self.assertListEqual(endpoints['feature_instance'].get_shape().as_list(),
+    self.assertListEqual(endpoints['feature_panoptic'].get_shape().as_list(),
                          [None, 17, 17, 256])
     self.assertListEqual(endpoints['feature_semantic'].get_shape().as_list(),
                          [None, 5, 5, 2048])
@@ -120,7 +120,7 @@ class AxialResnetInstancesTest(tf.test.TestCase, parameterized.TestCase):
     self.assertListEqual(
         endpoints['transformer_mask_feature'].get_shape().as_list(),
         [None, 128, 512])
-    self.assertListEqual(endpoints['feature_instance'].get_shape().as_list(),
+    self.assertListEqual(endpoints['feature_panoptic'].get_shape().as_list(),
                          [None, 17, 17, 256])
     self.assertListEqual(endpoints['feature_semantic'].get_shape().as_list(),
                          [None, 17, 17, 256])

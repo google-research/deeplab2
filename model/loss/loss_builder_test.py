@@ -44,7 +44,8 @@ class LossTest(tf.test.TestCase):
     loss_layer = loss.DeepLabFamilyLoss(
         loss_options,
         num_classes=num_classes,
-        ignore_label=ignore_label)
+        ignore_label=ignore_label,
+        thing_class_ids=tuple(range(11, 19)))
 
     pred_dict = {
         common.PRED_SEMANTIC_LOGITS_KEY:
@@ -171,7 +172,8 @@ class LossTest(tf.test.TestCase):
     loss_layer = loss.DeepLabFamilyLoss(
         loss_options,
         num_classes=num_classes,
-        ignore_label=ignore_label)
+        ignore_label=ignore_label,
+        thing_class_ids=tuple(range(11, 19)))
 
     pred_dict = {
         common.PRED_SEMANTIC_LOGITS_KEY:
@@ -212,7 +214,10 @@ class LossTest(tf.test.TestCase):
         motion_loss=motion_loss_options)
 
     with self.assertRaises(ValueError):
-      _ = loss.DeepLabFamilyLoss(loss_options, num_classes=19)
+      _ = loss.DeepLabFamilyLoss(loss_options,
+                                 num_classes=19,
+                                 ignore_label=255,
+                                 thing_class_ids=tuple(range(11, 19)))
 
 
 if __name__ == '__main__':

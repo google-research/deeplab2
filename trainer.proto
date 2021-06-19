@@ -19,7 +19,7 @@ package deeplab2;
 option java_multiple_files = true;
 
 // Configure the solver options.
-// Next ID: 16
+// Next ID: 17
 message SolverOptions {
   optional bool use_sync_batchnorm = 1 [default = true];
   optional float batchnorm_momentum = 14 [default = 0.99];
@@ -47,6 +47,11 @@ message SolverOptions {
   optional float clip_gradient_norm = 10 [default = 10.0];
   // Set the number of steps for training.
   optional int32 training_number_of_steps = 11 [default = 60000];
+  // Set the backbone learning rate multiplier when different learning rates
+  // are desired for the backbone and for the other layers. For example,
+  // MaX-DeepLab uses this field to set a 0.1x learning rate for the pretrained
+  // backbone parameters.
+  optional float backbone_learning_rate_multiplier = 16 [default = 1.0];
 }
 
 /********** Submessages used to config loss options **********/
@@ -71,6 +76,12 @@ message LossOptions {
   optional SingleLossOptions motion_loss = 4;
   // Set the loss options for the next regression head.
   optional SingleLossOptions next_regression_loss = 5;
+  // Set the loss options for the PQ-style loss.
+  optional SingleLossOptions pq_style_loss = 6;
+  // Set the loss options for the mask id cross entropy loss.
+  optional SingleLossOptions mask_id_cross_entropy_loss = 7;
+  // Set the loss options for the instance discrimination loss.
+  optional SingleLossOptions instance_discrimination_loss = 8;
 }
 
 // Configure the trainer options.

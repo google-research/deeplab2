@@ -70,7 +70,8 @@ class BuilderTest(tf.test.TestCase, parameterized.TestCase):
         _CONFIG_PATH, 'example_kitti-step_motion_deeplab.textproto')
     model_options = _read_proto_file(proto_filename, config_pb2.ModelOptions())
     motion_decoder = builder.create_decoder(
-        model_options, tf.keras.layers.experimental.SyncBatchNormalization)
+        model_options, tf.keras.layers.experimental.SyncBatchNormalization,
+        ignore_label=255)
     self.assertIsInstance(motion_decoder,
                           motion_deeplab_decoder.MotionDeepLabDecoder)
 

@@ -127,7 +127,7 @@ def preprocess_image_and_label(image,
                                min_scale_factor=1.,
                                max_scale_factor=1.,
                                scale_factor_step_size=0,
-                               ignore_label=255,
+                               ignore_label=None,
                                is_training=True,
                                autoaugment_policy_name=None):
   """Preprocesses the image and label.

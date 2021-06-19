@@ -39,7 +39,8 @@ class InputPreprocessingTest(tf.test.TestCase):
             prev_image=tf.identity(self._image),
             prev_label=tf.identity(self._label),
             crop_height=crop_height,
-            crop_width=crop_width))
+            crop_width=crop_width,
+            ignore_label=255))
 
     self.assertListEqual(original_image.shape.as_list(),
                          [33, 33, 3])
@@ -63,7 +64,8 @@ class InputPreprocessingTest(tf.test.TestCase):
             crop_width=width,
             min_resize_value=65,
             max_resize_value=65,
-            resize_factor=32))
+            resize_factor=32,
+            ignore_label=255))
 
     self.assertListEqual(original_image.shape.as_list(),
                          [height, width, 3])
@@ -86,7 +88,8 @@ class InputPreprocessingTest(tf.test.TestCase):
             crop_height=height,
             crop_width=width,
             min_scale_factor=0.5,
-            max_scale_factor=2.0))
+            max_scale_factor=2.0,
+            ignore_label=255))
 
     self.assertListEqual(original_image.shape.as_list(),
                          [33, 33, 3])
@@ -160,7 +163,8 @@ class InputPreprocessingTest(tf.test.TestCase):
             crop_height=crop_height,
             crop_width=crop_width,
             min_resize_value=[10],
-            max_resize_value=None))
+            max_resize_value=None,
+            ignore_label=255))
 
     self.assertListEqual(processed_image.shape.as_list(),
                          [crop_height, crop_width, 3])

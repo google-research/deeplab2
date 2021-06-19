@@ -15,9 +15,10 @@
 
 """This file contains basic loss classes used in the DeepLab model."""
 
-from typing import Text, Dict, Callable
+from typing import Text, Dict, Callable, Optional
 
 import tensorflow as tf
+from deeplab2.model import utils
 
 
 def compute_average_top_k_loss(loss: tf.Tensor,
@@ -63,17 +64,18 @@ def compute_mask_dice_loss(y_true: tf.Tensor,
       https://arxiv.org/abs/1606.04797
 
   Args:
-    y_true: A tf.Tensor of shape [batch, height, width, channels] containing the
-      ground-truth. The channel dimension indicates the mask ID in MaX-DeepLab,
-      instead of a "class" dimension in the V-net paper. In our case, for all
-      batch, height, width, the [batch, height, width, :] should be one-hot
-      encodings only, with valid pixels having one and only one 1.0, and with
-      void pixels being all 0.0. The valid pixels of the masks do not and should
-      not overlap because of the non-overlapping definition of panoptic
+    y_true: A tf.Tensor of shape [batch, height, width, channels] (or [batch,
+      length, channels]) containing the ground-truth. The channel dimension
+      indicates the mask ID in MaX-DeepLab, instead of a "class" dimension in
+      the V-net paper. In our case, for all batch, height, width, (or batch,
+      length) the [batch, height, width, :] (or [batch, length, :]) should be
+      one-hot encodings only, with valid pixels having one and only one 1.0, and
+      with void pixels being all 0.0. The valid pixels of the masks do not and
+      should not overlap because of the non-overlapping definition of panoptic
       segmentation. The output loss is computed and normalized by valid (not
       void) pixels.
-    y_pred: A tf.Tensor of shape [batch, height, width, channels] containing the
-      prediction.
+    y_pred: A tf.Tensor of shape [batch, height, width, channels] (or [batch,
+      length, channels]) containing the prediction.
     prediction_activation: A String indicating activation function of the
       prediction. It should be either 'sigmoid' or 'softmax'.
 
@@ -85,11 +87,12 @@ def compute_mask_dice_loss(y_true: tf.Tensor,
         'sigmoid' or 'softmax'.
   """
   tf.debugging.assert_rank_in(
-      y_pred, [4], message='Input tensors y_pred must have rank 4.')
+      y_pred, [3, 4], message='Input tensors y_pred must have rank 3 or 4.')
   tf.debugging.assert_rank_in(
-      y_true, [4], message='Input tensors y_true must have rank 4.')
+      y_true, [3, 4], message='Input tensors y_true must have rank 3 or 4.')
 
-  batch, height, width, channels = y_true.shape.as_list()
+  shape_list = y_true.shape.as_list()
+  batch, channels = shape_list[0], shape_list[-1]
   if prediction_activation == 'sigmoid':
     y_pred = tf.math.sigmoid(y_pred)
   elif prediction_activation == 'softmax':
@@ -98,7 +101,7 @@ def compute_mask_dice_loss(y_true: tf.Tensor,
     raise ValueError(
         "prediction_activation should be either 'sigmoid' or 'softmax'")
 
-  y_true_flat = tf.reshape(y_true, [batch, height * width, channels])
+  y_true_flat = tf.reshape(y_true, [batch, -1, channels])
   # valid_flat indicates labeled pixels in the groudtruth. y_true is one-hot
   # encodings only, with valid pixels having one and only one 1.0, and with
   # invalid pixels having 0.0 values in all the channels. The valid pixels of
@@ -106,7 +109,7 @@ def compute_mask_dice_loss(y_true: tf.Tensor,
   # panoptic segmentation.
   valid_flat = tf.reduce_sum(y_true_flat, axis=-1, keepdims=True)
   y_pred_flat = tf.reshape(
-      y_pred, [batch, height * width, channels]) * valid_flat
+      y_pred, [batch, -1, channels]) * valid_flat
   # Use smooth = 1 to avoid division by zero when both y_pred and y_true are
   # zeros.
   smooth = 1.0
@@ -180,7 +183,7 @@ def mean_squared_error(y_true: tf.Tensor,
 def encode_one_hot(gt: tf.Tensor,
                    num_classes: int,
                    weights: tf.Tensor,
-                   ignore_label: int = 255):
+                   ignore_label: Optional[int]):
   """Helper function for one-hot encoding of integer labels.
 
   Args:
@@ -188,8 +191,7 @@ def encode_one_hot(gt: tf.Tensor,
     num_classes: An integer indicating the number of classes considered in the
       ground-truth. It is used as 'depth' in tf.one_hot().
     weights: A tf.Tensor containing weights information.
-    ignore_label: An integer specifying the ignore label or 'None'. Default to
-      255.
+    ignore_label: An integer specifying the ignore label or None.
 
   Returns:
     gt: A tf.Tensor of one-hot encoded gt labels.
@@ -215,7 +217,15 @@ def is_one_hot(gt: tf.Tensor, pred: tf.Tensor):
     A boolean indicating whether the gt is one-hot encoded (True) or
     in integer type (False).
   """
-  return gt.shape.as_list() == pred.shape.as_list()
+  gt_shape = gt.get_shape().as_list()
+  pred_shape = pred.get_shape().as_list()
+  # If the ground truth is one-hot encoded, the rank of the ground truth should
+  # match that of the prediction. In addition, we check that the first
+  # dimension, batch_size, and the last dimension, channels, should also match
+  # the prediction. However, we still allow spatial dimensions, e.g., height and
+  # width, to be different since we will downsample the ground truth if needed.
+  return (len(gt_shape) == len(pred_shape) and
+          gt_shape[0] == pred_shape[0] and gt_shape[-1] == pred_shape[-1])
 
 
 def _ensure_topk_value_is_percentage(top_k_percentage: float):
@@ -290,8 +300,8 @@ class TopKCrossEntropyLoss(tf.keras.losses.Loss):
                gt_key: Text,
                pred_key: Text,
                weight_key: Text,
-               num_classes: int,
-               ignore_label: int = 255,
+               num_classes: Optional[int],
+               ignore_label: Optional[int],
                top_k_percent_pixels: float = 1.0,
                dynamic_weight: bool = False):
     """Initializes a top-k cross entropy loss.
@@ -301,8 +311,7 @@ class TopKCrossEntropyLoss(tf.keras.losses.Loss):
       pred_key: A key to extract the prediction tensor.
       weight_key: A key to extract the weight tensor.
       num_classes: An integer specifying the number of classes in the dataset.
-      ignore_label: An optional integer specifying the ignore label or 'None'
-        (default: 255).
+      ignore_label: An optional integer specifying the ignore label or None.
       top_k_percent_pixels: An optional float specifying the percentage of
         pixels used to compute the loss. The value must lie within [0.0, 1.0].
       dynamic_weight: A boolean indicating whether the weights are determined
@@ -338,17 +347,34 @@ class TopKCrossEntropyLoss(tf.keras.losses.Loss):
         When one-hot encoded, the shape can be [batch, num_elements, channels]
         or [batch, height, width, channels].
       y_pred: A dict of tensors providing predictions. The tensors are of shape
-        [batch, num_elements, channels] or [batch, height, width, channels].
+        [batch, num_elements, channels] or [batch, height, width, channels]. If
+        the prediction is 2D (with height and width), we allow the spatial
+        dimension to be strided_height and strided_width. In this case, we
+        downsample the ground truth accordingly.
 
     Returns:
       A tensor of shape [batch] containing the loss per image.
+
+    Raises:
+      ValueError: If the prediction is 1D (with the length dimension) but its
+        length does not match that of the ground truth.
     """
-    gt = tf.cast(y_true[self._gt_key], tf.int32)
+    gt = y_true[self._gt_key]
     pred = y_pred[self._pred_key]
+    gt_shape = gt.get_shape().as_list()
+    pred_shape = pred.get_shape().as_list()
     if self._dynamic_weight:
       weights = y_pred[self._weight_key]
     else:
       weights = y_true[self._weight_key]
+
+    # Downsample the ground truth for 2D prediction cases.
+    if len(pred_shape) == 4 and gt_shape[1:3] != pred_shape[1:3]:
+      gt = utils.strided_downsample(gt, pred_shape[1:3])
+      weights = utils.strided_downsample(weights, pred_shape[1:3])
+    elif len(pred_shape) == 3 and gt_shape[1] != pred_shape[1]:
+      # We don't support downsampling for 1D predictions.
+      raise ValueError('The shape of gt does not match the shape of pred.')
 
     if is_one_hot(gt, pred):
       gt = tf.cast(gt, tf.float32)
@@ -371,8 +397,8 @@ class FocalCrossEntropyLoss(tf.keras.losses.Loss):
                gt_key: Text,
                pred_key: Text,
                weight_key: Text,
-               num_classes: int,
-               ignore_label: int = 255,
+               num_classes: Optional[int],
+               ignore_label: Optional[int],
                focal_loss_alpha: float = 0.75,
                focal_loss_gamma: float = 0.0,
                background_channel_index: int = -1,
@@ -392,8 +418,8 @@ class FocalCrossEntropyLoss(tf.keras.losses.Loss):
       pred_key: A key to extract the prediction tensor.
       weight_key: A key to extract the weight tensor.
       num_classes: An integer specifying the number of classes in the dataset.
-      ignore_label: An optional integer specifying the ignore label or 'None'
-        (default: 255). Only effective when gt labels are in integer mode.
+      ignore_label: An optional integer specifying the ignore label or None.
+        Only effective when ground truth labels are in integer mode.
       focal_loss_alpha: An optional float specifying the coefficient that
         weights between positive (matched) and negative (unmatched) masks in
         focal loss. The positives are weighted by alpha, while the negatives

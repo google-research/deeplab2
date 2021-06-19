@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This file contains code to build a DeepLabV3PlusDecoder.
+"""This file contains code to build a DeepLabV3Plus.
 
 Reference:
   - [Encoder-Decoder with Atrous Separable Convolution for Semantic Image
@@ -31,7 +31,7 @@ from deeplab2.model.layers import convolutions
 layers = tf.keras.layers
 
 
-class DeepLabV3PlusDecoder(tf.keras.layers.Layer):
+class DeepLabV3Plus(tf.keras.layers.Layer):
   """A DeepLabV3+ decoder model.
 
   This model takes in low- and high-level features from an encoder and performs
@@ -53,7 +53,7 @@ class DeepLabV3PlusDecoder(tf.keras.layers.Layer):
       bn_layer: An optional tf.keras.layers.Layer that computes the
         normalization (default: tf.keras.layers.BatchNormalization).
     """
-    super(DeepLabV3PlusDecoder, self).__init__(name='DeepLabv3Plus')
+    super(DeepLabV3Plus, self).__init__(name='DeepLabv3Plus')
 
     self._high_level_feature_name = decoder_options.feature_key
     self._low_level_feature_name = deeplabv3plus_options.low_level.feature_key

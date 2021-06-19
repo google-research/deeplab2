@@ -25,9 +25,8 @@ from deeplab2 import common
 from deeplab2 import config_pb2
 from deeplab2.data import dataset
 from deeplab2.model import builder
-from deeplab2.model import post_processing
 from deeplab2.model import utils
-from deeplab2.model.decoder import panoptic_deeplab
+from deeplab2.model.post_processor import post_processor_builder
 
 _OFFSET_OUTPUT = 'offset'
 
@@ -35,9 +34,9 @@ _OFFSET_OUTPUT = 'offset'
 class DeepLab(tf.keras.Model):
   """This class represents the DeepLab meta architecture.
 
-  This class supports three architectures of the DeepLab family: DeepLab V3,
-  DeepLab V3+ and Panoptic-DeepLab. The exact architecture must be defined
-  during initialization.
+  This class supports four architectures of the DeepLab family: DeepLab V3,
+  DeepLab V3+, Panoptic-DeepLab, and MaX-DeepLab. The exact architecture must be
+  defined during initialization.
   """
 
   def __init__(self,
@@ -48,6 +47,9 @@ class DeepLab(tf.keras.Model):
     Args:
       config: A config_pb2.ExperimentOptions configuration.
       dataset_descriptor: A dataset.DatasetDescriptor.
+
+    Raises:
+      ValueError: If MaX-DeepLab is used with multi-scale inference.
     """
     super(DeepLab, self).__init__(name='DeepLab')
 
@@ -77,27 +79,13 @@ class DeepLab(tf.keras.Model):
         conv_kernel_weight_decay=(
             config.trainer_options.solver_options.weight_decay / 2))
 
-    self._decoder = builder.create_decoder(config.model_options, bn_layer)
+    self._decoder = builder.create_decoder(
+        config.model_options, bn_layer, dataset_descriptor.ignore_label)
 
-    self._predict_panoptic_segmentation = (
-        isinstance(self._decoder, panoptic_deeplab.PanopticDeepLabDecoder) and
-        config.model_options.panoptic_deeplab.instance.enable)
-    if self._predict_panoptic_segmentation:
-      self._post_processing_fn = functools.partial(
-          post_processing.get_panoptic_predictions,
-          center_threshold=config.evaluator_options.center_score_threshold,
-          thing_class_ids=tf.convert_to_tensor(
-              dataset_descriptor.class_has_instances_list),
-          label_divisor=dataset_descriptor.panoptic_label_divisor,
-          stuff_area_limit=config.evaluator_options.stuff_area_limit,
-          void_label=dataset_descriptor.ignore_label,
-          nms_kernel_size=config.evaluator_options.nms_kernel,
-          keep_k_centers=config.evaluator_options.keep_k_centers,
-          merge_semantic_and_instance_with_tf_op=(
-              config.evaluator_options.merge_semantic_and_instance_with_tf_op),
-          )
-    else:
-      self._post_processing_fn = post_processing.get_semantic_predictions
+    self._is_max_deeplab = (
+        config.model_options.WhichOneof('meta_architecture') == 'max_deeplab')
+    self._post_processor = post_processor_builder.get_post_processor(
+        config, dataset_descriptor)
 
     # The ASPP pooling size is always set to train crop size, which is found to
     # be experimentally better.
@@ -114,6 +102,10 @@ class DeepLab(tf.keras.Model):
       self._eval_scales = [1.0]
     else:
       self._eval_scales = config.evaluator_options.eval_scales
+    if self._is_max_deeplab and (
+        self._add_flipped_images or len(self._eval_scales) > 1):
+      raise ValueError(
+          'MaX-DeepLab does not support multi-scale inference yet.')
 
   def call(self,
            input_tensor: tf.Tensor,
@@ -162,6 +154,8 @@ class DeepLab(tf.keras.Model):
                      eval_scale, scaled_pool_size)
         pred_dict = self._decoder(
             self._encoder(scaled_images, training=training), training=training)
+        # MaX-DeepLab skips this resizing and upsamples the mask outputs in
+        # self._post_processor.
         pred_dict = self._resize_predictions(
             pred_dict,
             target_h=input_h,
@@ -195,19 +189,9 @@ class DeepLab(tf.keras.Model):
       for output_type, output_value in result_dict.items():
         result_dict[output_type] = tf.reduce_mean(
             tf.stack(output_value, axis=0), axis=0)
-      if self._predict_panoptic_segmentation:
-        (result_dict[common.PRED_PANOPTIC_KEY],
-         result_dict[common.PRED_SEMANTIC_KEY],
-         result_dict[common.PRED_INSTANCE_KEY],
-         result_dict[common.PRED_INSTANCE_CENTER_KEY],
-         result_dict[common.PRED_INSTANCE_SCORES_KEY]
-        ) = self._post_processing_fn(
-            result_dict[common.PRED_SEMANTIC_PROBS_KEY],
-            result_dict[common.PRED_CENTER_HEATMAP_KEY],
-            result_dict[common.PRED_OFFSET_MAP_KEY])
-      else:
-        result_dict[common.PRED_SEMANTIC_KEY] = self._post_processing_fn(
-            result_dict[common.PRED_SEMANTIC_PROBS_KEY])
+      # Post-process the results.
+      result_dict.update(self._post_processor(result_dict))
+
     if common.PRED_CENTER_HEATMAP_KEY in result_dict:
       result_dict[common.PRED_CENTER_HEATMAP_KEY] = tf.squeeze(
           result_dict[common.PRED_CENTER_HEATMAP_KEY], axis=3)
@@ -249,6 +233,11 @@ class DeepLab(tf.keras.Model):
     Returns:
       Resized (or optionally reversed) result_dict.
     """
+    # The default MaX-DeepLab paper does not upsample any output during training
+    # in order to save GPU/TPU memory, but upsampling might lead to better
+    # performance.
+    if self._is_max_deeplab:
+      return result_dict
     for key, value in result_dict.items():
       if reverse:
         value = tf.reverse(value, [2])

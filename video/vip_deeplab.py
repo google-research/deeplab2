@@ -25,8 +25,9 @@ from deeplab2 import common
 from deeplab2 import config_pb2
 from deeplab2.data import dataset
 from deeplab2.model import builder
-from deeplab2.model import post_processing
 from deeplab2.model import utils
+from deeplab2.model.post_processor import post_processor_builder
+from deeplab2.model.post_processor import vip_deeplab
 
 _OFFSET_OUTPUT = 'offset'
 
@@ -66,20 +67,11 @@ class ViPDeepLab(tf.keras.Model):
         conv_kernel_weight_decay=(
             config.trainer_options.solver_options.weight_decay / 2))
 
-    self._decoder = builder.create_decoder(config.model_options, bn_layer)
+    self._decoder = builder.create_decoder(config.model_options, bn_layer,
+                                           dataset_descriptor.ignore_label)
 
-    self._post_processing_fn = functools.partial(
-        post_processing.get_panoptic_predictions,
-        center_threshold=config.evaluator_options.center_score_threshold,
-        thing_class_ids=tf.convert_to_tensor(
-            dataset_descriptor.class_has_instances_list),
-        label_divisor=dataset_descriptor.panoptic_label_divisor,
-        stuff_area_limit=config.evaluator_options.stuff_area_limit,
-        void_label=dataset_descriptor.ignore_label,
-        nms_kernel_size=config.evaluator_options.nms_kernel,
-        keep_k_centers=config.evaluator_options.keep_k_centers,
-        merge_semantic_and_instance_with_tf_op=(
-            config.evaluator_options.merge_semantic_and_instance_with_tf_op))
+    self._post_processor = post_processor_builder.get_post_processor(
+        config, dataset_descriptor)
 
     pool_size = config.train_dataset_options.crop_size
     output_stride = float(config.model_options.backbone.output_stride)
@@ -223,24 +215,8 @@ class ViPDeepLab(tf.keras.Model):
                                   axis=3)
       concat_result_dict[common.PRED_OFFSET_MAP_KEY] = tf.concat(
           [result_dict[common.PRED_OFFSET_MAP_KEY], next_regression], axis=2)
-      (concat_result_dict[common.PRED_PANOPTIC_KEY],
-       concat_result_dict[common.PRED_SEMANTIC_KEY],
-       concat_result_dict[common.PRED_INSTANCE_KEY],
-       concat_result_dict[common.PRED_INSTANCE_CENTER_KEY],
-       concat_result_dict[common.PRED_INSTANCE_SCORES_KEY]
-      ) = self._post_processing_fn(
-          concat_result_dict[common.PRED_SEMANTIC_PROBS_KEY],
-          concat_result_dict[common.PRED_CENTER_HEATMAP_KEY],
-          concat_result_dict[common.PRED_OFFSET_MAP_KEY])
-      (next_result_dict[common.PRED_PANOPTIC_KEY],
-       next_result_dict[common.PRED_SEMANTIC_KEY],
-       next_result_dict[common.PRED_INSTANCE_KEY],
-       next_result_dict[common.PRED_INSTANCE_CENTER_KEY],
-       next_result_dict[common.PRED_INSTANCE_SCORES_KEY]
-      ) = self._post_processing_fn(
-          next_result_dict[common.PRED_SEMANTIC_PROBS_KEY],
-          next_result_dict[common.PRED_CENTER_HEATMAP_KEY],
-          next_result_dict[common.PRED_OFFSET_MAP_KEY])
+      concat_result_dict.update(self._post_processor(concat_result_dict))
+      next_result_dict.update(self._post_processor(next_result_dict))
       result_dict[common.PRED_NEXT_PANOPTIC_KEY] = next_result_dict[
           common.PRED_PANOPTIC_KEY]
       for result_key in [
@@ -253,7 +229,7 @@ class ViPDeepLab(tf.keras.Model):
       result_dict[common.PRED_CONCAT_NEXT_PANOPTIC_KEY] = next_result_dict[
           common.PRED_PANOPTIC_KEY]
       result_dict[common.PRED_NEXT_PANOPTIC_KEY] = tf.numpy_function(
-          func=post_processing.vip_deeplab_stitch,
+          func=vip_deeplab.vip_deeplab_stitch,
           inp=[
               result_dict[common.PRED_CONCAT_NEXT_PANOPTIC_KEY],
               result_dict[common.PRED_NEXT_PANOPTIC_KEY], self._label_divisor

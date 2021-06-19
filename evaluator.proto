@@ -16,7 +16,7 @@ syntax = "proto2";
 
 package deeplab2;
 
-// Next ID: 19
+// Next ID: 22
 message EvaluatorOptions {
   // Set the number of steps to run evaluation. -1 corresponds to a run over the
   // full dataset.
@@ -31,6 +31,14 @@ message EvaluatorOptions {
   optional bool use_tf_function = 4 [default = true];
   // Set the area size of stuff segments to discard.
   optional int32 stuff_area_limit = 6 [default = 0];
+  // Set the area size of thing segments to discard (set to ignore_label). Note
+  // that this option is currently only supported in MaX-DeepLab.
+  optional int32 thing_area_limit = 19 [default = 0];
+  // Set the threshold for the transformer class confidence.
+  optional float transformer_class_confidence_threshold = 20 [default = 0.7];
+  // Set the threshold for the per-pixel mask confidence. Note that this option
+  // is currently only supported in MaX-DeepLab.
+  optional float pixel_confidence_threshold = 21 [default = 0.4];
   // Set the threshold of the center heatmap for post-processing.
   optional float center_score_threshold = 7 [default = 0.1];
   // Set the kernel size of the nms kernel for the center heatmap.

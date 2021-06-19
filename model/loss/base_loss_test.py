@@ -109,7 +109,8 @@ class BaseLossTest(tf.test.TestCase):
         gt_key='gt',
         pred_key='pred',
         weight_key='weight',
-        num_classes=num_classes)
+        num_classes=num_classes,
+        ignore_label=255)
     logits = tf.random.uniform(shape=[2, 33, 33, num_classes])
 
     y_true = {
@@ -136,7 +137,8 @@ class BaseLossTest(tf.test.TestCase):
         pred_key='pred',
         weight_key='weight',
         num_classes=num_classes,
-        top_k_percent_pixels=top_k)
+        top_k_percent_pixels=top_k,
+        ignore_label=255)
 
     logits = tf.random.uniform(shape=[2, 33, 33, num_classes])
     y_true = {
@@ -187,7 +189,8 @@ class BaseLossTest(tf.test.TestCase):
         weight_key='weight',
         num_classes=num_classes,
         focal_loss_alpha=alpha,
-        focal_loss_gamma=gamma,)
+        focal_loss_gamma=gamma,
+        ignore_label=255)
 
     logits = tf.random.uniform(shape=[2, 33 * 33, num_classes])
     gt = tf.ones([2, 33 * 33], tf.int32)

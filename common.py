@@ -32,6 +32,10 @@ PRED_NEXT_OFFSET_MAP_KEY = 'next_offset_map'
 PRED_NEXT_PANOPTIC_KEY = 'next_panoptic_pred'
 PRED_CONCAT_NEXT_PANOPTIC_KEY = 'concat_next_panoptic_pred'
 
+PRED_PIXEL_SPACE_NORMALIZED_FEATURE_KEY = 'pixel_space_normalized_feature'
+PRED_PIXEL_SPACE_MASK_LOGITS_KEY = 'pixel_space_mask_logits'
+PRED_TRANSFORMER_CLASS_LOGITS_KEY = 'transformer_class_logits'
+
 # Ground-truth keys used by the model.
 GT_PANOPTIC_KEY = 'panoptic_gt'
 GT_SEMANTIC_KEY = 'semantic_gt'
@@ -56,6 +60,12 @@ CENTER_LOSS = 'center_loss'
 REGRESSION_LOSS = 'regression_loss'
 MOTION_LOSS = 'motion_loss'
 NEXT_REGRESSION_LOSS = 'next_regression_loss'
+PQ_STYLE_LOSS = 'pq_style_loss'
+# The PQ-style loss consists of a class term and a mask dice term.
+PQ_STYLE_LOSS_CLASS_TERM = 'pq_style_loss_class_term'
+PQ_STYLE_LOSS_MASK_DICE_TERM = 'pq_style_loss_mask_dice_term'
+MASK_ID_CROSS_ENTROPY_LOSS = 'mask_id_cross_entropy_loss'
+INSTANCE_DISCRIMINATION_LOSS = 'instance_discrimination_loss'
 TOTAL_LOSS = 'total_loss'
 
 # Weight keys used by the model.
@@ -126,3 +136,15 @@ CKPT_NEXT_INSTANCE_REGRESSION_HEAD_WITHOUT_LAST_LAYER = (
     'next_instance_regression_head_without_last_layer')
 CKPT_NEXT_INSTANCE_REGRESSION_HEAD_LAST_LAYER = (
     'next_instance_regression_head_last_layer')
+
+# MaX-DeepLab
+CKPT_PIXEL_SPACE_HEAD = 'pixel_space_head'
+CKPT_TRANSFORMER_MASK_HEAD = 'transformer_mask_head'
+CKPT_TRANSFORMER_CLASS_HEAD = 'transformer_class_head'
+CKPT_PIXEL_SPACE_FEATURE_BATCH_NORM = 'pixel_space_feature_batch_norm'
+CKPT_PIXEL_SPACE_MASK_BATCH_NORM = 'pixel_space_mask_batch_norm'
+
+# Supported Tasks
+TASK_PANOPTIC_SEGMENTATION = 'panoptic_segmentation'
+TASK_INSTANCE_SEGMENTATION = 'instance_segmentation'
+TASK_VIDEO_PANOPTIC_SEGMENTATION = 'video_panoptic_segmentation'
