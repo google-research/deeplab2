@@ -15,8 +15,8 @@ A high-level overview of the whole process:
 
 We also define some environmental variables for simplicity and convenience:
 
-`EXPERIMENT_ROOT` and `EXPERIMENT_NAME`: variables set in textproto file, which
-define where all checkpoints and results are saved.
+`BASE_MODEL_DIRECTORY`: variables set in textproto file, which defines where all
+checkpoints and results are saved.
 
 `DATA_ROOT`: where the original Cityscapes dataset is located.
 
@@ -37,9 +37,12 @@ evaluator_options.save_raw_predictions = true
 evaluator_options.convert_raw_to_eval_ids = true
 ```
 
-Then run the model in evaluation modes (with `--job_type="eval"`), and the
-results will be saved at
-${EXPERIMENT_ROOT}/${EXPERIMENT_NAME}/vis/raw_panoptic/\*.png.
+Then run the model in evaluation modes (with `--mode=eval`), the results will be
+saved at
+
+*semantic segmentation*: ${BASE_MODEL_DIRECTORY}/vis/raw_semantic/\*.png
+
+*panoptic segmentation*: ${BASE_MODEL_DIRECTORY}/vis/raw_panoptic/\*.png
 
 ## Create Images JSON
 
@@ -61,7 +64,7 @@ panoptic COCO format.
 
 ```bash
 python panopticapi/converters/2channels2panoptic_coco_format.py \
-  --source_folder=${EXPERIMENT_ROOT}/${EXPERIMENT_NAME}/vis/raw_panoptic \
+  --source_folder=${BASE_MODEL_DIRECTORY}/vis/raw_panoptic \
   --images_json_file=${PATH_TO_SAVE}/${IMAGES_SPLIT}_images.json\
   --categories_json_file=deeplab2/utils/panoptic_cityscapes_categories.json \
   --segmentations_folder=${PATH_TO_SAVE}/panoptic_cocoformat \
@@ -73,6 +76,17 @@ python panopticapi/converters/2channels2panoptic_coco_format.py \
 Run the [official scripts](https://github.com/mcordts/cityscapesScripts) to
 evaluate validation set results.
 
+For *semantic segmentation*:
+
+```bash
+CITYSCAPES_RESULTS=${BASE_MODEL_DIRECTORY}/vis/raw_semantic/ \
+CITYSCAPES_DATASET=${DATA_ROOT} \
+CITYSCAPES_EXPORT_DIR=${PATH_TO_SAVE} \
+python cityscapesscripts/evaluation/evalPixelLevelSemanticLabeling.py
+```
+
+For *panoptic segmentation*:
+
 ```bash
 python cityscapesscripts/evaluation/evalPanopticSemanticLabeling.py \
     --prediction-json-file=${PATH_TO_SAVE}/panoptic_cocoformat.json \
@@ -81,11 +95,15 @@ python cityscapesscripts/evaluation/evalPanopticSemanticLabeling.py \
     --gt-folder=${DATA_ROOT}/gtFine/cityscapes_panoptic_val
 ```
 
+Please note that our prediction fortmat does not support instance segmentation
+prediction format yet.
+
 ## Prepare Submission Files (for *test* set)
 
 Run the following command to prepare a submission file for test server
 evaluation.
 
 ```bash
+zip -r cityscapes_test_submission_semantic.zip ${BASE_MODEL_DIRECTORY}/vis/raw_semantic
 zip -r cityscapes_test_submission_panoptic.zip ${PATH_TO_SAVE}/panoptic_cocoformat ${PATH_TO_SAVE}/panoptic_cocoformat.json
 ```
