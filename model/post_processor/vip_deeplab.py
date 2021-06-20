@@ -18,7 +18,7 @@
 import numpy as np
 
 
-def vip_deeplab_stitch(
+def stitch_video_panoptic_prediction(
     concat_panoptic: np.ndarray,
     next_panoptic: np.ndarray,
     label_divisor: int,
@@ -35,7 +35,8 @@ def vip_deeplab_stitch(
       it with the current frame.
     next_panoptic: Panoptic prediction of the next frame.
     label_divisor: An integer specifying the label divisor of the dataset.
-    overlap_offset: An integer offset to avoid overlap.
+    overlap_offset: An integer offset to avoid overlap between the IDs in
+      next_panoptic and the propagated IDs from concat_panoptic.
     combine_offset: An integer offset to combine concat and next panoptic.
 
   Returns:

@@ -229,7 +229,7 @@ class ViPDeepLab(tf.keras.Model):
       result_dict[common.PRED_CONCAT_NEXT_PANOPTIC_KEY] = next_result_dict[
           common.PRED_PANOPTIC_KEY]
       result_dict[common.PRED_NEXT_PANOPTIC_KEY] = tf.numpy_function(
-          func=vip_deeplab.vip_deeplab_stitch,
+          func=vip_deeplab.stitch_video_panoptic_prediction,
           inp=[
               result_dict[common.PRED_CONCAT_NEXT_PANOPTIC_KEY],
               result_dict[common.PRED_NEXT_PANOPTIC_KEY], self._label_divisor

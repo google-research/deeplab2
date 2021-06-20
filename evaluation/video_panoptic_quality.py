@@ -34,6 +34,15 @@ class VideoPanopticQuality(panoptic_quality.PanopticQuality):
   Dahun Kim, Sanghyun Woo, Joon-Young Lee, and In So Kweon.
   "Video panoptic segmentation." In CVPR, 2020.
 
+  Video Panoptic Quality can be modeled as Image Panoptic Quality with the
+  sequences of predictions and the ground-truth labels horizontally concatenated
+  as two images, separately. Therefore, this class inherits the image panoptic
+  quality class and changes the implementation to concatenated comparisons.
+
+  Siyuan Qiao, Yukun Zhu, Hartwig Adam, Alan Yuille, and Liang-Chieh Chen.
+  "ViP-DeepLab: Learning Visual Perception with Depth-aware Video Panoptic
+  Segmentation." In CVPR, 2021.
+
   Stand-alone usage:
   vpq_obj = video_panoptic_quality.VideoPanopticQuality(
     num_classes, max_instances_per_category, ignored_label)
