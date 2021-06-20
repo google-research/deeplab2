@@ -75,7 +75,7 @@ evaluate validation set results.
 
 ```bash
 python cityscapesscripts/evaluation/evalPanopticSemanticLabeling.py \
-    --prediction-json_file=${PATH_TO_SAVE}/panoptic_cocoformat.json \
+    --prediction-json-file=${PATH_TO_SAVE}/panoptic_cocoformat.json \
     --prediction-folder=${PATH_TO_SAVE}/panoptic_cocoformat \
     --gt-json-file=${DATA_ROOT}/gtFine/cityscapes_panoptic_val.json \
     --gt-folder=${DATA_ROOT}/gtFine/cityscapes_panoptic_val
