@@ -60,6 +60,7 @@ class VideoPanopticQuality(panoptic_quality.PanopticQuality):
                name: str = 'video_panoptic_quality',
                **kwargs):
     """Initialization of the VideoPanopticQuality metric.
+
     Args:
       num_classes: Number of classes in the dataset as an integer.
       ignored_label: The class id to be ignored in evaluation as an integer or

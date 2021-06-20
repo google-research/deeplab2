@@ -113,6 +113,7 @@ class Evaluator(orbit.StandardEvaluator):
           self._dataset_info.ignore_label,
           self._dataset_info.panoptic_label_divisor,
           offset=_PANOPTIC_METRIC_OFFSET * 256)
+      # We compute two-frame video panoptic quality.
       self._eval_vpq_metric = vpq.VideoPanopticQuality(
           self._dataset_info.num_classes,
           self._dataset_info.ignore_label,
@@ -224,6 +225,8 @@ class Evaluator(orbit.StandardEvaluator):
             outputs[common.PRED_SEMANTIC_PROBS_KEY],
             outputs[common.PRED_INSTANCE_SCORES_KEY],
             inputs[common.GT_IS_CROWD_RAW])
+      if (common.TASK_VIDEO_PANOPTIC_SEGMENTATION in self._supported_tasks
+              and common.GT_NEXT_PANOPTIC_RAW in inputs):
         step_outputs[self._eval_vpq_metric.name] = (
             inputs[common.GT_PANOPTIC_RAW],
             inputs[common.GT_NEXT_PANOPTIC_RAW],
@@ -289,12 +292,12 @@ class Evaluator(orbit.StandardEvaluator):
       eval_logs['evaluation/step/AQ'] = tracking_results['AQ']
       eval_logs['evaluation/step/IoU'] = tracking_results['IoU']
       vpq_results = self._eval_vpq_metric.result()
-      eval_logs['evaluation/vpq/PQ'] = vpq_results[0]
-      eval_logs['evaluation/vpq/SQ'] = vpq_results[1]
-      eval_logs['evaluation/vpq/RQ'] = vpq_results[2]
-      eval_logs['evaluation/vpq/TP'] = vpq_results[3]
-      eval_logs['evaluation/vpq/FN'] = vpq_results[4]
-      eval_logs['evaluation/vpq/FP'] = vpq_results[5]
+      eval_logs['evaluation/vpq_2frames/PQ'] = vpq_results[0]
+      eval_logs['evaluation/vpq_2frames/SQ'] = vpq_results[1]
+      eval_logs['evaluation/vpq_2frames/RQ'] = vpq_results[2]
+      eval_logs['evaluation/vpq_2frames/TP'] = vpq_results[3]
+      eval_logs['evaluation/vpq_2frames/FN'] = vpq_results[4]
+      eval_logs['evaluation/vpq_2frames/FP'] = vpq_results[5]
     if (common.TASK_DEPTH_AWARE_VIDEO_PANOPTIC_SEGMENTATION
             in self._supported_tasks):
       # Leave space for depth aware video panoptic quality

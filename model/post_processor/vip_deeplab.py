@@ -26,6 +26,10 @@ def stitch_video_panoptic_prediction(
     combine_offset: int = 2 ** 32) -> np.ndarray:
   """The stitching algorithm in ViP-DeepLab.
 
+  This function stitches a pair of image panoptic predictions to form video
+  panoptic predictions by propagating instance IDs from concat_panoptic to
+  next_panoptic based on IoU matching.
+
   Siyuan Qiao, Yukun Zhu, Hartwig Adam, Alan Yuille, and Liang-Chieh Chen.
   "ViP-DeepLab: Learning Visual Perception with Depth-aware Video Panoptic
   Segmentation." CVPR, 2021.
@@ -51,6 +55,7 @@ def stitch_video_panoptic_prediction(
   # Increase the panoptic instance ID to avoid overlap.
   new_category = new_panoptic // label_divisor
   new_instance = new_panoptic % label_divisor
+  # We skip 0 which is reserved for crowd.
   instance_mask = new_instance > 0
   new_instance[instance_mask] = new_instance[instance_mask] + overlap_offset
   new_panoptic = new_category * label_divisor + new_instance
@@ -72,6 +77,7 @@ def stitch_video_panoptic_prediction(
       continue
     concat_instance_label = concat_panoptic_label % label_divisor
     next_instance_label = next_panoptic_label % label_divisor
+    # We skip 0 which is reserved for crowd.
     if concat_instance_label == 0 or next_instance_label == 0:
       continue
     union = (
@@ -83,7 +89,8 @@ def stitch_video_panoptic_prediction(
         concat_panoptic_label, next_panoptic_label, iou])
   intersection_ious = sorted(
       intersection_ious, key=lambda e: e[2])
-  # Build mapping and inverse mapping.
+  # Build mapping and inverse mapping. Two-way mapping guarantees 1-to-1
+  # matching.
   map_concat_to_next = {}
   map_next_to_concat = {}
   for (concat_panoptic_label, next_panoptic_label,
