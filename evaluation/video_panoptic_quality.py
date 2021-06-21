@@ -86,7 +86,7 @@ class VideoPanopticQuality(panoptic_quality.PanopticQuality):
     Args:
       gt_panoptic_labels: A list of tensors for the ground-truth
         video panoptic segmentation labels.
-      pred_panoptic-labels: A list of tensors for video panoptic
+      pred_panoptic_labels: A list of tensors for video panoptic
         segmentation predictions.
 
     Returns:
