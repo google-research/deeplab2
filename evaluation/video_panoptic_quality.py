@@ -14,6 +14,7 @@
 # limitations under the License.
 
 """Implementation of the Video Panoptic Quality metric.
+
 Video Panoptic Quality is an instance-based metric for evaluating the task
 of video panoptic segmentation.
 Please see the paper for details:
