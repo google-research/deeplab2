@@ -73,9 +73,8 @@ class VideoPanopticQuality(panoptic_quality.PanopticQuality):
       name: An optional variable_scope name. (default: 'video_panoptic_quality')
       **kwargs: The keyword arguments that are passed on to `fn`.
     """
-    super(VideoPanopticQuality, self).__init__(
-        num_classes, ignored_label, max_instances_per_category, offset, name,
-        **kwargs)
+    super().__init__(num_classes, ignored_label, max_instances_per_category,
+                     offset, name, **kwargs)
 
   def compare_and_accumulate(
       self, gt_panoptic_labels: List[tf.Tensor],
