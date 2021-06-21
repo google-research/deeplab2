@@ -177,8 +177,7 @@ class Evaluator(orbit.StandardEvaluator):
         tf.shape(inputs[common.RESIZED_IMAGE])[1],
         tf.shape(inputs[common.RESIZED_IMAGE])[2],
     ]
-    outputs = utils.undo_preprocessing_for_predictions(outputs, resized_size,
-                                                       raw_size)
+
     step_outputs = {}
     if self._decode_groundtruth_label:
 
@@ -189,6 +188,10 @@ class Evaluator(orbit.StandardEvaluator):
 
       for name, value in average_loss_dict.items():
         self._eval_loss_metric_dict[name].update_state(value)
+
+      # We only undo-preprocess for those defined in tuples in model/utils.py.
+      outputs = utils.undo_preprocessing(outputs, resized_size,
+                                         raw_size)
 
       self._eval_iou_metric.update_state(
           tf.where(
@@ -209,6 +212,13 @@ class Evaluator(orbit.StandardEvaluator):
             outputs[common.PRED_SEMANTIC_PROBS_KEY],
             outputs[common.PRED_INSTANCE_SCORES_KEY],
             inputs[common.GT_IS_CROWD_RAW])
+    else:
+      # We only undo-preprocess for those defined in tuples in model/utils.py.
+      outputs = utils.undo_preprocessing(outputs, resized_size,
+                                         raw_size)
+    # We only undo-preprocess for those defined in tuples in model/utils.py.
+    inputs = utils.undo_preprocessing(inputs, resized_size,
+                                      raw_size)
     if common.SEQUENCE_ID in inputs:
       step_outputs[common.SEQUENCE_ID] = inputs[common.SEQUENCE_ID]
     if self._enable_visualization or self._save_raw_predictions:
