@@ -24,7 +24,7 @@ from deeplab2 import config_pb2
 
 layers = tf.keras.layers
 
-_PREDICTION_WITH_NEAREST_UPSAMPLING = [
+_PREDICTION_WITH_NEAREST_UPSAMPLING = (
     common.PRED_INSTANCE_KEY,
     common.PRED_INSTANCE_CENTER_KEY,
     common.PRED_INSTANCE_SCORES_KEY,
@@ -32,11 +32,22 @@ _PREDICTION_WITH_NEAREST_UPSAMPLING = [
     common.PRED_SEMANTIC_KEY,
     common.PRED_NEXT_PANOPTIC_KEY,
     common.PRED_CONCAT_NEXT_PANOPTIC_KEY,
-]
+    common.PRED_CENTER_HEATMAP_KEY,
+)
 
-_PREDICTION_WITH_BILINEAR_UPSAMPLING = [
+_PREDICTION_WITH_BILINEAR_UPSAMPLING = (
     common.PRED_SEMANTIC_PROBS_KEY,
-]
+    common.PRED_OFFSET_MAP_KEY,
+)
+
+_INPUT_WITH_NEAREST_UPSAMPLING = (
+    common.GT_INSTANCE_CENTER_KEY,
+)
+
+_INPUT_WITH_BILINEAR_UPSAMPLING = (
+    common.IMAGE,
+    common.GT_INSTANCE_REGRESSION_KEY
+)
 
 
 def _scale_helper(value, scale):
@@ -86,44 +97,44 @@ def undo_image_preprocessing(image_in: tf.Tensor, method: str,
   return resize_align_corners(image_out, output_shape, method=method)
 
 
-def undo_preprocessing_for_predictions(
-    predictions: MutableMapping[str, Any], regions_to_crop: List[int],
-    output_shape: List[int]) -> MutableMapping[str, Any]:
+def undo_preprocessing(input_or_prediction_dict: MutableMapping[str, Any],
+                       regions_to_crop: List[int],
+                       output_shape: List[int]) -> MutableMapping[str, Any]:
   """Undoes preprocessing for predictions.
 
   Args:
-    predictions: A dictionary storing different types of predictions.
+    input_or_prediction_dict: A dictionary storing different types of inputs or
+      predictions.
     regions_to_crop: The regions to crop [height, width]. Will only apply
       cropping at the bottom right.
     output_shape: Desired shape after resizing [height, width].
 
   Returns:
-    predictions after cropping (if perform_crop = True) and resizing.
+    inputs or predictions after cropping (if perform_crop = True) and resizing.
   """
-  for pred_key in predictions.keys():
-    if pred_key in _PREDICTION_WITH_NEAREST_UPSAMPLING:
-      predictions[pred_key] = tf.squeeze(
+  for key in input_or_prediction_dict.keys():
+    if key in _PREDICTION_WITH_NEAREST_UPSAMPLING or key in _INPUT_WITH_NEAREST_UPSAMPLING:
+      input_or_prediction_dict[key] = tf.squeeze(
           undo_image_preprocessing(
-              tf.expand_dims(predictions[pred_key], 3),
+              tf.expand_dims(input_or_prediction_dict[key], 3),
               'nearest',
               perform_crop=True,
               regions_to_crop=regions_to_crop,
               output_shape=output_shape),
           axis=3)
-    elif pred_key in _PREDICTION_WITH_BILINEAR_UPSAMPLING:
-      predictions[pred_key] = undo_image_preprocessing(
-          predictions[pred_key],
+    elif key in _PREDICTION_WITH_BILINEAR_UPSAMPLING or key in _INPUT_WITH_BILINEAR_UPSAMPLING:
+      input_or_prediction_dict[key] = undo_image_preprocessing(
+          input_or_prediction_dict[key],
           'bilinear',
           perform_crop=True,
           regions_to_crop=regions_to_crop,
           output_shape=output_shape)
     else:
-      # We only undo preprocessing for panoptic predictions. The
-      # intermediate results (e.g., keypoint prediction) are not
-      # processed. This is intentional, as not all models will generate
-      # the intermediate results.
+      # We only undo preprocessing for those defined in
+      # _{PREDICTION,INPUT}_WITH_{NEAREST,BILINEAR}_UPSAMPLING.
+      # Other intermediate results are skipped.
       continue
-  return predictions
+  return input_or_prediction_dict
 
 
 def add_zero_padding(input_tensor: tf.Tensor, kernel_size: int,
