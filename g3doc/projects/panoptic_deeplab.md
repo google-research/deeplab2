@@ -29,7 +29,7 @@ by the efficient majority-vote scheme [6].
 1. Make sure the software is properly [installed](../setup/installation.md).
 
 2. Make sure the target dataset is correctly prepared (e.g.,
-[Cityscapes](../setup/cityscapes.md)).
+[Cityscapes](../setup/cityscapes.md), [COCO](../setup/coco.md)).
 
 3. Download the ImageNet pretrained
 [checkpoints](./imagenet_pretrained_checkpoints.md), and update the
@@ -81,6 +81,26 @@ is not supported yet (need to convert our prediction format).
 
 [**]: Results evaluated by our pipeline. See Q4 in [FAQ](../faq.md).
 
+### COCO Panoptic Segmentation
+
+We provide checkpoints pretrained on COCO train set below. If you would like to
+train those models by yourself, please find the corresponding config files under
+the directory
+[configs/coco/panoptic_deeplab](../../configs/coco/panoptic_deeplab).
+
+All the reported results are obtained by *single-scale* inference and
+*ImageNet-1K* pretrained checkpoints.
+
+Backbone                                                                                                                                                                                                                 | Output stride | Output resolution | PQ [*] | PQ [**] | mIoU [**] | AP<sup>Mask</sup> [**]
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :-----------: | :---------------: | :----: | :-----: | :-------: | :--------------------:
+ResNet-50 ([config](../../configs/coco/panoptic_deeplab/resnet50_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_os32_panoptic_deeplab_coco_train_2.tar.gz))             | 32            | 641 x 641         | 34.1   | 34.60   | 54.75     | 18.50
+ResNet-50-Beta ([config](../../configs/coco/panoptic_deeplab/resnet50_beta_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50beta_os32_panoptic_deeplab_coco_train.tar.gz)) | 32            | 641 x 641         | 34.6   | 35.10   | 54.98     | 19.24
+ResNet-50 ([config](../../configs/coco/panoptic_deeplab/resnet50_os16.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_os16_panoptic_deeplab_coco_train.tar.gz))               | 16            | 641 x 641         | 35.1   | 35.67   | 55.52     | 19.40
+ResNet-50-Beta ([config](../../configs/coco/panoptic_deeplab/resnet50_beta_os16.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50beta_os16_panoptic_deeplab_coco_train.tar.gz)) | 16            | 641 x 641         | 35.2   | 35.76   | 55.45     | 19.63
+
+\[*]: Results evaluated by the official script.
+
+\[**]: Results evaluated by our pipeline. See Q4 in [FAQ](../faq.md).
 
 ## Citing Panoptic-DeepLab
 
