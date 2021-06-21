@@ -148,5 +148,3 @@ CKPT_PIXEL_SPACE_MASK_BATCH_NORM = 'pixel_space_mask_batch_norm'
 TASK_PANOPTIC_SEGMENTATION = 'panoptic_segmentation'
 TASK_INSTANCE_SEGMENTATION = 'instance_segmentation'
 TASK_VIDEO_PANOPTIC_SEGMENTATION = 'video_panoptic_segmentation'
-TASK_DEPTH_AWARE_VIDEO_PANOPTIC_SEGMENTATION = (
-    'depth_aware_video_panoptic_segmentation')

@@ -30,8 +30,6 @@ _PREDICTION_WITH_NEAREST_UPSAMPLING = (
     common.PRED_INSTANCE_SCORES_KEY,
     common.PRED_PANOPTIC_KEY,
     common.PRED_SEMANTIC_KEY,
-    common.PRED_NEXT_PANOPTIC_KEY,
-    common.PRED_CONCAT_NEXT_PANOPTIC_KEY,
     common.PRED_CENTER_HEATMAP_KEY,
 )
 
@@ -480,6 +478,4 @@ def get_supported_tasks(
       supported_tasks.add(common.TASK_INSTANCE_SEGMENTATION)
   if is_motion_deeplab or is_vip_deeplab:
     supported_tasks.add(common.TASK_VIDEO_PANOPTIC_SEGMENTATION)
-  if is_vip_deeplab:
-    supported_tasks.add(common.TASK_DEPTH_AWARE_VIDEO_PANOPTIC_SEGMENTATION)
   return supported_tasks
