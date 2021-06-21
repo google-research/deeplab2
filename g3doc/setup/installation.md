@@ -37,10 +37,10 @@ git clone https://github.com/google-research/deeplab2.git
 pip install tensorflow==2.5
 ```
 
-**NOTE** You should find the right Tensorflow version according to your own
+**NOTE:** You should find the right Tensorflow version according to your own
 configuration at
 https://www.tensorflow.org/install/source#tested_build_configurations. You also
-need to choose the right cuda version as listed on the page if we want to run
+need to choose the right cuda version as listed on the page if you want to run
 with GPU.
 
 ### Install Protobuf
@@ -121,8 +121,8 @@ export PYTHONPATH=$PYTHONPATH:${PATH_TO_MODELS}
 export PYTHONPATH=$PYTHONPATH:${PATH_TO_cocoapi_PythonAPI}
 ```
 
-If you clone `models(/orbit)` and `cocoapi` under `${YOUR_PROJECT_NAME}`, here
-is an example:
+If you clone `models(for Orbit)` and `cocoapi` under `${YOUR_PROJECT_NAME}`,
+here is an example:
 
 ```bash
 export PYTHONPATH=$PYTHONPATH:`pwd`:`pwd`/models:`pwd`/cocoapi/PythonAPI
@@ -132,9 +132,9 @@ export PYTHONPATH=$PYTHONPATH:`pwd`:`pwd`/models:`pwd`/cocoapi/PythonAPI
 
 In DeepLab2, we define
 [protocol buffers](https://developers.google.com/protocol-buffers) to configure
-training and evaluation variants (`deeplab2/config.proto`). However, protobuf
-needs to be compiled beforehand into a python recognizable format. To compile
-protobuf, run:
+training and evaluation variants (see [proto definition](../../config.proto)).
+However, protobuf needs to be compiled beforehand into a python recognizable
+format. To compile protobuf, run:
 
 ```bash
 # `${PATH_TO_PROTOC}` is the directory where the `protoc` binary locates.
