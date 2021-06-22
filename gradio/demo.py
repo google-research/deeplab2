@@ -246,13 +246,14 @@ run_cmd("tar -xzvf " + download_path + " -C " + model_dir)
 
 LOADED_MODEL = tf.saved_model.load(os.path.join(model_dir, MODEL_NAME))
 def inference(image):
+    image = image.resize(size=(512, 512))
     im = np.array(image)
     output = LOADED_MODEL(tf.cast(im, tf.uint8))
     return vis_segmentation(im, output['panoptic_pred'][0], DATASET_INFO)
 
 title = "Deeplab2"
 description = "demo for Deeplab2. To use it, simply upload your image, or click one of the examples to load them. Read more at the links below."
-article = "<p style='text-align: center'><a href='https://arxiv.org/abs/2104.05703'>DeepLab2: A TensorFlow Library for Deep Labeling</a> | <a href='https://github.com/google-research/deeplab2'>Github Repo</a></p>"
+article = "<p style='text-align: center'><a href='https://arxiv.org/abs/2106.09748'>DeepLab2: A TensorFlow Library for Deep Labeling</a> | <a href='https://github.com/google-research/deeplab2'>Github Repo</a></p>"
 
 gr.Interface(
     inference, 
