@@ -11,9 +11,13 @@ import urllib
 import tensorflow as tf
 import gradio as gr
 
-from google.colab import files
 from subprocess import call
 import sys
+import torch
+
+# Images
+torch.hub.download_url_to_file('https://cdn.pixabay.com/photo/2021/01/28/18/21/beach-5958718_1280.jpg', 'town.jpg')
+torch.hub.download_url_to_file('https://cdn.pixabay.com/photo/2021/06/19/20/30/bird-6349407_1280.jpg', 'bird.jpg')
 
 DatasetInfo = collections.namedtuple(
     'DatasetInfo',
@@ -256,4 +260,8 @@ gr.Interface(
     gr.outputs.Image(type="plot", label="Output"),
     title=title,
     description=description,
-    article=article).launch()
+    article=article,
+    examples=[
+        ["town.jpg"],
+        ["bird.jpg"]
+    ]).launch()
