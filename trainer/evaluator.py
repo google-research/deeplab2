@@ -31,12 +31,15 @@ from deeplab2.data import dataset
 from deeplab2.evaluation import coco_instance_ap as instance_ap
 from deeplab2.evaluation import panoptic_quality
 from deeplab2.evaluation import segmentation_and_tracking_quality as stq
+from deeplab2.evaluation import video_panoptic_quality as vpq
 from deeplab2.model import utils
 from deeplab2.trainer import runner_utils
 from deeplab2.trainer import vis
 
-
 _PANOPTIC_METRIC_OFFSET = 256 * 256
+# Video Panoptic Segmentation requires a larger offset value for accommodating
+# more instance IDs.
+_VIDEO_PANOPTIC_METRIC_OFFSET = _PANOPTIC_METRIC_OFFSET * 256
 _PREDICTIONS_KEY = 'unique_key_for_storing_predictions'
 _LABELS_KEY = 'unique_key_for_storing_labels'
 
@@ -60,8 +63,8 @@ class Evaluator(orbit.StandardEvaluator):
     eval_dataset = runner_utils.create_dataset(
         config.eval_dataset_options,
         is_training=False,
-        only_semantic_annotations=(
-            common.TASK_PANOPTIC_SEGMENTATION not in self._supported_tasks))
+        only_semantic_annotations=(common.TASK_PANOPTIC_SEGMENTATION
+                                   not in self._supported_tasks))
     eval_dataset = orbit.utils.make_distributed_dataset(self._strategy,
                                                         eval_dataset)
     evaluator_options_override = orbit.StandardEvaluatorOptions(
@@ -111,7 +114,16 @@ class Evaluator(orbit.StandardEvaluator):
           self._dataset_info.class_has_instances_list,
           self._dataset_info.ignore_label,
           self._dataset_info.panoptic_label_divisor,
-          offset=_PANOPTIC_METRIC_OFFSET * 256)
+          offset=_VIDEO_PANOPTIC_METRIC_OFFSET)
+    if (common.TASK_DEPTH_AWARE_VIDEO_PANOPTIC_SEGMENTATION
+        in self._supported_tasks):
+      # We compute two-frame video panoptic quality as an additional metric
+      # for the task of depth-aware video panoptic segmentation.
+      self._eval_vpq_metric = vpq.VideoPanopticQuality(
+          self._dataset_info.num_classes,
+          self._dataset_info.ignore_label,
+          self._dataset_info.panoptic_label_divisor,
+          offset=_VIDEO_PANOPTIC_METRIC_OFFSET)
 
   def _reset(self):
     for metric in self._eval_loss_metric_dict.values():
@@ -123,6 +135,9 @@ class Evaluator(orbit.StandardEvaluator):
       self._eval_ap_metric.reset_states()
     if common.TASK_VIDEO_PANOPTIC_SEGMENTATION in self._supported_tasks:
       self._eval_tracking_metric.reset_states()
+    if (common.TASK_DEPTH_AWARE_VIDEO_PANOPTIC_SEGMENTATION
+        in self._supported_tasks):
+      self._eval_vpq_metric.reset_states()
     self._sample_counter = 0
 
   def eval_begin(self):
@@ -133,11 +148,9 @@ class Evaluator(orbit.StandardEvaluator):
     self._reset()
     tf.io.gfile.makedirs(self._vis_dir)
     if self._save_raw_predictions:
-      tf.io.gfile.makedirs(
-          os.path.join(self._vis_dir, 'raw_semantic'))
+      tf.io.gfile.makedirs(os.path.join(self._vis_dir, 'raw_semantic'))
       if common.TASK_PANOPTIC_SEGMENTATION in self._supported_tasks:
-        tf.io.gfile.makedirs(
-            os.path.join(self._vis_dir, 'raw_panoptic'))
+        tf.io.gfile.makedirs(os.path.join(self._vis_dir, 'raw_panoptic'))
 
   def eval_step(self, iterator):
     """Implements one step of evaluation.
@@ -157,6 +170,7 @@ class Evaluator(orbit.StandardEvaluator):
       An output which is passed as `step_outputs` argument into `eval_reduce`
       function.
     """
+
     def step_fn(inputs):
       step_outputs = self._eval_step(inputs)
       return step_outputs
@@ -166,9 +180,9 @@ class Evaluator(orbit.StandardEvaluator):
                                  distributed_outputs)
 
   def _eval_step(self, inputs):
-    tf.assert_equal(tf.shape(inputs[common.IMAGE])[0], 1, 'Currently only a '
-                    'batchsize of 1 is supported in evaluation due to resizing.'
-                    )
+    tf.assert_equal(
+        tf.shape(inputs[common.IMAGE])[0], 1, 'Currently only a '
+        'batchsize of 1 is supported in evaluation due to resizing.')
     outputs = self._model(inputs[common.IMAGE], training=False)
     raw_size = [
         inputs[common.GT_SIZE_RAW][0, 0], inputs[common.GT_SIZE_RAW][0, 1]
@@ -184,7 +198,8 @@ class Evaluator(orbit.StandardEvaluator):
       loss_dict = self._loss(inputs, outputs)
       # Average over the batch.
       average_loss_dict = {
-          key: tf.reduce_mean(value) for key, value in loss_dict.items()}
+          key: tf.reduce_mean(value) for key, value in loss_dict.items()
+      }
 
       for name, value in average_loss_dict.items():
         self._eval_loss_metric_dict[name].update_state(value)
@@ -195,13 +210,11 @@ class Evaluator(orbit.StandardEvaluator):
 
       self._eval_iou_metric.update_state(
           tf.where(
-              tf.equal(inputs[common.GT_SEMANTIC_RAW], self._ignore_label),
-              0,
+              tf.equal(inputs[common.GT_SEMANTIC_RAW], self._ignore_label), 0,
               inputs[common.GT_SEMANTIC_RAW]),
           outputs[common.PRED_SEMANTIC_KEY],
           tf.where(
-              tf.equal(inputs[common.GT_SEMANTIC_RAW], self._ignore_label),
-              0.0,
+              tf.equal(inputs[common.GT_SEMANTIC_RAW], self._ignore_label), 0.0,
               1.0))
       if common.TASK_PANOPTIC_SEGMENTATION in self._supported_tasks:
         step_outputs[self._eval_pq_metric.name] = (
@@ -212,6 +225,12 @@ class Evaluator(orbit.StandardEvaluator):
             outputs[common.PRED_SEMANTIC_PROBS_KEY],
             outputs[common.PRED_INSTANCE_SCORES_KEY],
             inputs[common.GT_IS_CROWD_RAW])
+      if (common.TASK_DEPTH_AWARE_VIDEO_PANOPTIC_SEGMENTATION
+          in self._supported_tasks):
+        step_outputs[self._eval_vpq_metric.name] = (
+            inputs[common.GT_PANOPTIC_RAW], inputs[common.GT_NEXT_PANOPTIC_RAW],
+            outputs[common.PRED_PANOPTIC_KEY],
+            outputs[common.PRED_NEXT_PANOPTIC_KEY])
     else:
       # We only undo-preprocess for those defined in tuples in model/utils.py.
       outputs = utils.undo_preprocessing(outputs, resized_size,
@@ -274,6 +293,15 @@ class Evaluator(orbit.StandardEvaluator):
       eval_logs['evaluation/step/STQ'] = tracking_results['STQ']
       eval_logs['evaluation/step/AQ'] = tracking_results['AQ']
       eval_logs['evaluation/step/IoU'] = tracking_results['IoU']
+    if (common.TASK_DEPTH_AWARE_VIDEO_PANOPTIC_SEGMENTATION
+        in self._supported_tasks):
+      vpq_results = self._eval_vpq_metric.result()
+      eval_logs['evaluation/vpq_2frames/PQ'] = vpq_results[0]
+      eval_logs['evaluation/vpq_2frames/SQ'] = vpq_results[1]
+      eval_logs['evaluation/vpq_2frames/RQ'] = vpq_results[2]
+      eval_logs['evaluation/vpq_2frames/TP'] = vpq_results[3]
+      eval_logs['evaluation/vpq_2frames/FN'] = vpq_results[4]
+      eval_logs['evaluation/vpq_2frames/FP'] = vpq_results[5]
     return eval_logs
 
   def eval_reduce(self, state=None, step_outputs=None):
@@ -312,14 +340,10 @@ class Evaluator(orbit.StandardEvaluator):
       predictions = step_outputs[_PREDICTIONS_KEY]
       inputs = step_outputs[_LABELS_KEY]
       if self._dataset_info.is_video_dataset:
-        inputs[common.IMAGE] = tf.expand_dims(inputs[common.IMAGE][0][..., :3],
-                                              axis=0)
-      vis.store_predictions(
-          predictions,
-          inputs,
-          self._sample_counter,
-          self._dataset_info,
-          self._vis_dir)
+        inputs[common.IMAGE] = tf.expand_dims(
+            inputs[common.IMAGE][0][..., :3], axis=0)
+      vis.store_predictions(predictions, inputs, self._sample_counter,
+                            self._dataset_info, self._vis_dir)
       self._sample_counter += 1
 
     # Accumulates PQ, AP_Mask and STQ.
@@ -346,6 +370,16 @@ class Evaluator(orbit.StandardEvaluator):
                                             pred_semantic_probs[i],
                                             pred_instance_scores[i],
                                             gt_is_crowd[i])
+    if (common.TASK_DEPTH_AWARE_VIDEO_PANOPTIC_SEGMENTATION
+        in self._supported_tasks):
+      for vpq_result in zip(*tuple(step_outputs[self._eval_vpq_metric.name])):
+        (gt_panoptic, gt_next_panoptic, pred_panoptic,
+         pred_next_panoptic) = vpq_result
+        batch_size = tf.shape(gt_panoptic)[0]
+        for i in range(batch_size):
+          self._eval_vpq_metric.update_state(
+              [gt_panoptic[i], gt_next_panoptic[i]],
+              [pred_panoptic[i], pred_next_panoptic[i]])
     # We simply return state as it is, since our current implementation does not
     # keep track of state between steps.
     return state

@@ -188,8 +188,8 @@ class ViPDeepLab(tf.keras.Model):
       # for the results of the next pair. Here, we need to compute the panoptic
       # predictions of the next frame to do pair evaluation.
       # pylint: disable=arguments-out-of-order
-      next_result_dict = self._inference(
-          next_input_tensor, input_tensor, training)
+      next_result_dict = self._inference(next_input_tensor, input_tensor,
+                                         training)
       # Here, we horizontally concat the raw predictions of the current frame
       # and the next frame to perform two-frame panoptic post-processing.
       concat_result_dict = collections.defaultdict(list)
@@ -229,7 +229,7 @@ class ViPDeepLab(tf.keras.Model):
       result_dict[common.PRED_CONCAT_NEXT_PANOPTIC_KEY] = next_result_dict[
           common.PRED_PANOPTIC_KEY]
       result_dict[common.PRED_NEXT_PANOPTIC_KEY] = tf.numpy_function(
-          func=vip_deeplab.vip_deeplab_stitch,
+          func=vip_deeplab.stitch_video_panoptic_prediction,
           inp=[
               result_dict[common.PRED_CONCAT_NEXT_PANOPTIC_KEY],
               result_dict[common.PRED_NEXT_PANOPTIC_KEY], self._label_divisor

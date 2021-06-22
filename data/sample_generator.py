@@ -192,6 +192,9 @@ class PanopticSampleGenerator:
       label.get_shape().assert_is_compatible_with(
           tf.TensorShape([None, None, 1]))
       original_label = tf.cast(label, dtype=tf.int32, name='original_label')
+      if next_label is not None:
+        original_next_label = tf.cast(
+            next_label, dtype=tf.int32, name='original_next_label')
     # Reusing the preprocessing function for both next and prev samples.
     if next_image is not None:
       resized_image, image, label, next_image, next_label = (
@@ -315,6 +318,9 @@ class PanopticSampleGenerator:
         if not self._only_semantic_annotations:
           sample[common.GT_PANOPTIC_RAW] = tf.squeeze(original_label, axis=2)
           sample[common.GT_IS_CROWD_RAW] = tf.squeeze(orig_crowd_region)
+          if next_label is not None:
+            sample[common.GT_NEXT_PANOPTIC_RAW] = tf.squeeze(
+                original_next_label, axis=2)
     return sample
 
   def _generate_thing_id_mask_and_class(self,
