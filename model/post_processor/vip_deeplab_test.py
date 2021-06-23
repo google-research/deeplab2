@@ -24,41 +24,29 @@ class PostProcessingTest(tf.test.TestCase):
 
   def test_stitch_video_panoptic_prediction(self):
     concat_semantic = np.array(
-        [[[0, 0, 0, 0],
-          [0, 1, 1, 0],
-          [0, 2, 2, 0],
-          [2, 2, 3, 3]]], dtype=np.int32)
+        [[[0, 0, 0, 0], [0, 1, 1, 0], [0, 2, 2, 0], [2, 2, 3, 3]]],
+        dtype=np.int32)
     concat_instance = np.array(
-        [[[1, 1, 2, 2],
-          [1, 0, 0, 2],
-          [1, 1, 1, 2],
-          [2, 2, 1, 1]]], dtype=np.int32)
+        [[[1, 1, 2, 2], [1, 0, 0, 2], [1, 1, 1, 2], [2, 2, 1, 1]]],
+        dtype=np.int32)
     next_semantic = np.array(
-        [[[0, 1, 1, 0],
-          [0, 1, 1, 0],
-          [0, 2, 2, 0],
-          [2, 2, 3, 3]]], dtype=np.int32)
+        [[[0, 1, 1, 0], [0, 1, 1, 0], [0, 2, 2, 0], [2, 2, 3, 3]]],
+        dtype=np.int32)
     next_instance = np.array(
-        [[[2, 0, 0, 1],
-          [2, 0, 0, 1],
-          [2, 4, 4, 1],
-          [5, 5, 3, 3]]], dtype=np.int32)
+        [[[2, 0, 0, 1], [2, 0, 0, 1], [2, 4, 4, 1], [5, 5, 3, 3]]],
+        dtype=np.int32)
     label_divisor = 1000
     concat_panoptic = concat_semantic * label_divisor + concat_instance
     next_panoptic = next_semantic * label_divisor + next_instance
     new_panoptic = vip_deeplab.stitch_video_panoptic_prediction(
-        concat_panoptic,
-        next_panoptic,
-        label_divisor)
+        concat_panoptic, next_panoptic, label_divisor)
     # The expected instance is manually computed. It should receive the IDs
     # propagated from concat_instance by IoU matching between concat_panoptic
     # and next_panoptic.
     expected_semantic = next_semantic
     expected_instance = np.array(
-        [[[1, 0, 0, 2],
-          [1, 0, 0, 2],
-          [1, 1, 1, 2],
-          [2, 2, 1, 1]]], dtype=np.int32)
+        [[[1, 0, 0, 2], [1, 0, 0, 2], [1, 1, 1, 2], [2, 2, 1, 1]]],
+        dtype=np.int32)
     expected_panoptic = expected_semantic * label_divisor + expected_instance
     np.testing.assert_array_equal(expected_panoptic, new_panoptic)
 

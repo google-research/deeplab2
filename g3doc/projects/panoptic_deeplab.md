@@ -29,7 +29,7 @@ by the efficient majority-vote scheme [6].
 1. Make sure the software is properly [installed](../setup/installation.md).
 
 2. Make sure the target dataset is correctly prepared (e.g.,
-[Cityscapes](../setup/cityscapes.md)).
+[Cityscapes](../setup/cityscapes.md), [COCO](../setup/coco.md)).
 
 3. Download the ImageNet pretrained
 [checkpoints](./imagenet_pretrained_checkpoints.md), and update the
@@ -65,20 +65,42 @@ config files under the directory
 All the reported results are obtained by *single-scale* inference and
 *ImageNet-1K* pretrained checkpoints.
 
-Backbone | Output stride | Output resolution | PQ [*] | mIoU [*] | PQ [**] | mIoU [**] | AP<sup>Mask</sup> [**]
--------- | :-----------: | :---------------: | :---: | :---: | :---: | :---: | :---:
-ResNet-50 ([config](../../configs/cityscapes/panoptic_deeplab/resnet50_os32_merge_with_pure_tf_func.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_os32_panoptic_deeplab_cityscapes_trainfine.tar.gz)) | 32 | 1025 x 2049 | 59.8 | 76.0 | 60.24 | 76.36 | 30.01
-ResNet-50-Beta ([config](../../configs/cityscapes/panoptic_deeplab/resnet50_beta_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_beta_os32_panoptic_deeplab_cityscapes_trainfine.tar.gz)) | 32 | 1025 x 2049 | 60.8 | 77.0 | 61.16 | 77.37 | 31.58
-Wide-ResNet-41 ([config](../../configs/cityscapes/panoptic_deeplab/wide_resnet41_os16.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/wide_resnet41_os16_panoptic_deeplab_cityscapes_trainfine.tar.gz)) | 16 | 1025 x 2049 | 64.4 | 81.5 | 64.83 | 81.92 | 36.07
-SWideRNet-SAC-(1, 1, 1) ([config](../../configs/cityscapes/panoptic_deeplab/swidernet_sac_1_1_1_os16.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/swidernet_sac_1_1_1_os16_panoptic_deeplab_cityscapes_trainfine.tar.gz)) | 16 | 1025 x 2049 | 64.3 | 81.8 | 64.81 | 82.24 | 36.80
-SWideRNet-SAC-(1, 1, 3) ([config](../../configs/cityscapes/panoptic_deeplab/swidernet_sac_1_1_3_os16.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/swidernet_sac_1_1_3_os16_panoptic_deeplab_cityscapes_trainfine.tar.gz))) | 16 | 1025 x 2049 | 66.6 | 82.1 | 67.05 | 82.67 | 38.59
-SWideRNet-SAC-(1, 1, 4.5) ([config](../../configs/cityscapes/panoptic_deeplab/swidernet_sac_1_1_4.5_os16.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/swidernet_sac_1_1_4.5_os16_panoptic_deeplab_cityscapes_trainfine.tar.gz)) | 16 | 1025 x 2049 | 66.8 | 82.2 | 67.29 | 82.74 | 39.51
+Backbone                                                                                                                                                                                                                                                             | Output stride | Input resolution | PQ [*] | mIoU [*] | PQ [**] | mIoU [**] | AP<sup>Mask</sup> [**]
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-----------: | :---------------: | :----: | :------: | :-----: | :-------: | :--------------------:
+MobilenetV3-S ([config](../../configs/cityscapes/panoptic_deeplab/mobilenet_v3_small_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/mobilenet_v3_small_os32_panoptic_deeplab_cityscapes_trainfine.tar.gz))                   | 32            | 1025 x 2049       | 46.7   | 69.5     | 46.92   | 69.8      | 16.53
+MobilenetV3-L ([config](../../configs/cityscapes/panoptic_deeplab/mobilenet_v3_large_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/mobilenet_v3_large_os32_panoptic_deeplab_cityscapes_trainfine.tar.gz))                   | 32            | 1025 x 2049       | 52.7   | 73.8     | 53.07   | 74.15     | 22.58
+ResNet-50 ([config](../../configs/cityscapes/panoptic_deeplab/resnet50_os32_merge_with_pure_tf_func.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_os32_panoptic_deeplab_cityscapes_trainfine.tar.gz))                   | 32            | 1025 x 2049       | 59.8   | 76.0     | 60.24   | 76.36     | 30.01
+ResNet-50-Beta ([config](../../configs/cityscapes/panoptic_deeplab/resnet50_beta_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_beta_os32_panoptic_deeplab_cityscapes_trainfine.tar.gz))                            | 32            | 1025 x 2049       | 60.8   | 77.0     | 61.16   | 77.37     | 31.58
+Wide-ResNet-41 ([config](../../configs/cityscapes/panoptic_deeplab/wide_resnet41_os16.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/wide_resnet41_os16_panoptic_deeplab_cityscapes_trainfine.tar.gz))                            | 16            | 1025 x 2049       | 64.4   | 81.5     | 64.83   | 81.92     | 36.07
+SWideRNet-SAC-(1, 1, 1) ([config](../../configs/cityscapes/panoptic_deeplab/swidernet_sac_1_1_1_os16.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/swidernet_sac_1_1_1_os16_panoptic_deeplab_cityscapes_trainfine.tar.gz))       | 16            | 1025 x 2049       | 64.3   | 81.8     | 64.81   | 82.24     | 36.80
+SWideRNet-SAC-(1, 1, 3) ([config](../../configs/cityscapes/panoptic_deeplab/swidernet_sac_1_1_3_os16.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/swidernet_sac_1_1_3_os16_panoptic_deeplab_cityscapes_trainfine.tar.gz)))      | 16            | 1025 x 2049       | 66.6   | 82.1     | 67.05   | 82.67     | 38.59
+SWideRNet-SAC-(1, 1, 4.5) ([config](../../configs/cityscapes/panoptic_deeplab/swidernet_sac_1_1_4.5_os16.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/swidernet_sac_1_1_4.5_os16_panoptic_deeplab_cityscapes_trainfine.tar.gz)) | 16            | 1025 x 2049       | 66.8   | 82.2     | 67.29   | 82.74     | 39.51
 
 [*]: Results evaluated by the official script. Instance segmentation evaluation
 is not supported yet (need to convert our prediction format).
 
 [**]: Results evaluated by our pipeline. See Q4 in [FAQ](../faq.md).
 
+### COCO Panoptic Segmentation
+
+We provide checkpoints pretrained on COCO train set below. If you would like to
+train those models by yourself, please find the corresponding config files under
+the directory
+[configs/coco/panoptic_deeplab](../../configs/coco/panoptic_deeplab).
+
+All the reported results are obtained by *single-scale* inference and
+*ImageNet-1K* pretrained checkpoints.
+
+Backbone                                                                                                                                                                                                                 | Output stride | Input resolution | PQ [*] | PQ [**] | mIoU [**] | AP<sup>Mask</sup> [**]
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :-----------: | :---------------: | :----: | :-----: | :-------: | :--------------------:
+ResNet-50 ([config](../../configs/coco/panoptic_deeplab/resnet50_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_os32_panoptic_deeplab_coco_train_2.tar.gz))             | 32            | 641 x 641         | 34.1   | 34.60   | 54.75     | 18.50
+ResNet-50-Beta ([config](../../configs/coco/panoptic_deeplab/resnet50_beta_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50beta_os32_panoptic_deeplab_coco_train.tar.gz)) | 32            | 641 x 641         | 34.6   | 35.10   | 54.98     | 19.24
+ResNet-50 ([config](../../configs/coco/panoptic_deeplab/resnet50_os16.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50_os16_panoptic_deeplab_coco_train.tar.gz))               | 16            | 641 x 641         | 35.1   | 35.67   | 55.52     | 19.40
+ResNet-50-Beta ([config](../../configs/coco/panoptic_deeplab/resnet50_beta_os16.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/resnet50beta_os16_panoptic_deeplab_coco_train.tar.gz)) | 16            | 641 x 641         | 35.2   | 35.76   | 55.45     | 19.63
+
+\[*]: Results evaluated by the official script.
+
+\[**]: Results evaluated by our pipeline. See Q4 in [FAQ](../faq.md).
 
 ## Citing Panoptic-DeepLab
 

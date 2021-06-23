@@ -19,6 +19,10 @@ The IoUTracker takes frame-by-frame panoptic segmentation prediction and
 generates video panoptic segmentation with re-ordered identities based on IoU
 overlaps within consecutive frames.
 
+We recommend to use the 3 input channels as it allows for a wide range of
+instance IDs. The evaluator options can be configured with raw_panoptic_format:
+`three_channel_png` to export results in the recommended format.
+
 To run this script, you need to install scipy.
 For example, install it via pip:
 $pip install scipy
@@ -57,6 +61,13 @@ flags.DEFINE_string(
 flags.DEFINE_string('optical_flow', None,
                     'The path to the optical flow predictions. This folder '
                     'should contain one folder per sequence.')
+flags.DEFINE_integer(
+    'input_channels', 2, 'DeepLab2 supports two formats when exporting '
+    'predictions. The first channel of the input always encodes the semantic '
+    'class while either only the second channel (G in RGB) encodes the '
+    'instance ID or the second and third channel (GB in RGB). Depending on the '
+    'ground-truth and prediction format, the valid options are `2` and `3`.')
+                  
 
 _LABEL_DIVISOR = 10000
 _OCCLUSION_EXT = '.occ_forward'
@@ -280,11 +291,47 @@ class IoUTracker(object):
     return list_of_matches, unmatched_instances, unmatched_tracks
 
 
-def read_panoptic_image(path: Text, label_divisor: int) -> np.ndarray:
-  """Reads in a panoptic image in 2 channel format and returns as np array."""
+def read_panoptic_image_2ch(path: Text, label_divisor: int) -> np.ndarray:
+  """Reads in a panoptic image in 2 channel format.
+  
+  The 2 channel format encodes the semantic class in the first channel, and the
+  instance ID in the second channel.
+
+  Args:
+    path: A string specifying the path to the image to be loaded.
+    label_divisior: An integer specifying the label divisor that is used to
+      combine the semantic class and the instance ID.
+
+  Returns:
+    A numpy array enconding the semantic class and instance ID for every pixel.
+  """
   with tf.io.gfile.GFile(path, 'rb') as f:
     image = tf.cast(tf.io.decode_image(f.read()), tf.int32).numpy()
+
+  if image.shape[2] == 3 and np.any(image[..., 2] != 0):
+    raise ValueError('The input %s is not in 2 channel format.' % path)
   return image[..., 0] * label_divisor + image[..., 1]
+
+
+def read_panoptic_image_3ch(path: Text, label_divisor: int) -> np.ndarray:
+  """Reads in a panoptic image in 3 channel format.
+  
+  The 3 channel format encodes the semantic class in the first channel, and the
+  instance ID in the second and third channel as follows: instance_id =
+  image[..., 1] * 256 + image[..., 2].
+
+  Args:
+    path: A string specifying the path to the image to be loaded.
+    label_divisior: An integer specifying the label divisor that is used to
+      combine the semantic class and the instance ID.
+
+  Returns:
+    A numpy array enconding the semantic class and instance ID for every pixel.
+  """
+  with tf.io.gfile.GFile(path, 'rb') as f:
+    image = tf.cast(tf.io.decode_image(f.read()), tf.int32).numpy()
+
+  return image[..., 0] * label_divisor + image[..., 1] * 256 + image[..., 2]
 
 
 def read_numpy_tensor(path: Text) -> np.ndarray:
@@ -309,6 +356,13 @@ def main(unused_args):
   metric = stq.STQuality(num_classes, thing_classes, ignore_label,
                          _LABEL_DIVISOR, 256*256*256)
 
+  if FLAGS.input_channels == 2:
+    reader_fn = read_panoptic_image_2ch
+  elif FLAGS.input_channels == 3:
+    reader_fn = read_panoptic_image_3ch
+  else:
+    raise ValueError('The --input_channels must be 2 or 3.')
+
   # Get ground-truth files.
   for gt_sequence_folder in tf.io.gfile.glob(os.path.join(FLAGS.gt, '*')):
     tracker.reset_states()
@@ -328,8 +382,8 @@ def main(unused_args):
       flow = None
       occlusion = None
       logging.info('Processing sequence %s: frame %s.', sequence, gt_frame_name)
-      gt_frame = read_panoptic_image(gt_frame_path, _LABEL_DIVISOR)
-      pred_frame = read_panoptic_image(pred_frame_name, _LABEL_DIVISOR)
+      gt_frame = reader_fn(gt_frame_path, _LABEL_DIVISOR)
+      pred_frame = reader_fn(pred_frame_name, _LABEL_DIVISOR)
       if use_optical_flow:
         frame_id = int(os.path.splitext(gt_frame_name)[0])
         flow_path = os.path.join(optical_flow_sequence_folder,

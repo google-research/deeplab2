@@ -14,7 +14,7 @@
 # limitations under the License.
 
 """Utility functions for optical flow."""
-from cvx2 import latest as cv
+import cv2 as cv
 import numpy as np
 
 

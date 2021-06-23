@@ -13,8 +13,8 @@ A high-level overview of the whole process:
 
 We also define some environmental variables for simplicity and convenience:
 
-`EXPERIMENT_ROOT` and `EXPERIMENT_NAME`: variables set in textproto file, which
-define where all checkpoints and results are saved.
+`BASE_MODEL_DIRECTORY`: variables set in textproto file, which defines where all
+checkpoints and results are saved.
 
 `DATA_ROOT`: where the original COCO dataset is located.
 
@@ -33,9 +33,8 @@ evaluator_options.save_raw_predictions = true
 evaluator_options.convert_raw_to_eval_ids = true
 ```
 
-Then run the model in evaluation modes (with `--job_type="eval"`), and the
-results will be saved at
-${EXPERIMENT_ROOT}/${EXPERIMENT_NAME}/vis/raw_panoptic/\*.png.
+Then run the model in evaluation modes (with `--mode=eval`), and the results
+will be saved at ${BASE_MODEL_DIRECTORY}/vis/raw_panoptic/\*.png.
 
 ## Convert the Prediction Format
 
@@ -45,7 +44,7 @@ panoptic COCO format.
 
 ```bash
 python panopticapi/converters/2channels2panoptic_coco_format.py \
-  --source_folder=${EXPERIMENT_ROOT}/${EXPERIMENT_NAME}/vis/raw_panoptic \
+  --source_folder=${BASE_MODEL_DIRECTORY}/vis/raw_panoptic \
   --images_json_file=${DATA_ROOT}/annotations/IMG_JSON \
   --categories_json_file=panopticapi/panoptic_coco_categories.json \
   --segmentations_folder=${PATH_TO_SAVE}/panoptic_cocoformat \

@@ -49,12 +49,6 @@ _CITYSCAPES_TRAIN_ID_TO_EVAL_ID = (
 _COCO_TRAIN_ID_TO_EVAL_ID = coco_constants.get_id_mapping_inverse()
 
 
-def _crop_like(tensor_to_crop: np.ndarray,
-               crop_to_tensor: np.ndarray) -> np.ndarray:
-  h, w = crop_to_tensor.shape[:2]
-  return tensor_to_crop[:h, :w, ...]
-
-
 def _convert_train_id_to_eval_id(
     prediction: np.ndarray, dataset_name: str) -> np.ndarray:
   """Converts the predicted label for evaluation.
@@ -246,8 +240,9 @@ def store_predictions(predictions: Dict[str, Any], inputs: Dict[str, Any],
   colormap_name = dataset_info.colormap
 
   # 1. Save image.
+  image = inputs[common.IMAGE]
   vis_utils.save_annotation(
-      inputs[common.IMAGE],
+      image,
       save_dir,
       _IMAGE_FORMAT % image_id,
       add_colormap=False)
@@ -268,26 +263,26 @@ def store_predictions(predictions: Dict[str, Any], inputs: Dict[str, Any],
 
   if common.PRED_CENTER_HEATMAP_KEY in predictions:
     # 3. Save center heatmap.
+    heatmap_pred = predictions[common.PRED_CENTER_HEATMAP_KEY]
+    heat_map_gt = inputs[common.GT_INSTANCE_CENTER_KEY]
     vis_utils.save_annotation(
         vis_utils.overlay_heatmap_on_image(
-            predictions[common.PRED_CENTER_HEATMAP_KEY],
-            inputs[common.IMAGE]),
+            heatmap_pred,
+            image),
         save_dir,
         _CENTER_HEATMAP_PREDICTION_FORMAT % image_id,
         add_colormap=False)
     vis_utils.save_annotation(
         vis_utils.overlay_heatmap_on_image(
-            inputs[common.GT_INSTANCE_CENTER_KEY],
-            inputs[common.IMAGE]),
+            heat_map_gt,
+            image),
         save_dir,
         _CENTER_LABEL_FORMAT % image_id,
         add_colormap=False)
 
   if common.PRED_OFFSET_MAP_KEY in predictions:
     # 4. Save center offsets.
-    center_offset_prediction = _crop_like(
-        predictions[common.PRED_OFFSET_MAP_KEY],
-        predictions[common.PRED_SEMANTIC_KEY])
+    center_offset_prediction = predictions[common.PRED_OFFSET_MAP_KEY]
     center_offset_prediction_rgb = vis_utils.flow_to_color(
         center_offset_prediction)
     semantic_prediction = predictions[common.PRED_SEMANTIC_KEY]
@@ -302,9 +297,11 @@ def store_predictions(predictions: Dict[str, Any], inputs: Dict[str, Any],
 
     center_offset_label = inputs[common.GT_INSTANCE_REGRESSION_KEY]
     center_offset_label_rgb = vis_utils.flow_to_color(center_offset_label)
-    gt_fg_mask = _get_fg_mask(inputs[common.GT_SEMANTIC_KEY], thing_list)
+    gt_fg_mask = _get_fg_mask(inputs[common.GT_SEMANTIC_RAW], thing_list)
+    center_offset_label_rgb = center_offset_label_rgb * gt_fg_mask
+
     vis_utils.save_annotation(
-        center_offset_label_rgb * gt_fg_mask,
+        center_offset_label_rgb,
         save_dir,
         _OFFSET_LABEL_FORMAT % image_id,
         add_colormap=False)

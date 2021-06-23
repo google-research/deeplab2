@@ -53,6 +53,7 @@ class VideoPanopticQuality(panoptic_quality.PanopticQuality):
   result = vpq_obj.result().numpy()
   """
 
+  # pylint: disable=useless-super-delegation
   def __init__(self,
                num_classes: int,
                ignored_label: int,
@@ -73,9 +74,8 @@ class VideoPanopticQuality(panoptic_quality.PanopticQuality):
       name: An optional variable_scope name. (default: 'video_panoptic_quality')
       **kwargs: The keyword arguments that are passed on to `fn`.
     """
-    super(VideoPanopticQuality, self).__init__(
-        num_classes, ignored_label, max_instances_per_category, offset, name,
-        **kwargs)
+    super().__init__(num_classes, ignored_label, max_instances_per_category,
+                     offset, name, **kwargs)
 
   def compare_and_accumulate(
       self, gt_panoptic_labels: List[tf.Tensor],
@@ -84,10 +84,10 @@ class VideoPanopticQuality(panoptic_quality.PanopticQuality):
     """Compares predicted segmentation with groundtruth, accumulates its metric.
 
     Args:
-      gt_panoptic_labels: A list of tensors for the ground-truth
-        video panoptic segmentation labels.
-      pred_panoptic_labels: A list of tensors for video panoptic
-        segmentation predictions.
+      gt_panoptic_labels: A list of tensors for the ground-truth video panoptic
+        segmentation labels.
+      pred_panoptic_labels: A list of tensors for video panoptic segmentation
+        predictions.
 
     Returns:
       The value of the metrics (iou, tp, fn, fp) over all comparisons, as a
@@ -95,5 +95,6 @@ class VideoPanopticQuality(panoptic_quality.PanopticQuality):
     """
     gt_panoptic_label = tf.concat(gt_panoptic_labels, axis=1)
     pred_panoptic_label = tf.concat(pred_panoptic_labels, axis=1)
-    return super(VideoPanopticQuality, self).compare_and_accumulate(
-        gt_panoptic_label, pred_panoptic_label)
+    return super(VideoPanopticQuality,
+                 self).compare_and_accumulate(gt_panoptic_label,
+                                              pred_panoptic_label)

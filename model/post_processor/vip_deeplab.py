@@ -18,12 +18,11 @@
 import numpy as np
 
 
-def stitch_video_panoptic_prediction(
-    concat_panoptic: np.ndarray,
-    next_panoptic: np.ndarray,
-    label_divisor: int,
-    overlap_offset: int = 128,
-    combine_offset: int = 2 ** 32) -> np.ndarray:
+def stitch_video_panoptic_prediction(concat_panoptic: np.ndarray,
+                                     next_panoptic: np.ndarray,
+                                     label_divisor: int,
+                                     overlap_offset: int = 128,
+                                     combine_offset: int = 2**32) -> np.ndarray:
   """The stitching algorithm in ViP-DeepLab.
 
   This function stitches a pair of image panoptic predictions to form video
@@ -35,8 +34,8 @@ def stitch_video_panoptic_prediction(
   Segmentation." CVPR, 2021.
 
   Args:
-    concat_panoptic: Panoptic prediction of the next frame by concatenating
-      it with the current frame.
+    concat_panoptic: Panoptic prediction of the next frame by concatenating it
+      with the current frame.
     next_panoptic: Panoptic prediction of the next frame.
     label_divisor: An integer specifying the label divisor of the dataset.
     overlap_offset: An integer offset to avoid overlap between the IDs in
@@ -47,10 +46,12 @@ def stitch_video_panoptic_prediction(
     Panoptic prediction of the next frame with the instance IDs propragated
       from the concatenated panoptic prediction.
   """
+
   def _ids_to_counts(id_array: np.ndarray):
     """Given a numpy array, a mapping from each entry to its count."""
     ids, counts = np.unique(id_array, return_counts=True)
     return dict(zip(ids, counts))
+
   new_panoptic = next_panoptic.copy()
   # Increase the panoptic instance ID to avoid overlap.
   new_category = new_panoptic // label_divisor
@@ -63,8 +64,9 @@ def stitch_video_panoptic_prediction(
   concat_segment_areas = _ids_to_counts(concat_panoptic)
   next_segment_areas = _ids_to_counts(next_panoptic)
   # Combine concat_panoptic and next_panoptic.
-  intersection_id_array = (concat_panoptic.astype(np.int64) *
-                           combine_offset + next_panoptic.astype(np.int64))
+  intersection_id_array = (
+      concat_panoptic.astype(np.int64) * combine_offset +
+      next_panoptic.astype(np.int64))
   intersection_areas = _ids_to_counts(intersection_id_array)
   # Compute IoU and sort them.
   intersection_ious = []
@@ -82,24 +84,20 @@ def stitch_video_panoptic_prediction(
       continue
     union = (
         concat_segment_areas[concat_panoptic_label] +
-        next_segment_areas[next_panoptic_label] -
-        intersection_area)
+        next_segment_areas[next_panoptic_label] - intersection_area)
     iou = intersection_area / union
-    intersection_ious.append([
-        concat_panoptic_label, next_panoptic_label, iou])
-  intersection_ious = sorted(
-      intersection_ious, key=lambda e: e[2])
+    intersection_ious.append([concat_panoptic_label, next_panoptic_label, iou])
+  intersection_ious = sorted(intersection_ious, key=lambda e: e[2])
   # Build mapping and inverse mapping. Two-way mapping guarantees 1-to-1
   # matching.
   map_concat_to_next = {}
   map_next_to_concat = {}
-  for (concat_panoptic_label, next_panoptic_label,
-         iou) in intersection_ious:
+  for (concat_panoptic_label, next_panoptic_label, iou) in intersection_ious:
     map_concat_to_next[concat_panoptic_label] = next_panoptic_label
     map_next_to_concat[next_panoptic_label] = concat_panoptic_label
   # Match and propagate.
   for (concat_panoptic_label,
-         next_panoptic_label) in map_concat_to_next.items():
+       next_panoptic_label) in map_concat_to_next.items():
     if map_next_to_concat[next_panoptic_label] == concat_panoptic_label:
       propagate_mask = next_panoptic == next_panoptic_label
       new_panoptic[propagate_mask] = concat_panoptic_label

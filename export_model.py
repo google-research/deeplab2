@@ -132,8 +132,9 @@ class DeepLabModule(tf.Module):
     resized_size = tf.shape(resized_image)[0:2]
     # Making input tensor to 4D to fit model input requirements.
     outputs = self._model(tf.expand_dims(processed_image, 0), training=False)
-    return utils.undo_preprocessing_for_predictions(outputs, resized_size,
-                                                    input_size)
+    # We only undo-preprocess for those defined in tuples in model/utils.py.
+    return utils.undo_preprocessing(outputs, resized_size,
+                                    input_size)
 
 
 def main(argv: Sequence[str]) -> None:
