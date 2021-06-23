@@ -61,8 +61,12 @@ flags.DEFINE_string(
 flags.DEFINE_string('optical_flow', None,
                     'The path to the optical flow predictions. This folder '
                     'should contain one folder per sequence.')
-flags.DEFINE_integer('input_channels', 2, 'The number of channels from the '
-                     'input images. Valid options are `2` and `3`.')
+flags.DEFINE_integer(
+    'input_channels', 2, 'DeepLab2 supports two formats when exporting '
+    'predictions. The first channel of the input always encodes the semantic '
+    'class while either only the second channel (G in RGB) encodes the '
+    'instance ID or the second and third channel (GB in RGB). Depending on the '
+    'ground-truth and prediction format, the valid options are `2` and `3`.')
                   
 
 _LABEL_DIVISOR = 10000
@@ -288,7 +292,19 @@ class IoUTracker(object):
 
 
 def read_panoptic_image_2ch(path: Text, label_divisor: int) -> np.ndarray:
-  """Reads in a panoptic image in 2 channel format and returns as np array."""
+  """Reads in a panoptic image in 2 channel format.
+  
+  The 2 channel format encodes the semantic class in the first channel, and the
+  instance ID in the second channel.
+
+  Args:
+    path: A string specifying the path to the image to be loaded.
+    label_divisior: An integer specifying the label divisor that is used to
+      combine the semantic class and the instance ID.
+
+  Returns:
+    A numpy array enconding the semantic class and instance ID for every pixel.
+  """
   with tf.io.gfile.GFile(path, 'rb') as f:
     image = tf.cast(tf.io.decode_image(f.read()), tf.int32).numpy()
 
@@ -298,7 +314,20 @@ def read_panoptic_image_2ch(path: Text, label_divisor: int) -> np.ndarray:
 
 
 def read_panoptic_image_3ch(path: Text, label_divisor: int) -> np.ndarray:
-  """Reads in a panoptic image in 3 channel format and returns as np array."""
+  """Reads in a panoptic image in 3 channel format.
+  
+  The 3 channel format encodes the semantic class in the first channel, and the
+  instance ID in the second and third channel as follows: instance_id =
+  image[..., 1] * 256 + image[..., 2].
+
+  Args:
+    path: A string specifying the path to the image to be loaded.
+    label_divisior: An integer specifying the label divisor that is used to
+      combine the semantic class and the instance ID.
+
+  Returns:
+    A numpy array enconding the semantic class and instance ID for every pixel.
+  """
   with tf.io.gfile.GFile(path, 'rb') as f:
     image = tf.cast(tf.io.decode_image(f.read()), tf.int32).numpy()
 
