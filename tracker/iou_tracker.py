@@ -47,27 +47,30 @@ from deeplab2.trainer import vis_utils
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_string('gt', None, 'The path to the gt video frames. This folder '
-                    'should contain one folder per sequence.')
-flags.DEFINE_string('pred', None, 'The path to the prediction video frames. '
-                    'This folder should contain one folder per sequence.')
-flags.DEFINE_string('output', '', 'The path to store the tracked video frames.'
-                    'This folder should contain one folder per sequence.')
+flags.DEFINE_string(
+    'gt', None, 'The path to the gt video frames. This folder '
+    'should contain one folder per sequence.')
+flags.DEFINE_string(
+    'pred', None, 'The path to the prediction video frames. '
+    'This folder should contain one folder per sequence.')
+flags.DEFINE_string(
+    'output', '', 'The path to store the tracked video frames.'
+    'This folder should contain one folder per sequence.')
 flags.DEFINE_string('sequence', '', 'The sequence ID to evaluate on.')
 flags.DEFINE_string(
     'dataset', 'kitti_step', 'The specified dataset is used'
     ' to interpret the labels. Supported options are: ' +
     ', '.join(dataset.MAP_NAMES))
-flags.DEFINE_string('optical_flow', None,
-                    'The path to the optical flow predictions. This folder '
-                    'should contain one folder per sequence.')
+flags.DEFINE_string(
+    'optical_flow', None,
+    'The path to the optical flow predictions. This folder '
+    'should contain one folder per sequence.')
 flags.DEFINE_integer(
     'input_channels', 2, 'DeepLab2 supports two formats when exporting '
     'predictions. The first channel of the input always encodes the semantic '
     'class while either only the second channel (G in RGB) encodes the '
     'instance ID or the second and third channel (GB in RGB). Depending on the '
     'ground-truth and prediction format, the valid options are `2` and `3`.')
-                  
 
 _LABEL_DIVISOR = 10000
 _OCCLUSION_EXT = '.occ_forward'
@@ -90,8 +93,7 @@ def _compute_mask_iou(instance_a: np.ndarray, instance_b: np.ndarray) -> int:
       np.logical_and(instance_a > 0, instance_b > 0).astype(np.uint8))
   non_intersection_a = np.count_nonzero(instance_a > 0) - intersection
   non_intersection_b = np.count_nonzero(instance_b > 0) - intersection
-  return intersection / (
-      intersection + non_intersection_a + non_intersection_b)
+  return intersection / (intersection + non_intersection_a + non_intersection_b)
 
 
 class IoUTracker(object):
@@ -144,8 +146,7 @@ class IoUTracker(object):
   def _increase_inactivity_of_track(self, track_id: int, class_index: int):
     """Increases inactivity of track and potentially remove it."""
     self._frames_since_last_update[class_index][track_id] += 1
-    if (self._frames_since_last_update[class_index][track_id] >
-        self._sigma):
+    if self._frames_since_last_update[class_index][track_id] > self._sigma:
       self._remove_track(track_id, class_index)
 
   def _match_instances_to_tracks(
@@ -293,13 +294,13 @@ class IoUTracker(object):
 
 def read_panoptic_image_2ch(path: Text, label_divisor: int) -> np.ndarray:
   """Reads in a panoptic image in 2 channel format.
-  
+
   The 2 channel format encodes the semantic class in the first channel, and the
   instance ID in the second channel.
 
   Args:
     path: A string specifying the path to the image to be loaded.
-    label_divisior: An integer specifying the label divisor that is used to
+    label_divisor: An integer specifying the label divisor that is used to
       combine the semantic class and the instance ID.
 
   Returns:
@@ -315,14 +316,14 @@ def read_panoptic_image_2ch(path: Text, label_divisor: int) -> np.ndarray:
 
 def read_panoptic_image_3ch(path: Text, label_divisor: int) -> np.ndarray:
   """Reads in a panoptic image in 3 channel format.
-  
+
   The 3 channel format encodes the semantic class in the first channel, and the
   instance ID in the second and third channel as follows: instance_id =
   image[..., 1] * 256 + image[..., 2].
 
   Args:
     path: A string specifying the path to the image to be loaded.
-    label_divisior: An integer specifying the label divisor that is used to
+    label_divisor: An integer specifying the label divisor that is used to
       combine the semantic class and the instance ID.
 
   Returns:
@@ -354,7 +355,7 @@ def main(unused_args):
   # Create Tracker and metric.
   tracker = IoUTracker(thing_classes, _LABEL_DIVISOR)
   metric = stq.STQuality(num_classes, thing_classes, ignore_label,
-                         _LABEL_DIVISOR, 256*256*256)
+                         _LABEL_DIVISOR, 256 * 256 * 256)
 
   if FLAGS.input_channels == 2:
     reader_fn = read_panoptic_image_2ch
@@ -375,8 +376,8 @@ def main(unused_args):
     if use_optical_flow:
       optical_flow_sequence_folder = os.path.join(FLAGS.optical_flow, sequence)
 
-    for gt_frame_path in sorted(tf.io.gfile.glob(
-        os.path.join(gt_sequence_folder, '*.png'))):
+    for gt_frame_path in sorted(
+        tf.io.gfile.glob(os.path.join(gt_sequence_folder, '*.png'))):
       gt_frame_name = gt_frame_path.split('/')[-1]
       pred_frame_name = os.path.join(pred_sequence_folder, gt_frame_name)
       flow = None
@@ -402,12 +403,14 @@ def main(unused_args):
       if FLAGS.output:
         output_folder = os.path.join(FLAGS.output, sequence)
         tf.io.gfile.makedirs(output_folder)
-        color_map = vis_utils.save_parsing_result(pred_frame, _LABEL_DIVISOR,
-                                                  thing_classes, output_folder,
-                                                  os.path.splitext(
-                                                      gt_frame_name)[0],
-                                                  color_map,
-                                                  colormap_name=colormap_name)
+        color_map = vis_utils.save_parsing_result(
+            pred_frame,
+            _LABEL_DIVISOR,
+            thing_classes,
+            output_folder,
+            os.path.splitext(gt_frame_name)[0],
+            color_map,
+            colormap_name=colormap_name)
       metric.update_state(
           tf.convert_to_tensor(gt_frame), tf.convert_to_tensor(pred_frame),
           sequence)

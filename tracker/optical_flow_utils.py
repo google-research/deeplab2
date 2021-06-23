@@ -14,7 +14,7 @@
 # limitations under the License.
 
 """Utility functions for optical flow."""
-import cv2 as cv
+import cv2
 import numpy as np
 
 
@@ -23,7 +23,7 @@ def warp_flow(img: np.ndarray, flow_tensor: np.ndarray) -> np.ndarray:
   h, w = flow.shape[:2]
   flow[..., 0] += np.arange(w)
   flow[..., 1] += np.arange(h)[:, np.newaxis]
-  res = cv.remap(img, flow, None, cv.INTER_LINEAR)
+  res = cv2.remap(img, flow, None, cv2.INTER_LINEAR)
   return res
 
 
