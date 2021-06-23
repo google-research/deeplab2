@@ -211,7 +211,9 @@ class PanopticDeepLabSingleHead(layers.Layer):
                pred_key,
                name,
                conv_type='depthwise_separable_conv',
-               bn_layer=tf.keras.layers.BatchNormalization):
+               bn_layer=tf.keras.layers.BatchNormalization,
+               sigmoid_max=0,
+               sigmoid_min=0):
     """Initializes a single PanopticDeepLab head.
 
     Args:
@@ -225,6 +227,12 @@ class PanopticDeepLabSingleHead(layers.Layer):
         'depthwise_separable_conv' and 'standard_conv'.
       bn_layer: An optional tf.keras.layers.Layer that computes the
         normalization (default: tf.keras.layers.BatchNormalization).
+      sigmoid_max: An optional float specifying the maximum value of sigmoid.
+        When sigmoid_max > sigmoid_min, the head output will be
+        sigmoid_min + (max - min) * sigmoid(logits).
+      sigmoid_min: An optional float specifying the minimum value of sigmoid.
+        When sigmoid_max > sigmoid_min, the head output will be
+        sigmoid_min + (max - min) * sigmoid(logits).
     """
     super(PanopticDeepLabSingleHead, self).__init__(name=name)
     self._pred_key = pred_key
@@ -244,6 +252,8 @@ class PanopticDeepLabSingleHead(layers.Layer):
         kernel_size=1,
         name='final_conv',
         kernel_initializer=tf.keras.initializers.TruncatedNormal(stddev=0.01))
+    self._sigmoid_max = sigmoid_max
+    self._sigmoid_min = sigmoid_min
 
   def call(self, features, training=False):
     """Performs a forward pass.
@@ -257,7 +267,11 @@ class PanopticDeepLabSingleHead(layers.Layer):
       The dictionary containing the predictions under the specified key.
     """
     x = self.conv_block(features, training=training)
-    return {self._pred_key: self.final_conv(x)}
+    x = self.final_conv(x)
+    if self._sigmoid_max > self._sigmoid_min:
+      x = (tf.sigmoid(x) * (self._sigmoid_max - self._sigmoid_min) +
+           self._sigmoid_min)
+    return {self._pred_key: x}
 
 
 class PanopticDeepLab(layers.Layer):

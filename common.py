@@ -31,6 +31,7 @@ PRED_FRAME_OFFSET_MAP_KEY = 'frame_offset_map'
 PRED_NEXT_OFFSET_MAP_KEY = 'next_offset_map'
 PRED_NEXT_PANOPTIC_KEY = 'next_panoptic_pred'
 PRED_CONCAT_NEXT_PANOPTIC_KEY = 'concat_next_panoptic_pred'
+PRED_DEPTH_KEY = 'depth_pred'
 
 PRED_PIXEL_SPACE_NORMALIZED_FEATURE_KEY = 'pixel_space_normalized_feature'
 PRED_PIXEL_SPACE_MASK_LOGITS_KEY = 'pixel_space_mask_logits'
@@ -46,6 +47,7 @@ GT_IS_CROWD = 'is_crowd_gt'
 GT_THING_ID_MASK_KEY = 'thing_id_mask_gt'
 GT_THING_ID_CLASS_KEY = 'thing_id_class_gt'
 GT_NEXT_INSTANCE_REGRESSION_KEY = 'next_instance_regression_gt'
+GT_DEPTH_KEY = 'depth_gt'
 
 # Raw labels.
 GT_PANOPTIC_RAW = 'panoptic_raw'
@@ -60,6 +62,7 @@ CENTER_LOSS = 'center_loss'
 REGRESSION_LOSS = 'regression_loss'
 MOTION_LOSS = 'motion_loss'
 NEXT_REGRESSION_LOSS = 'next_regression_loss'
+DEPTH_LOSS = 'depth_loss'
 PQ_STYLE_LOSS = 'pq_style_loss'
 # The PQ-style loss consists of a class term and a mask dice term.
 PQ_STYLE_LOSS_CLASS_TERM = 'pq_style_loss_class_term'
@@ -74,6 +77,7 @@ CENTER_LOSS_WEIGHT_KEY = 'center_loss_weight'
 REGRESSION_LOSS_WEIGHT_KEY = 'regression_loss_weight'
 FRAME_REGRESSION_LOSS_WEIGHT_KEY = 'frame_regression_loss_weight'
 NEXT_REGRESSION_LOSS_WEIGHT_KEY = 'next_regression_loss_weight'
+DEPTH_LOSS_WEIGHT_KEY = 'depth_loss_weight'
 
 # Misc.
 RESIZED_IMAGE = 'resized_image'

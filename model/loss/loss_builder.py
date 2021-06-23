@@ -69,6 +69,10 @@ def _create_loss_and_weight(
         pred_key,
         weight_key,
         top_k_percent_pixels=loss_options.top_k_percent), loss_options.weight
+  elif loss_options.name == 'depth_loss':
+    return base_loss.DepthLoss(
+        gt_key,
+        pred_key), loss_options.weight
 
   raise ValueError('Loss %s is not a valid loss.' % loss_options.name)
 
@@ -137,6 +141,15 @@ class DeepLabFamilyLoss(tf.keras.layers.Layer):
               common.GT_NEXT_INSTANCE_REGRESSION_KEY,
               common.PRED_NEXT_OFFSET_MAP_KEY,
               common.NEXT_REGRESSION_LOSS_WEIGHT_KEY)
+
+    # Depth loss used in ViP-DeepLab.
+    if loss_options.HasField(common.DEPTH_LOSS):
+      self._single_term_loss_func_and_weight_dict[
+          common.DEPTH_LOSS] = _create_loss_and_weight(
+              loss_options.depth_loss,
+              common.GT_DEPTH_KEY,
+              common.PRED_DEPTH_KEY,
+              common.DEPTH_LOSS_WEIGHT_KEY)
 
     # Multi-term losses that return dictionaries of loss terms.
     self._multi_term_losses = []

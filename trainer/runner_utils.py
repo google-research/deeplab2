@@ -91,6 +91,7 @@ def create_dataset(dataset_config: config_pb2.DatasetOptions,
   decoder = data_utils.SegmentationDecoder(
       is_panoptic_dataset=True,
       is_video_dataset=dataset_info.is_video_dataset,
+      is_depth_dataset=dataset_info.is_depth_dataset,
       use_two_frames=dataset_config.use_two_frames,
       use_next_frame=dataset_config.use_next_frame,
       decode_groundtruth_label=dataset_config.decode_groundtruth_label)

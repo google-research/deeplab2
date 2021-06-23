@@ -149,6 +149,7 @@ class PanopticSampleGenerator:
       - `prev_label`: An optional tensor of the same shape as `label`.
       - `next_image`: An optional next-frame tensor of the shape of `image`.
       - `next_label`: An optional next-frame tensor of the shape of `label`.
+      - `depth`: An optional tensor of thesame shape as `label`.
 
     Returns:
       sample: A dictionary storing required data for panoptic segmentation.
@@ -165,7 +166,8 @@ class PanopticSampleGenerator:
            prev_image=None,
            prev_label=None,
            next_image=None,
-           next_label=None):
+           next_label=None,
+           depth=None):
     """Gets a sample.
 
     Args:
@@ -179,6 +181,7 @@ class PanopticSampleGenerator:
       prev_label: An optional tensor of shape [label_height, label_width, 1].
       next_image: An optional tensor of shape [image_height, image_width, 3].
       next_label: An optional tensor of shape [label_height, label_width, 1].
+      depth: An optional tensor of shape [label_height, label_width, 1].
 
     Returns:
       sample: A dictionary storing required data for panoptic segmentation.
@@ -197,13 +200,15 @@ class PanopticSampleGenerator:
             next_label, dtype=tf.int32, name='original_next_label')
     # Reusing the preprocessing function for both next and prev samples.
     if next_image is not None:
-      resized_image, image, label, next_image, next_label = (
+      resized_image, image, label, next_image, next_label, depth = (
           self._preprocessing_fn(
-              image, label, prev_image=next_image, prev_label=next_label))
+              image, label, prev_image=next_image, prev_label=next_label,
+              depth=depth))
     else:
-      resized_image, image, label, prev_image, prev_label = (
+      resized_image, image, label, prev_image, prev_label, depth = (
           self._preprocessing_fn(
-              image, label, prev_image=prev_image, prev_label=prev_label))
+              image, label, prev_image=prev_image, prev_label=prev_label,
+              depth=depth))
     sample = {
         common.IMAGE: image
     }
@@ -301,6 +306,12 @@ class PanopticSampleGenerator:
           sample[common.GT_THING_ID_MASK_KEY] = tf.squeeze(
               thing_id_mask, axis=2)
           sample[common.GT_THING_ID_CLASS_KEY] = thing_id_class
+
+    if depth is not None:
+      # Depth maps are stored as an array of integers of depth * 256.
+      depth = tf.cast(depth, tf.float32)
+      depth = depth / 256
+      sample[common.GT_DEPTH_KEY] = depth
 
     if not self._is_training:
       # Resized image is only used during visualization.

@@ -63,6 +63,12 @@ message HeadOptions {
   // Set the head convolution type. Support 'depthwise_separable_conv' and
   // 'standard_conv'
   optional string head_conv_type = 3 [default = 'depthwise_separable_conv'];
+  // Set the maximum value of sigmoid. When sigmoid_max > sigmoid_min, the head
+  // output will be sigmoid_min + sigmoid(logits) * (sigmoid_max - sigmoid_min).
+  optional float sigmoid_max = 4 [default = 0];
+  // Set the minimum value of sigmoid. When sigmoid_max > sigmoid_min, the head
+  // output will be sigmoid_min + sigmoid(logits) * (sigmoid_max - sigmoid_min).
+  optional float sigmoid_min = 5 [default = 0];
 }
 
 // Configure the instance branch.
@@ -151,6 +157,8 @@ message ModelOptions {
     optional InstanceOptions instance = 2;
     // Set the model options of the semantic head.
     optional HeadOptions semantic_head = 3;
+    // Set the model options of the depth head.
+    optional HeadOptions depth_head = 4;
   }
 
   message MotionDeepLabOptions {

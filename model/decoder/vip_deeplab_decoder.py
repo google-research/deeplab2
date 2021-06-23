@@ -23,6 +23,7 @@ import tensorflow as tf
 
 from deeplab2 import common
 from deeplab2.model.decoder import panoptic_deeplab
+from deeplab2.model.utils import resize_align_corners
 
 
 layers = tf.keras.layers
@@ -80,6 +81,18 @@ class ViPDeepLabDecoder(layers.Layer):
         name='semantic_head',
         conv_type=vip_deeplab_options.semantic_head.head_conv_type,
         bn_layer=bn_layer)
+
+    self._depth_head = None
+    if vip_deeplab_options.HasField('depth_head'):
+      self._depth_head = panoptic_deeplab.PanopticDeepLabSingleHead(
+          vip_deeplab_options.depth_head.head_channels,
+          vip_deeplab_options.depth_head.output_channels,
+          common.PRED_DEPTH_KEY,
+          name='depth_head',
+          conv_type=vip_deeplab_options.depth_head.head_conv_type,
+          bn_layer=bn_layer,
+          sigmoid_max=vip_deeplab_options.depth_head.sigmoid_max,
+          sigmoid_min=vip_deeplab_options.depth_head.sigmoid_min)
 
     self._instance_decoder = None
     self._instance_center_head = None
@@ -240,6 +253,14 @@ class ViPDeepLabDecoder(layers.Layer):
 
     semantic_features = self._semantic_decoder(features, training=training)
     results = self._semantic_head(semantic_features, training=training)
+
+    if self._depth_head is not None:
+      _, height, width, _ = semantic_features.get_shape().as_list()
+      height = 2 * height - 1
+      width = 2 * width - 1
+      depth_features = resize_align_corners(semantic_features, (height, width))
+      depth_prediction = self._depth_head(depth_features)
+      results.update(depth_prediction)
 
     if self._instance_decoder is not None:
       instance_features = self._instance_decoder(features, training=training)

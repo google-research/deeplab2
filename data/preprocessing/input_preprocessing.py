@@ -121,6 +121,7 @@ def preprocess_image_and_label(image,
                                crop_width,
                                prev_image=None,
                                prev_label=None,
+                               depth=None,
                                min_resize_value=None,
                                max_resize_value=None,
                                resize_factor=None,
@@ -140,6 +141,7 @@ def preprocess_image_and_label(image,
     crop_width: The width value used to crop the image and label.
     prev_image: An optional tensor of shape [image_height, image_width, 3].
     prev_label: An optional tensor of shape [label_height, label_width, 1].
+    depth: An optional tensor of shape [label_height, label_width, 1].
     min_resize_value: A 2-tuple of (height, width), desired minimum value
       after resize. If a single element is given, then height and width share
       the same value. None, empty or having 0 indicates no minimum value will
@@ -168,6 +170,7 @@ def preprocess_image_and_label(image,
 
   Raises:
     ValueError: Ground truth label not provided during training.
+    ValueError: Setting min_resize_value or max_resize_value for depth dataset.
   """
   if is_training and label is None:
     raise ValueError('During training, label must be provided.')
@@ -186,6 +189,15 @@ def preprocess_image_and_label(image,
     if prev_label is not None:
       label = tf.concat([label, prev_label], axis=2)
     label = tf.cast(label, tf.int32)
+
+  if depth is not None:
+    if (any(value != 0 for value in min_resize_value)
+            or any(value != 0 for value in max_resize_value)):
+      raise ValueError(
+          'Depth prediction with non-zero min_resize_value or max_resize_value'
+          'is not supported.')
+    depth.get_shape().assert_is_compatible_with(tf.TensorShape([None, None, 1]))
+    depth = tf.cast(depth, tf.int32)
 
   # Resize image and label to the desired range.
   if any([min_resize_value, max_resize_value, not is_training]):
@@ -219,6 +231,7 @@ def preprocess_image_and_label(image,
 
     offset_height = 0
     offset_width = 0
+    image_before_padding = processed_image
     processed_image, label = _pad_image_and_label(processed_image, label,
                                                   offset_height, offset_width,
                                                   crop_height, crop_width,
@@ -233,18 +246,32 @@ def preprocess_image_and_label(image,
       processed_prev_image.set_shape([crop_height, crop_width, 3])
       if prev_label is not None:
         prev_label.set_shape([crop_height, crop_width, 1])
+    if depth is not None:
+      # Unlabeled depth is 0. We use 0 as the ignore label.
+      _, depth = _pad_image_and_label(
+          image_before_padding, depth, offset_height, offset_width, crop_height,
+          crop_width, 0)
+      depth.set_shape([crop_height, crop_width, 1])
     return (resized_image, processed_image, label, processed_prev_image,
-            prev_label)
+            prev_label, depth)
 
   # Data augmentation by randomly scaling the inputs.
   scale = preprocess_utils.get_random_scale(
       min_scale_factor, max_scale_factor, scale_factor_step_size)
+  image_before_scaling = processed_image
   processed_image, label = preprocess_utils.randomly_scale_image_and_label(
       processed_image, label, scale)
   if processed_prev_image is not None:
     (processed_prev_image,
      prev_label) = preprocess_utils.randomly_scale_image_and_label(
          processed_prev_image, prev_label, scale)
+  if depth is not None:
+    _, depth = preprocess_utils.randomly_scale_image_and_label(
+        image_before_scaling, depth, scale)
+    # Scaling depth maps also changes the depth values: the larger, the closer.
+    depth = tf.cast(depth, tf.float32)
+    depth = depth / scale
+    depth = tf.cast(depth, tf.int32)
 
   # Apply autoaugment if any.
   if autoaugment_policy_name:
@@ -268,6 +295,7 @@ def preprocess_image_and_label(image,
 
   offset_height = _uniform_offset(crop_height - image_height)
   offset_width = _uniform_offset(crop_width - image_width)
+  image_before_padding = processed_image
   processed_image, label = _pad_image_and_label(processed_image, label,
                                                 offset_height, offset_width,
                                                 target_height, target_width,
@@ -277,17 +305,35 @@ def preprocess_image_and_label(image,
         processed_prev_image, prev_label, offset_height, offset_width,
         target_height, target_width, ignore_label)
 
+  if depth is not None:
+    # Unlabeled depth is 0. We use 0 as the ignore label.
+    _, depth = _pad_image_and_label(
+        image_before_padding, depth, offset_height, offset_width,
+        target_height, target_width, 0)
+
   if processed_prev_image is not None:
-    (processed_image, label, processed_prev_image,
-     prev_label) = preprocess_utils.random_crop(
-         [processed_image, label, processed_prev_image, prev_label],
-         crop_height, crop_width)
-    # Randomly left-right flip the image and label.
-    (processed_image, label, processed_prev_image, prev_label,
-     _) = preprocess_utils.flip_dim(
-         [processed_image, label, processed_prev_image, prev_label],
-         _PROB_OF_FLIP,
-         dim=1)
+    if depth is not None:
+      (processed_image, label, processed_prev_image,
+       prev_label, depth) = preprocess_utils.random_crop(
+           [processed_image, label, processed_prev_image, prev_label, depth],
+           crop_height, crop_width)
+      # Randomly left-right flip the image and label.
+      (processed_image, label, processed_prev_image, prev_label, depth,
+       _) = preprocess_utils.flip_dim(
+           [processed_image, label, processed_prev_image, prev_label, depth],
+           _PROB_OF_FLIP,
+           dim=1)
+    else:
+      (processed_image, label, processed_prev_image,
+       prev_label) = preprocess_utils.random_crop(
+           [processed_image, label, processed_prev_image, prev_label],
+           crop_height, crop_width)
+      # Randomly left-right flip the image and label.
+      (processed_image, label, processed_prev_image, prev_label,
+       _) = preprocess_utils.flip_dim(
+           [processed_image, label, processed_prev_image, prev_label],
+           _PROB_OF_FLIP,
+           dim=1)
   else:
     processed_image, label = preprocess_utils.random_crop(
         [processed_image, label], crop_height, crop_width)
@@ -295,7 +341,8 @@ def preprocess_image_and_label(image,
     processed_image, label, _ = preprocess_utils.flip_dim(
         [processed_image, label], _PROB_OF_FLIP, dim=1)
 
-  return resized_image, processed_image, label, processed_prev_image, prev_label
+  return (resized_image, processed_image, label, processed_prev_image,
+          prev_label, depth)
 
 
 def _autoaugment_helper(image, label, ignore_label, policy_name):
