@@ -13,13 +13,17 @@ import gradio as gr
 
 from subprocess import call
 import sys
-import urllib
-url, filename = ("https://cdn.pixabay.com/photo/2021/01/28/18/21/beach-5958718_1280.jpg", "town.jpg")
-try: urllib.URLopener().retrieve(url, filename)
-except: urllib.request.urlretrieve(url, filename)
-url, filename = ("https://cdn.pixabay.com/photo/2021/06/19/20/30/bird-6349407_1280.jpg", "bird.jpg")
-try: urllib.URLopener().retrieve(url, filename)
-except: urllib.request.urlretrieve(url, filename)
+
+tf.keras.utils.get_file(
+    "town.jpg",
+    "https://cdn.pixabay.com/photo/2021/01/28/18/21/beach-5958718_1280.jpg",
+    untar=False)
+
+tf.keras.utils.get_file(
+    "bird.jpg",
+    "https://cdn.pixabay.com/photo/2021/06/19/20/30/bird-6349407_1280.jpg",
+    untar=False)
+
 
 DatasetInfo = collections.namedtuple(
     'DatasetInfo',
