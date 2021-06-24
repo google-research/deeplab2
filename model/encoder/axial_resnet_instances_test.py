@@ -17,15 +17,11 @@
 
 import os
 
-from absl import flags
 from absl.testing import parameterized
 import numpy as np
 import tensorflow as tf
 
-from deeplab2.model import test_utils
 from deeplab2.model.encoder import axial_resnet_instances
-
-FLAGS = flags.FLAGS
 
 
 class AxialResnetInstancesTest(tf.test.TestCase, parameterized.TestCase):
@@ -145,89 +141,6 @@ class AxialResnetInstancesTest(tf.test.TestCase, parameterized.TestCase):
     test_variable_name2 = 'max_deeplab_s_backbone/stage4/block2/attention/global/qkv_kernel:0'
     self.assertIn(test_variable_name1, variable_names)
     self.assertIn(test_variable_name2, variable_names)
-
-  @parameterized.product(
-      (dict(model_name='resnet50', backbone_layer_multiplier=1),
-       dict(model_name='resnet50_beta', backbone_layer_multiplier=1),
-       dict(model_name='wide_resnet41', backbone_layer_multiplier=1),
-       dict(model_name='swidernet', backbone_layer_multiplier=2)),
-      output_stride=[4, 8, 16, 32])
-  def test_model_atrous_consistency_with_output_stride_four(
-      self, model_name, backbone_layer_multiplier, output_stride):
-    tf.random.set_seed(0)
-
-    # Create the input.
-    pixel_inputs = test_utils.create_test_input(1, 225, 225, 3)
-
-    # Create the model and the weights.
-    model_1 = axial_resnet_instances.get_model(
-        model_name,
-        backbone_layer_multiplier=backbone_layer_multiplier,
-        bn_layer=tf.keras.layers.BatchNormalization,
-        conv_kernel_weight_decay=0.0001,
-        output_stride=4)
-
-    # Create the weights.
-    model_1(pixel_inputs, training=False)
-
-    # Set the batch norm gamma as non-zero so that the 3x3 convolution affects
-    # the output.
-    for weight in model_1.trainable_weights:
-      if '/gamma:0' in weight.name:
-        weight.assign(tf.ones_like(weight))
-
-    # Dense feature extraction followed by subsampling.
-    pixel_outputs = model_1(pixel_inputs, training=False)['res5']
-    downsampling_stride = output_stride // 4
-    expected = pixel_outputs[:, ::downsampling_stride, ::downsampling_stride, :]
-
-    # Feature extraction at the nominal network rate.
-    model_2 = axial_resnet_instances.get_model(
-        model_name,
-        backbone_layer_multiplier=backbone_layer_multiplier,
-        bn_layer=tf.keras.layers.BatchNormalization,
-        conv_kernel_weight_decay=0.0001,
-        output_stride=output_stride)
-    # Create the weights.
-    model_2(pixel_inputs, training=False)
-    # Make the two networks use the same weights.
-    model_2.set_weights(model_1.get_weights())
-    output = model_2(pixel_inputs, training=False)['res5']
-
-    # Normalize the outputs. Since we set batch_norm gamma to 1, the output
-    # activations can explode to a large standard deviation, which sometimes
-    # cause numerical errors beyond the tolerances.
-    normalizing_factor = tf.math.reduce_std(expected)
-    # Compare normalized outputs.
-    self.assertAllClose(output / normalizing_factor,
-                        expected / normalizing_factor,
-                        atol=1e-4, rtol=1e-4)
-
-  @parameterized.parameters(
-      ('resnet50',),
-      ('resnet50_beta',),
-      ('max_deeplab_s_backbone',),
-      ('max_deeplab_l_backbone',),
-      ('axial_resnet_s',),
-      ('axial_resnet_l',),
-      ('axial_deeplab_s',),
-      ('axial_deeplab_l',),
-      ('swidernet',),
-      ('axial_swidernet',),
-      )
-  def test_model_export(self, model_name):
-    model = axial_resnet_instances.get_model(
-        model_name,
-        output_stride=16,
-        backbone_layer_multiplier=1.0,
-        bn_layer=tf.keras.layers.BatchNormalization,
-        conv_kernel_weight_decay=0.0001,
-        # Disable drop path as it is not compatible with model exporting.
-        block_group_config={'drop_path_keep_prob': 1.0})
-    model(tf.keras.Input([257, 257, 3], batch_size=1), training=False)
-    export_dir = os.path.join(
-        FLAGS.test_tmpdir, 'test_model_export', model_name)
-    model.save(export_dir)
 
 
 if __name__ == '__main__':
