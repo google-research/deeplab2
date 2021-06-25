@@ -20,8 +20,6 @@ from typing import Text, Dict, Callable, Optional
 import tensorflow as tf
 from deeplab2.model import utils
 
-_DEPTH_IGNORE_LABEL = 0
-
 
 def compute_average_top_k_loss(loss: tf.Tensor,
                                top_k_percentage: float) -> tf.Tensor:
