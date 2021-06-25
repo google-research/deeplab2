@@ -14,15 +14,15 @@ import gradio as gr
 from subprocess import call
 import sys
 
-tf.keras.utils.get_file(
-    "town.jpg",
-    "https://cdn.pixabay.com/photo/2021/01/28/18/21/beach-5958718_1280.jpg",
-    untar=False)
+import requests
 
-tf.keras.utils.get_file(
-    "bird.jpg",
-    "https://cdn.pixabay.com/photo/2021/06/19/20/30/bird-6349407_1280.jpg",
-    untar=False)
+url1 = 'https://cdn.pixabay.com/photo/2021/01/28/18/21/beach-5958718_1280.jpg'
+r = requests.get(url, allow_redirects=True)
+open("town.jpg", 'wb').write(r.content)
+
+url2 = 'https://cdn.pixabay.com/photo/2014/05/20/21/20/bird-349026_1280.jpg'
+r = requests.get(url2, allow_redirects=True)
+open("bird.jpg", 'wb').write(r.content)
 
 
 DatasetInfo = collections.namedtuple(
