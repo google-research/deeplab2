@@ -71,6 +71,7 @@ def _create_panoptic_deeplab_loss(dataset_info):
       loss_options,
       num_classes=dataset_info.num_classes,
       ignore_label=dataset_info.ignore_label,
+      ignore_depth=dataset_info.ignore_depth,
       thing_class_ids=dataset_info.class_has_instances_list)
   return loss_layer
 
@@ -92,6 +93,7 @@ def _create_max_deeplab_loss(dataset_info):
       loss_options,
       num_classes=dataset_info.num_classes,
       ignore_label=dataset_info.ignore_label,
+      ignore_depth=dataset_info.ignore_depth,
       thing_class_ids=dataset_info.class_has_instances_list)
   return loss_layer
 

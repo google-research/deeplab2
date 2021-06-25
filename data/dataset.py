@@ -121,6 +121,8 @@ DatasetDescriptor = collections.namedtuple(
         'colormap',
         # A flag indicating whether the dataset contains depth annotation.
         'is_depth_dataset',
+        # The ignore label for depth annotations.
+        'ignore_depth',
     ]
 )
 
@@ -139,6 +141,7 @@ CITYSCAPES_INFORMATION = DatasetDescriptor(
     is_video_dataset=False,
     colormap=_CITYSCAPES_COLORMAP,
     is_depth_dataset=False,
+    ignore_depth=None,
 )
 
 CITYSCAPES_PANOPTIC_INFORMATION = DatasetDescriptor(
@@ -154,6 +157,7 @@ CITYSCAPES_PANOPTIC_INFORMATION = DatasetDescriptor(
     is_video_dataset=False,
     colormap=_CITYSCAPES_COLORMAP,
     is_depth_dataset=False,
+    ignore_depth=None,
 )
 
 KITTI_STEP_INFORMATION = DatasetDescriptor(
@@ -168,6 +172,7 @@ KITTI_STEP_INFORMATION = DatasetDescriptor(
     is_video_dataset=True,
     colormap=_CITYSCAPES_COLORMAP,
     is_depth_dataset=False,
+    ignore_depth=None,
 )
 
 MOTCHALLENGE_STEP_INFORMATION = DatasetDescriptor(
@@ -182,6 +187,7 @@ MOTCHALLENGE_STEP_INFORMATION = DatasetDescriptor(
     is_video_dataset=True,
     colormap=_MOTCHALLENGE_COLORMAP,
     is_depth_dataset=False,
+    ignore_depth=None,
 )
 
 CITYSCAPES_DVPS_INFORMATION = DatasetDescriptor(
@@ -200,6 +206,7 @@ CITYSCAPES_DVPS_INFORMATION = DatasetDescriptor(
     is_video_dataset=True,
     colormap=_CITYSCAPES_COLORMAP,
     is_depth_dataset=True,
+    ignore_depth=0,
 )
 
 COCO_PANOPTIC_INFORMATION = DatasetDescriptor(
@@ -214,6 +221,7 @@ COCO_PANOPTIC_INFORMATION = DatasetDescriptor(
     is_video_dataset=False,
     colormap=_COCO_COLORMAP,
     is_depth_dataset=False,
+    ignore_depth=None,
 )
 
 MAP_NAME_TO_DATASET_INFO = {

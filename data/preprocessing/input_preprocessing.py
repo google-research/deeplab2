@@ -26,8 +26,6 @@ _PROB_OF_FLIP = 0.5
 
 _MEAN_PIXEL = [127.5, 127.5, 127.5]
 
-_DEPTH_IGNORE_LABEL = 0
-
 
 def _pad_image_and_label(image, label, offset_height, offset_width,
                          target_height, target_width, ignore_label=None):
@@ -131,6 +129,7 @@ def preprocess_image_and_label(image,
                                max_scale_factor=1.,
                                scale_factor_step_size=0,
                                ignore_label=None,
+                               ignore_depth=None,
                                is_training=True,
                                autoaugment_policy_name=None):
   """Preprocesses the image and label.
@@ -159,6 +158,8 @@ def preprocess_image_and_label(image,
       factor. The input is randomly scaled based on the value of
       (min_scale_factor, max_scale_factor, scale_factor_step_size).
     ignore_label: The label value which will be ignored for training and
+      evaluation.
+    ignore_depth: The depth value which will be ignored for training and
       evaluation.
     is_training: If the preprocessing is used for training or not.
     autoaugment_policy_name: String, autoaugment policy name. See
@@ -251,7 +252,7 @@ def preprocess_image_and_label(image,
     if depth is not None:
       _, depth = _pad_image_and_label(
           image_before_padding, depth, offset_height, offset_width, crop_height,
-          crop_width, _DEPTH_IGNORE_LABEL)
+          crop_width, ignore_depth)
       depth.set_shape([crop_height, crop_width, 1])
     return (resized_image, processed_image, label, processed_prev_image,
             prev_label, depth)
@@ -309,7 +310,7 @@ def preprocess_image_and_label(image,
   if depth is not None:
     _, depth = _pad_image_and_label(
         image_before_padding, depth, offset_height, offset_width,
-        target_height, target_width, _DEPTH_IGNORE_LABEL)
+        target_height, target_width, ignore_depth)
 
   if processed_prev_image is not None:
     if depth is not None:

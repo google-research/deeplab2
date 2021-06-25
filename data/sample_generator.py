@@ -104,6 +104,7 @@ class PanopticSampleGenerator:
     """
     self._dataset_info = dataset_info
     self._ignore_label = self._dataset_info['ignore_label']
+    self._ignore_depth = self._dataset_info['ignore_depth']
     self._only_semantic_annotations = only_semantic_annotations
     self._sigma = sigma
     self._instance_area_threshold = 0
@@ -124,6 +125,7 @@ class PanopticSampleGenerator:
         autoaugment_policy_name=autoaugment_policy_name,
         ignore_label=self._ignore_label *
         self._dataset_info['panoptic_label_divisor'],
+        ignore_depth=self._ignore_depth,
         is_training=self._is_training)
 
     if focus_small_instances is not None:

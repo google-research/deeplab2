@@ -574,12 +574,14 @@ class SILogError(tf.keras.losses.Loss):
 
   def __init__(self,
                gt_key: Text,
-               pred_key: Text):
+               pred_key: Text,
+               ignore_label: float):
     # Implicit reduction might mess with tf.distribute.Strategy, hence we
     # explicitly reduce the loss.
     super().__init__(reduction=tf.keras.losses.Reduction.NONE)
     self._gt_key = gt_key
     self._pred_key = pred_key
+    self._ignore_label = ignore_label
 
   def call(self, y_true: Dict[Text, tf.Tensor],
            y_pred: Dict[Text, tf.Tensor]) -> tf.Tensor:
@@ -594,10 +596,11 @@ class SILogError(tf.keras.losses.Loss):
     """
     gt = y_true[self._gt_key]
     pred = y_pred[self._pred_key]
+    ignore_label = self._ignore_label
 
     def _compute_error(loss_input):
       gt, pred = loss_input
-      label_mask = gt > _DEPTH_IGNORE_LABEL
+      label_mask = gt != ignore_label
       gt = tf.boolean_mask(gt, label_mask)
       pred = tf.boolean_mask(pred, label_mask)
       # Scale invariant logarithmic error.
@@ -622,12 +625,14 @@ class RelativeSquaredError(tf.keras.losses.Loss):
 
   def __init__(self,
                gt_key: Text,
-               pred_key: Text):
+               pred_key: Text,
+               ignore_label: float):
     # Implicit reduction might mess with tf.distribute.Strategy, hence we
     # explicitly reduce the loss.
     super().__init__(reduction=tf.keras.losses.Reduction.NONE)
     self._gt_key = gt_key
     self._pred_key = pred_key
+    self._ignore_label = ignore_label
 
   def call(self, y_true: Dict[Text, tf.Tensor],
            y_pred: Dict[Text, tf.Tensor]) -> tf.Tensor:
@@ -642,10 +647,11 @@ class RelativeSquaredError(tf.keras.losses.Loss):
     """
     gt = y_true[self._gt_key]
     pred = y_pred[self._pred_key]
+    ignore_label = self._ignore_label
 
     def _compute_error(loss_input):
       gt, pred = loss_input
-      label_mask = gt > _DEPTH_IGNORE_LABEL
+      label_mask = gt != ignore_label
       gt = tf.boolean_mask(gt, label_mask)
       pred = tf.boolean_mask(pred, label_mask)
       # Relative squared error.
@@ -670,12 +676,14 @@ class SILogPlusRelativeSquaredLoss(tf.keras.losses.Loss):
 
   def __init__(self,
                gt_key: Text,
-               pred_key: Text):
+               pred_key: Text,
+               ignore_label: float):
     # Implicit reduction might mess with tf.distribute.Strategy, hence we
     # explicitly reduce the loss.
     super().__init__(reduction=tf.keras.losses.Reduction.NONE)
-    self._silog_error = SILogError(gt_key, pred_key)
-    self._relativate_squared_error = RelativeSquaredError(gt_key, pred_key)
+    self._silog_error = SILogError(gt_key, pred_key, ignore_label)
+    self._relativate_squared_error = RelativeSquaredError(
+        gt_key, pred_key, ignore_label)
 
   def call(self, y_true: Dict[Text, tf.Tensor],
            y_pred: Dict[Text, tf.Tensor]) -> tf.Tensor:
