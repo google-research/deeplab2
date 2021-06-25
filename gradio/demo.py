@@ -17,7 +17,7 @@ import sys
 import requests
 
 url1 = 'https://cdn.pixabay.com/photo/2021/01/28/18/21/beach-5958718_1280.jpg'
-r = requests.get(url, allow_redirects=True)
+r = requests.get(url1, allow_redirects=True)
 open("town.jpg", 'wb').write(r.content)
 
 url2 = 'https://cdn.pixabay.com/photo/2014/05/20/21/20/bird-349026_1280.jpg'
