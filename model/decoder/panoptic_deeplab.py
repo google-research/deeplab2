@@ -267,11 +267,7 @@ class PanopticDeepLabSingleHead(layers.Layer):
       The dictionary containing the predictions under the specified key.
     """
     x = self.conv_block(features, training=training)
-    x = self.final_conv(x)
-    if self._sigmoid_max > self._sigmoid_min:
-      x = (tf.sigmoid(x) * (self._sigmoid_max - self._sigmoid_min) +
-           self._sigmoid_min)
-    return {self._pred_key: x}
+    return {self._pred_key: self.final_conv(x)}
 
 
 class PanopticDeepLab(layers.Layer):

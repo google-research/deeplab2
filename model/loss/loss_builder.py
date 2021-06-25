@@ -70,7 +70,7 @@ def _create_loss_and_weight(
         weight_key,
         top_k_percent_pixels=loss_options.top_k_percent), loss_options.weight
   elif loss_options.name == 'depth_loss':
-    return base_loss.DepthLoss(
+    return base_loss.SILogPlusRelativeSquaredLoss(
         gt_key,
         pred_key), loss_options.weight
 

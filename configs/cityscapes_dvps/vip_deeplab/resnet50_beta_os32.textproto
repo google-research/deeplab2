@@ -90,8 +90,8 @@ model_options {
     depth_head {
       output_channels: 1
       head_channels: 64
-      sigmoid_max: 88.0
-      sigmoid_min: 0.0
+      max_value_after_activation: 88.0
+      min_value_after_activation: 0.0
     }
   }
 }

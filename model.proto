@@ -63,12 +63,14 @@ message HeadOptions {
   // Set the head convolution type. Support 'depthwise_separable_conv' and
   // 'standard_conv'
   optional string head_conv_type = 3 [default = 'depthwise_separable_conv'];
-  // Set the maximum value of sigmoid. When sigmoid_max > sigmoid_min, the head
-  // output will be sigmoid_min + sigmoid(logits) * (sigmoid_max - sigmoid_min).
-  optional float sigmoid_max = 4 [default = 0];
-  // Set the minimum value of sigmoid. When sigmoid_max > sigmoid_min, the head
-  // output will be sigmoid_min + sigmoid(logits) * (sigmoid_max - sigmoid_min).
-  optional float sigmoid_min = 5 [default = 0];
+  // Set the maximum value after activation. max_value_after_activation and
+  // min_value_after_activation are used to shift the head outputs to a range.
+  // One example is using sigmoid to shift the range for depth prediction.
+  optional float max_value_after_activation = 4 [default = 0];
+  // Set the minimum value after activation. max_value_after_activation and
+  // min_value_after_activation are used to shift the head outputs to a range.
+  // One example is using sigmoid to shift the range for depth prediction.
+  optional float min_value_after_activation = 5 [default = 0];
 }
 
 // Configure the instance branch.

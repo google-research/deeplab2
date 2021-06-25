@@ -140,6 +140,8 @@ CKPT_NEXT_INSTANCE_REGRESSION_HEAD_WITHOUT_LAST_LAYER = (
     'next_instance_regression_head_without_last_layer')
 CKPT_NEXT_INSTANCE_REGRESSION_HEAD_LAST_LAYER = (
     'next_instance_regression_head_last_layer')
+CKPT_DEPTH_HEAD_WITHOUT_LAST_LAYER = 'depth_head_without_last_layer'
+CKPT_DEPTH_HEAD_LAST_LAYER = 'depth_head_last_layer'
 
 # MaX-DeepLab
 CKPT_PIXEL_SPACE_HEAD = 'pixel_space_head'
