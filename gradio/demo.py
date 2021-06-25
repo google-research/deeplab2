@@ -14,15 +14,15 @@ import gradio as gr
 from subprocess import call
 import sys
 
-tf.keras.utils.get_file(
-    "town.jpg",
-    "https://cdn.pixabay.com/photo/2021/01/28/18/21/beach-5958718_1280.jpg",
-    untar=False)
+# tf.keras.utils.get_file(
+#     "town.jpg",
+#     "https://cdn.pixabay.com/photo/2021/01/28/18/21/beach-5958718_1280.jpg",
+#     untar=False)
 
-tf.keras.utils.get_file(
-    "bird.jpg",
-    "https://cdn.pixabay.com/photo/2021/06/19/20/30/bird-6349407_1280.jpg",
-    untar=False)
+# tf.keras.utils.get_file(
+#     "bird.jpg",
+#     "https://cdn.pixabay.com/photo/2021/06/19/20/30/bird-6349407_1280.jpg",
+#     untar=False)
 
 
 DatasetInfo = collections.namedtuple(
@@ -267,8 +267,4 @@ gr.Interface(
     gr.outputs.Image(type="plot", label="Output"),
     title=title,
     description=description,
-    article=article,
-    examples=[
-        ["town.jpg"],
-        ["bird.jpg"]
-    ]).launch()
+    article=article).launch()
