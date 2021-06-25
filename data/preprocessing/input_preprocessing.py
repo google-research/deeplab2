@@ -26,6 +26,8 @@ _PROB_OF_FLIP = 0.5
 
 _MEAN_PIXEL = [127.5, 127.5, 127.5]
 
+_DEPTH_IGNORE_LABEL = 0
+
 
 def _pad_image_and_label(image, label, offset_height, offset_width,
                          target_height, target_width, ignore_label=None):
@@ -247,10 +249,9 @@ def preprocess_image_and_label(image,
       if prev_label is not None:
         prev_label.set_shape([crop_height, crop_width, 1])
     if depth is not None:
-      # Unlabeled depth is 0. We use 0 as the ignore label.
       _, depth = _pad_image_and_label(
           image_before_padding, depth, offset_height, offset_width, crop_height,
-          crop_width, 0)
+          crop_width, _DEPTH_IGNORE_LABEL)
       depth.set_shape([crop_height, crop_width, 1])
     return (resized_image, processed_image, label, processed_prev_image,
             prev_label, depth)
@@ -306,10 +307,9 @@ def preprocess_image_and_label(image,
         target_height, target_width, ignore_label)
 
   if depth is not None:
-    # Unlabeled depth is 0. We use 0 as the ignore label.
     _, depth = _pad_image_and_label(
         image_before_padding, depth, offset_height, offset_width,
-        target_height, target_width, 0)
+        target_height, target_width, _DEPTH_IGNORE_LABEL)
 
   if processed_prev_image is not None:
     if depth is not None:

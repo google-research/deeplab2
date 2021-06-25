@@ -149,7 +149,7 @@ class PanopticSampleGenerator:
       - `prev_label`: An optional tensor of the same shape as `label`.
       - `next_image`: An optional next-frame tensor of the shape of `image`.
       - `next_label`: An optional next-frame tensor of the shape of `label`.
-      - `depth`: An optional tensor of thesame shape as `label`.
+      - `depth`: An optional tensor of the same shape as `label`.
 
     Returns:
       sample: A dictionary storing required data for panoptic segmentation.

@@ -20,6 +20,8 @@ from typing import Text, Dict, Callable, Optional
 import tensorflow as tf
 from deeplab2.model import utils
 
+_DEPTH_IGNORE_LABEL = 0
+
 
 def compute_average_top_k_loss(loss: tf.Tensor,
                                top_k_percentage: float) -> tf.Tensor:
@@ -595,8 +597,7 @@ class SILogError(tf.keras.losses.Loss):
 
     def _compute_error(loss_input):
       gt, pred = loss_input
-      # Unlabeled pixels are filled with 0.
-      label_mask = gt > 0
+      label_mask = gt > _DEPTH_IGNORE_LABEL
       gt = tf.boolean_mask(gt, label_mask)
       pred = tf.boolean_mask(pred, label_mask)
       # Scale invariant logarithmic error.
@@ -644,8 +645,7 @@ class RelativeSquaredError(tf.keras.losses.Loss):
 
     def _compute_error(loss_input):
       gt, pred = loss_input
-      # Unlabeled pixels are filled with 0.
-      label_mask = gt > 0
+      label_mask = gt > _DEPTH_IGNORE_LABEL
       gt = tf.boolean_mask(gt, label_mask)
       pred = tf.boolean_mask(pred, label_mask)
       # Relative squared error.
@@ -660,7 +660,7 @@ class SILogPlusRelativeSquaredLoss(tf.keras.losses.Loss):
   """This class contains code to compute depth loss SILog + RelativeSquared.
 
   This depth loss function combines the scale invariant logarithmic (SILog)
-  error and relative squared error.
+  error and relative squared error, which was adopted in the ViP-DeepLab model.
 
   Reference:
   Siyuan Qiao, Yukun Zhu, Hartwig Adam, Alan Yuille, and Liang-Chieh Chen.
