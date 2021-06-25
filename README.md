@@ -43,6 +43,11 @@ We list a few projects that use DeepLab2.
 
 *   <a href='https://colab.research.google.com/github/google-research/deeplab2/blob/main/DeepLab_Demo.ipynb'>Colab notebook for off-the-shelf inference.</a><br>
 
+## Gradio Demo
+
+*   <a href='https://gradio.app/hub/AK391/deeplab2'>Gradio Web Demo</a><br>
+
+
 ## Running DeepLab2
 
 See [Getting Started](g3doc/setup/getting_started.md). In short, run the
