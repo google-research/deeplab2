@@ -13,7 +13,7 @@ guidances and hopefully that will facillitate the preparation process.
   annotations in the int32 array (e.g., int32_numpy_array.tostring()).
 2. Convert the dataset to TFRecord.
   * Update our provided example code (e.g.,
-  [build_step_data.py](../../data/build_step_data.py))to convert your dataset
+  [build_step_data.py](../../data/build_step_data.py)) to convert your dataset
   to TFRecord.
 3. Modify the `dataset.py` (path: `${DEEPLAB2}/data/dataset.py`) to provide
   your dataset information.
