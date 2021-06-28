@@ -84,7 +84,7 @@ We currently support four different modes to run DeepLab2:
 To run DeepLab2 on GPUs, the following command should be used:
 
 ```bash
-python training/train.py \
+python trainer/train.py \
     --config_file=${CONFIG_FILE} \
     --mode={train | eval | train_and_eval | continuous_eval} \
     --model_dir=${BASE_MODEL_DIRECTORY} \
@@ -95,7 +95,7 @@ You can also launch DeepLab2 on TPUS. For this, the TPU address needs to be
 specified:
 
 ```bash
-python training/train.py \
+python trainer/train.py \
     --config_file=${CONFIG_FILE} \
     --mode={train | eval | train_and_eval | continuous_eval} \
     --model_dir=${BASE_MODEL_DIRECTORY} \
@@ -105,5 +105,5 @@ python training/train.py \
 For a detailed explanation of each option run:
 
 ```bash
-python training/train.py --help
+python trainer/train.py --help
 ```

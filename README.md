@@ -51,7 +51,7 @@ following command:
 To run DeepLab2 on GPUs, the following command should be used:
 
 ```bash
-python training/train.py \
+python trainer/train.py \
     --config_file=${CONFIG_FILE} \
     --mode={train | eval | train_and_eval | continuous_eval} \
     --model_dir=${BASE_MODEL_DIRECTORY} \
