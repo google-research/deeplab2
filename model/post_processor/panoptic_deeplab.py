@@ -24,7 +24,6 @@ from deeplab2 import common
 from deeplab2 import config_pb2
 from deeplab2.data import dataset
 from deeplab2.model import utils
-from deeplab2.tensorflow_ops.python.ops import merge_semantic_and_instance_maps_op as merge_ops
 
 
 def _get_semantic_predictions(semantic_logits: tf.Tensor) -> tf.Tensor:
@@ -253,6 +252,9 @@ def _get_panoptic_predictions(
   instance_score_maps = instance_score_map_lists.stack()
 
   if merge_semantic_and_instance_with_tf_op:
+    # pylint: disable=g-import-not-at-top
+    from deeplab2.tensorflow_ops.python.ops import merge_semantic_and_instance_maps_op as merge_ops
+    # pylint: enable=g-import-not-at-top
     panoptic_prediction = merge_ops.merge_semantic_and_instance_maps(
         semantic_prediction, instance_maps, thing_class_ids, label_divisor,
         stuff_area_limit, void_label)

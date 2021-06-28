@@ -28,6 +28,8 @@ and write the global memory in any layer.
 ## Prerequisite
 
 1.  Make sure the software is properly [installed](../setup/installation.md).
+    The merging module (merge_semantic_and_instance_maps_op) is not needed for
+    MaX-DeepLab, so one could skip compiling the merging operation.
 
 2.  Make sure the target dataset is correctly prepared (e.g.,
     [COCO](../setup/coco.md)).
