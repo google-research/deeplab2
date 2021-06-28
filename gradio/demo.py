@@ -16,13 +16,13 @@ import sys
 
 import requests
 
-url1 = 'https://cdn.pixabay.com/photo/2021/01/28/18/21/beach-5958718_1280.jpg'
+url1 = 'https://cdn.pixabay.com/photo/2014/09/07/21/52/city-438393_1280.jpg'
 r = requests.get(url1, allow_redirects=True)
-open("town.jpg", 'wb').write(r.content)
+open("city1.jpg", 'wb').write(r.content)
 
-url2 = 'https://cdn.pixabay.com/photo/2014/05/20/21/20/bird-349026_1280.jpg'
+url2 = 'https://cdn.pixabay.com/photo/2016/02/19/11/36/canal-1209808_1280.jpg'
 r = requests.get(url2, allow_redirects=True)
-open("bird.jpg", 'wb').write(r.content)
+open("city2.jpg", 'wb').write(r.content)
 
 
 DatasetInfo = collections.namedtuple(
@@ -210,7 +210,6 @@ def vis_segmentation(image,
   plt.xticks([], [])
   ax.tick_params(width=0.0, grid_linewidth=0.0)
   plt.grid('off')
-#   plt.show()
   return plt
 
 def run_cmd(command):
@@ -269,6 +268,6 @@ gr.Interface(
     description=description,
     article=article,
     examples=[
-            ["town.jpg"],
-            ["bird.jpg"]
+            ["city1.jpg"],
+            ["city2.jpg"]
         ]).launch()
