@@ -96,3 +96,19 @@ lower.
 To use the pure-tf-function version of `merge_semantic_and_instance_maps`, set
 `merge_semantic_instance_with_tf_op` to `false` in your config's
 `evaluator_options`.
+
+________________________________________________________________________________
+
+**Q6: What should I do, if I only want to train a semantic segmentation model?**
+
+**A6**: While most of the tutorials focus on panoptic segmentation (unifying
+semantic and instance segmentation), we understand that there are cases where
+you would like to only train a semantic segmentation model. Currently, there are
+two options to do that:
+
+1.  Use DeepLabv3 or DeepLabv3+ model variants that could only perform semantic
+    segmentation.
+
+2.  Use Panoptic-DeepLab with only the semantic segmentation branch by disabling
+    the instance segmentation branch. We provide one example config
+    [here](../configs/cityscapes/panoptic_deeplab/resnet50_os32_semseg.textproto).
