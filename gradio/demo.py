@@ -220,7 +220,7 @@ def run_cmd(command):
     except KeyboardInterrupt:
         print("Process interrupted")
         sys.exit(1)
-MODEL_NAME = 'max_deeplab_l_backbone_os16_axial_deeplab_cityscapes_trainfine_saved_model'   
+MODEL_NAME = 'resnet50_os32_panoptic_deeplab_cityscapes_crowd_trainfine_saved_model'   
 
 
 _MODELS = ('resnet50_os32_panoptic_deeplab_cityscapes_crowd_trainfine_saved_model',
