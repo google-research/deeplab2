@@ -52,14 +52,19 @@ red boxes denote relative positionalencoding.</em></center>
 
 ## Prerequisite
 
-1. Make sure the software is properly [installed](../setup/installation.md).
+1.  Make sure the software is properly [installed](../setup/installation.md).
+    Tensorflow>=2.6 is needed for Axial-DeepLab training, because the attention
+    layers depend on a
+    [fix](https://github.com/tensorflow/tensorflow/commit/f5ead6f8e4de470fcf140360b304a4d788198090)
+    for
+    [SyncBatchNormalization](https://www.tensorflow.org/api_docs/python/tf/keras/layers/experimental/SyncBatchNormalization).
 
-2. Make sure the target dataset is correctly prepared (e.g.,
-[Cityscapes](../setup/cityscapes.md)).
+2.  Make sure the target dataset is correctly prepared (e.g.,
+    [Cityscapes](../setup/cityscapes.md)).
 
-3. Download the ImageNet pretrained
-[checkpoints](./imagenet_pretrained_checkpoints.md), and update the
-`initial_checkpoint` path in the config files.
+3.  Download the ImageNet pretrained
+    [checkpoints](./imagenet_pretrained_checkpoints.md), and update the
+    `initial_checkpoint` path in the config files.
 
 ## Model Zoo
 

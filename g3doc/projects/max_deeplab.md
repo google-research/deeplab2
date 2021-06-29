@@ -28,6 +28,11 @@ and write the global memory in any layer.
 ## Prerequisite
 
 1.  Make sure the software is properly [installed](../setup/installation.md).
+    Tensorflow>=2.6 is needed for MaX-DeepLab training, because the attention
+    layers depend on a
+    [fix](https://github.com/tensorflow/tensorflow/commit/f5ead6f8e4de470fcf140360b304a4d788198090)
+    for
+    [SyncBatchNormalization](https://www.tensorflow.org/api_docs/python/tf/keras/layers/experimental/SyncBatchNormalization).
     The merging module (merge_semantic_and_instance_maps_op) is not needed for
     MaX-DeepLab, so one could skip compiling the merging operation.
 

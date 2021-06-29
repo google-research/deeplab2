@@ -8,7 +8,7 @@ DeepLab2 depends on the following libraries:
 *   Numpy
 *   Pillow
 *   Matplotlib
-*   Tensorflow 2.5
+*   Tensorflow 2.5 (Tensorflow 2.6 for Axial-DeepLab and MaX-DeepLab)
 *   Cython
 *   [Google Protobuf](https://developers.google.com/protocol-buffers)
 *   [Orbit](https://github.com/tensorflow/models/tree/master/orbit)
