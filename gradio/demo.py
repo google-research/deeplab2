@@ -251,7 +251,7 @@ run_cmd("tar -xzvf " + download_path + " -C " + model_dir)
 
 LOADED_MODEL = tf.saved_model.load(os.path.join(model_dir, MODEL_NAME))
 def inference(image):
-    image = image.resize(size=(256, 256))
+    image = image.resize(size=(512, 512))
     im = np.array(image)
     output = LOADED_MODEL(tf.cast(im, tf.uint8))
     return vis_segmentation(im, output['panoptic_pred'][0], DATASET_INFO)
