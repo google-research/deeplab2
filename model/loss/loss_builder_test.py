@@ -27,6 +27,7 @@ class LossTest(tf.test.TestCase):
 
   def test_panoptic_deeplab_loss(self):
     ignore_label = 255
+    ignore_depth = 0
     num_classes = 19
     semantic_loss_options = trainer_pb2.LossOptions.SingleLossOptions(
         name='softmax_cross_entropy')
@@ -45,6 +46,7 @@ class LossTest(tf.test.TestCase):
         loss_options,
         num_classes=num_classes,
         ignore_label=ignore_label,
+        ignore_depth=ignore_depth,
         thing_class_ids=tuple(range(11, 19)))
 
     pred_dict = {
@@ -163,6 +165,7 @@ class LossTest(tf.test.TestCase):
 
   def test_panoptic_deeplab_semantic_loss_only(self):
     ignore_label = 255
+    ignore_depth = 0
     num_classes = 19
     semantic_loss_options = trainer_pb2.LossOptions.SingleLossOptions(
         name='softmax_cross_entropy')
@@ -173,6 +176,7 @@ class LossTest(tf.test.TestCase):
         loss_options,
         num_classes=num_classes,
         ignore_label=ignore_label,
+        ignore_depth=ignore_depth,
         thing_class_ids=tuple(range(11, 19)))
 
     pred_dict = {
@@ -217,6 +221,7 @@ class LossTest(tf.test.TestCase):
       _ = loss.DeepLabFamilyLoss(loss_options,
                                  num_classes=19,
                                  ignore_label=255,
+                                 ignore_depth=0,
                                  thing_class_ids=tuple(range(11, 19)))
 
 

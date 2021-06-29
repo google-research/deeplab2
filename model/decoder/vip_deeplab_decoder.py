@@ -23,6 +23,7 @@ import tensorflow as tf
 
 from deeplab2 import common
 from deeplab2.model.decoder import panoptic_deeplab
+from deeplab2.model import utils
 
 
 layers = tf.keras.layers
@@ -80,6 +81,20 @@ class ViPDeepLabDecoder(layers.Layer):
         name='semantic_head',
         conv_type=vip_deeplab_options.semantic_head.head_conv_type,
         bn_layer=bn_layer)
+
+    self._depth_head = None
+    if vip_deeplab_options.HasField('depth_head'):
+      self._depth_head = panoptic_deeplab.PanopticDeepLabSingleHead(
+          vip_deeplab_options.depth_head.head_channels,
+          vip_deeplab_options.depth_head.output_channels,
+          common.PRED_DEPTH_KEY,
+          name='depth_head',
+          conv_type=vip_deeplab_options.depth_head.head_conv_type,
+          bn_layer=bn_layer)
+      self._max_depth = (
+          vip_deeplab_options.depth_head.max_value_after_activation)
+      self._min_depth = (
+          vip_deeplab_options.depth_head.min_value_after_activation)
 
     self._instance_decoder = None
     self._instance_center_head = None
@@ -219,6 +234,13 @@ class ViPDeepLabDecoder(layers.Layer):
               self._next_instance_regression_head.final_conv,
       }
       items.update(next_instance_items)
+    if self._depth_head is not None:
+      depth_items = {
+          common.CKPT_DEPTH_HEAD_WITHOUT_LAST_LAYER:
+              self._depth_head.conv_block,
+          common.CKPT_DEPTH_HEAD_LAST_LAYER:
+              self._depth_head.final_conv}
+      items.update(depth_items)
     return items
 
   def call(self, features, next_features, training=False):
@@ -240,6 +262,18 @@ class ViPDeepLabDecoder(layers.Layer):
 
     semantic_features = self._semantic_decoder(features, training=training)
     results = self._semantic_head(semantic_features, training=training)
+
+    if self._depth_head is not None:
+      feature_size = semantic_features.get_shape().as_list()[1:3]
+      scaled_feature_size = utils.scale_mutable_sequence(feature_size, 2)
+      depth_features = utils.resize_align_corners(
+          semantic_features, scaled_feature_size)
+      depth_prediction = self._depth_head(depth_features)
+      for pred_key, pred_value in depth_prediction.items():
+        pred_value = self._min_depth + tf.sigmoid(pred_value) * (
+            self._max_depth - self._min_depth)
+        depth_prediction[pred_key] = pred_value
+      results.update(depth_prediction)
 
     if self._instance_decoder is not None:
       instance_features = self._instance_decoder(features, training=training)

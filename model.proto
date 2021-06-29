@@ -63,6 +63,14 @@ message HeadOptions {
   // Set the head convolution type. Support 'depthwise_separable_conv' and
   // 'standard_conv'
   optional string head_conv_type = 3 [default = 'depthwise_separable_conv'];
+  // Set the maximum value after activation. max_value_after_activation and
+  // min_value_after_activation are used to shift the head outputs to a range.
+  // One example is using sigmoid to shift the range for depth prediction.
+  optional float max_value_after_activation = 4 [default = 0];
+  // Set the minimum value after activation. max_value_after_activation and
+  // min_value_after_activation are used to shift the head outputs to a range.
+  // One example is using sigmoid to shift the range for depth prediction.
+  optional float min_value_after_activation = 5 [default = 0];
 }
 
 // Configure the instance branch.
@@ -151,6 +159,8 @@ message ModelOptions {
     optional InstanceOptions instance = 2;
     // Set the model options of the semantic head.
     optional HeadOptions semantic_head = 3;
+    // Set the model options of the depth head.
+    optional HeadOptions depth_head = 4;
   }
 
   message MotionDeepLabOptions {

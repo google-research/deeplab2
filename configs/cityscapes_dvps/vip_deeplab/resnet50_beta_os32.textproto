@@ -87,6 +87,12 @@ model_options {
       output_channels: 19
       head_channels: 256
     }
+    depth_head {
+      output_channels: 1
+      head_channels: 64
+      max_value_after_activation: 88.0
+      min_value_after_activation: 0.0
+    }
   }
 }
 trainer_options {
@@ -110,6 +116,10 @@ trainer_options {
     next_regression_loss {
       name: "l1"
       weight: 0.01
+    }
+    depth_loss {
+      name: "depth_loss"
+      weight: 0.1
     }
   }
   solver_options {

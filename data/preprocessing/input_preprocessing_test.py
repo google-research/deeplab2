@@ -32,7 +32,8 @@ class InputPreprocessingTest(tf.test.TestCase):
     crop_height = np.random.randint(33)
     crop_width = np.random.randint(33)
 
-    original_image, processed_image, processed_label, prev_image, prev_label = (
+    (original_image, processed_image, processed_label, prev_image, prev_label,
+     _) = (
         input_preprocessing.preprocess_image_and_label(
             image=self._image,
             label=self._label,
@@ -54,7 +55,8 @@ class InputPreprocessingTest(tf.test.TestCase):
   def test_resizing(self):
     height, width = 65, 65
 
-    original_image, processed_image, processed_label, prev_image, prev_label = (
+    (original_image, processed_image, processed_label, prev_image, prev_label,
+     _) = (
         input_preprocessing.preprocess_image_and_label(
             image=self._image,
             label=self._label,
@@ -79,7 +81,8 @@ class InputPreprocessingTest(tf.test.TestCase):
   def test_scaling(self):
     height, width = 65, 65
 
-    original_image, processed_image, processed_label, prev_image, prev_label = (
+    (original_image, processed_image, processed_label, prev_image, prev_label,
+     _) = (
         input_preprocessing.preprocess_image_and_label(
             image=self._image,
             label=self._label,
@@ -156,7 +159,7 @@ class InputPreprocessingTest(tf.test.TestCase):
     crop_height = np.random.randint(33)
     crop_width = np.random.randint(33)
 
-    _, processed_image, _, _, _ = (
+    _, processed_image, _, _, _, _ = (
         input_preprocessing.preprocess_image_and_label(
             image=self._image,
             label=self._label,

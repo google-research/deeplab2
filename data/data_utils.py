@@ -297,11 +297,13 @@ class SegmentationDecoder(object):
   def __init__(self,
                is_panoptic_dataset=True,
                is_video_dataset=False,
+               is_depth_dataset=False,
                use_two_frames=False,
                use_next_frame=False,
                decode_groundtruth_label=True):
     self._is_panoptic_dataset = is_panoptic_dataset
     self._is_video_dataset = is_video_dataset
+    self._is_depth_dataset = is_depth_dataset
     self._use_two_frames = use_two_frames
     self._use_next_frame = use_next_frame
     self._decode_groundtruth_label = decode_groundtruth_label
@@ -330,6 +332,9 @@ class SegmentationDecoder(object):
       self._keys_to_features[common.KEY_ENCODED_NEXT_IMAGE] = string_feature
       if decode_groundtruth_label:
         self._keys_to_features[common.KEY_ENCODED_NEXT_LABEL] = string_feature
+    # Depth specific processing.
+    if self._is_depth_dataset and decode_groundtruth_label:
+      self._keys_to_features[common.KEY_ENCODED_DEPTH] = string_feature
 
   def _decode_image(self, parsed_tensors, key):
     """Decodes image udner key from parsed tensors."""
@@ -388,4 +393,7 @@ class SegmentationDecoder(object):
       if self._decode_groundtruth_label:
         return_dict['next_label'] = self._decode_label(
             parsed_tensors, common.KEY_ENCODED_NEXT_LABEL)
+    if self._is_depth_dataset and self._decode_groundtruth_label:
+      return_dict['depth'] = self._decode_label(
+          parsed_tensors, common.KEY_ENCODED_DEPTH)
     return return_dict

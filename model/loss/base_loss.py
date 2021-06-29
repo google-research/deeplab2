@@ -557,3 +557,142 @@ class MaskDiceLoss(tf.keras.losses.Loss):
         weights)
     # Reduce_sum over the channels (i.e., number of masks).
     return tf.reduce_sum(weighted_dice_losses, axis=-1)
+
+
+class SILogError(tf.keras.losses.Loss):
+  """This class contains code to compute the SILog error.
+
+  Scale invariant logarithmic (SILog) error was proposed for monocular depth
+  estimation.
+
+  Reference:
+  Eigen, David, Christian Puhrsch, and Rob Fergus. "Depth map prediction from a
+  single image using a multi-scale deep network." In NeurIPS, 2014.
+  """
+
+  def __init__(self,
+               gt_key: Text,
+               pred_key: Text,
+               ignore_label: float):
+    # Implicit reduction might mess with tf.distribute.Strategy, hence we
+    # explicitly reduce the loss.
+    super().__init__(reduction=tf.keras.losses.Reduction.NONE)
+    self._gt_key = gt_key
+    self._pred_key = pred_key
+    self._ignore_label = ignore_label
+
+  def call(self, y_true: Dict[Text, tf.Tensor],
+           y_pred: Dict[Text, tf.Tensor]) -> tf.Tensor:
+    """Computes the scale invariant logarithmic error.
+
+    Args:
+      y_true: A dict of tensors providing ground-truth information.
+      y_pred: A dict of tensors providing predictions.
+
+    Returns:
+      A tensor of shape [batch] containing the loss per sample.
+    """
+    gt = y_true[self._gt_key]
+    pred = y_pred[self._pred_key]
+    ignore_label = self._ignore_label
+
+    def _compute_error(loss_input):
+      gt, pred = loss_input
+      label_mask = gt != ignore_label
+      gt = tf.boolean_mask(gt, label_mask)
+      pred = tf.boolean_mask(pred, label_mask)
+      # Scale invariant logarithmic error.
+      gt_log = tf.math.log(gt)
+      pred_log = tf.math.log(pred)
+      silog_error = (tf.reduce_mean(tf.square(gt_log - pred_log)) -
+                     tf.square(tf.reduce_mean(gt_log - pred_log)))
+      return silog_error
+
+    return tf.map_fn(_compute_error, (gt, pred), fn_output_signature=tf.float32)
+
+
+class RelativeSquaredError(tf.keras.losses.Loss):
+  """This class contains code to compute the relative squared error.
+
+  This class computes the relative squared error for monocular depth estimation.
+
+  Reference:
+  Uhrig, Jonas, Nick Schneider, Lukas Schneider, Uwe Franke, Thomas Brox, and
+  Andreas Geiger. "Sparsity invariant cnns." In 3DV, 2017.
+  """
+
+  def __init__(self,
+               gt_key: Text,
+               pred_key: Text,
+               ignore_label: float):
+    # Implicit reduction might mess with tf.distribute.Strategy, hence we
+    # explicitly reduce the loss.
+    super().__init__(reduction=tf.keras.losses.Reduction.NONE)
+    self._gt_key = gt_key
+    self._pred_key = pred_key
+    self._ignore_label = ignore_label
+
+  def call(self, y_true: Dict[Text, tf.Tensor],
+           y_pred: Dict[Text, tf.Tensor]) -> tf.Tensor:
+    """Computes the relative squared error.
+
+    Args:
+      y_true: A dict of tensors providing ground-truth information.
+      y_pred: A dict of tensors providing predictions.
+
+    Returns:
+      A tensor of shape [batch] containing the loss per sample.
+    """
+    gt = y_true[self._gt_key]
+    pred = y_pred[self._pred_key]
+    ignore_label = self._ignore_label
+
+    def _compute_error(loss_input):
+      gt, pred = loss_input
+      label_mask = gt != ignore_label
+      gt = tf.boolean_mask(gt, label_mask)
+      pred = tf.boolean_mask(pred, label_mask)
+      # Relative squared error.
+      relative_squared_error = tf.sqrt(
+          tf.reduce_mean(tf.square((gt - pred) / gt)))
+      return relative_squared_error
+
+    return tf.map_fn(_compute_error, (gt, pred), fn_output_signature=tf.float32)
+
+
+class SILogPlusRelativeSquaredLoss(tf.keras.losses.Loss):
+  """This class contains code to compute depth loss SILog + RelativeSquared.
+
+  This depth loss function combines the scale invariant logarithmic (SILog)
+  error and relative squared error, which was adopted in the ViP-DeepLab model.
+
+  Reference:
+  Siyuan Qiao, Yukun Zhu, Hartwig Adam, Alan Yuille, and Liang-Chieh Chen.
+  "ViP-DeepLab: Learning Visual Perception with Depth-aware Video Panoptic
+  Segmentation." In CVPR 2021.
+  """
+
+  def __init__(self,
+               gt_key: Text,
+               pred_key: Text,
+               ignore_label: float):
+    # Implicit reduction might mess with tf.distribute.Strategy, hence we
+    # explicitly reduce the loss.
+    super().__init__(reduction=tf.keras.losses.Reduction.NONE)
+    self._silog_error = SILogError(gt_key, pred_key, ignore_label)
+    self._relativate_squared_error = RelativeSquaredError(
+        gt_key, pred_key, ignore_label)
+
+  def call(self, y_true: Dict[Text, tf.Tensor],
+           y_pred: Dict[Text, tf.Tensor]) -> tf.Tensor:
+    """Computes the loss for SILog + RelativeSquared.
+
+    Args:
+      y_true: A dict of tensors providing ground-truth information.
+      y_pred: A dict of tensors providing predictions.
+
+    Returns:
+      A tensor of shape [batch] containing the loss per sample.
+    """
+    return self._silog_error(y_true, y_pred) + self._relativate_squared_error(
+        y_true, y_pred)

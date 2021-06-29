@@ -69,6 +69,11 @@ def _create_loss_and_weight(
         pred_key,
         weight_key,
         top_k_percent_pixels=loss_options.top_k_percent), loss_options.weight
+  elif loss_options.name == 'depth_loss':
+    return base_loss.SILogPlusRelativeSquaredLoss(
+        gt_key,
+        pred_key,
+        **kwargs), loss_options.weight
 
   raise ValueError('Loss %s is not a valid loss.' % loss_options.name)
 
@@ -81,6 +86,7 @@ class DeepLabFamilyLoss(tf.keras.layers.Layer):
       loss_options: config_pb2.LossOptions,
       num_classes: Optional[int],
       ignore_label: Optional[int],
+      ignore_depth: Optional[float],
       thing_class_ids: Tuple[int]):
     """Initializes the losses for Panoptic-DeepLab.
 
@@ -88,6 +94,7 @@ class DeepLabFamilyLoss(tf.keras.layers.Layer):
       loss_options: Loss options as defined by config_pb2.LossOptions.
       num_classes: An integer specifying the number of classes in the dataset.
       ignore_label: An optional integer specifying the ignore label or None.
+      ignore_depth: An optional float specifying the ignore depth or None.
       thing_class_ids: A tuple of length [N] containing N thing indices.
     """
     super(DeepLabFamilyLoss, self).__init__(name='DeepLabFamilyLoss')
@@ -137,6 +144,16 @@ class DeepLabFamilyLoss(tf.keras.layers.Layer):
               common.GT_NEXT_INSTANCE_REGRESSION_KEY,
               common.PRED_NEXT_OFFSET_MAP_KEY,
               common.NEXT_REGRESSION_LOSS_WEIGHT_KEY)
+
+    # Depth loss used in ViP-DeepLab.
+    if loss_options.HasField(common.DEPTH_LOSS):
+      self._single_term_loss_func_and_weight_dict[
+          common.DEPTH_LOSS] = _create_loss_and_weight(
+              loss_options.depth_loss,
+              common.GT_DEPTH_KEY,
+              common.PRED_DEPTH_KEY,
+              common.DEPTH_LOSS_WEIGHT_KEY,
+              ignore_label=ignore_depth)
 
     # Multi-term losses that return dictionaries of loss terms.
     self._multi_term_losses = []
