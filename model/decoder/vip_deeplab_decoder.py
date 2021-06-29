@@ -22,9 +22,8 @@ Reference:
 import tensorflow as tf
 
 from deeplab2 import common
-from deeplab2.model.decoder import panoptic_deeplab
 from deeplab2.model import utils
-
+from deeplab2.model.decoder import panoptic_deeplab
 
 layers = tf.keras.layers
 
@@ -110,10 +109,9 @@ class ViPDeepLabDecoder(layers.Layer):
 
       # If instance_decoder is set, use those options; otherwise reuse the
       # architecture as defined for the semantic decoder.
-      if vip_deeplab_options.instance.HasField(
-          'instance_decoder_override'):
-        decoder_options = (vip_deeplab_options.instance
-                           .instance_decoder_override)
+      if vip_deeplab_options.instance.HasField('instance_decoder_override'):
+        decoder_options = (
+            vip_deeplab_options.instance.instance_decoder_override)
 
       low_level_feature_keys = [item.feature_key for item in low_level_options]
       low_level_channels_project = [
@@ -137,8 +135,7 @@ class ViPDeepLabDecoder(layers.Layer):
           vip_deeplab_options.instance.center_head.output_channels,
           common.PRED_CENTER_HEATMAP_KEY,
           name='instance_center_head',
-          conv_type=(
-              vip_deeplab_options.instance.center_head.head_conv_type),
+          conv_type=(vip_deeplab_options.instance.center_head.head_conv_type),
           bn_layer=bn_layer)
       self._instance_regression_head = (
           panoptic_deeplab.PanopticDeepLabSingleHead(
@@ -166,10 +163,9 @@ class ViPDeepLabDecoder(layers.Layer):
                 bn_layer=bn_layer))
         self._next_instance_regression_head = (
             panoptic_deeplab.PanopticDeepLabSingleHead(
-                (vip_deeplab_options.instance.next_regression_head
-                 .head_channels),
-                (vip_deeplab_options.instance.next_regression_head
-                 .output_channels),
+                (vip_deeplab_options.instance.next_regression_head.head_channels
+                ), (vip_deeplab_options.instance.next_regression_head
+                    .output_channels),
                 common.PRED_NEXT_OFFSET_MAP_KEY,
                 name='next_instance_regression_head',
                 conv_type=(vip_deeplab_options.instance.next_regression_head
@@ -239,7 +235,8 @@ class ViPDeepLabDecoder(layers.Layer):
           common.CKPT_DEPTH_HEAD_WITHOUT_LAST_LAYER:
               self._depth_head.conv_block,
           common.CKPT_DEPTH_HEAD_LAST_LAYER:
-              self._depth_head.final_conv}
+              self._depth_head.final_conv
+      }
       items.update(depth_items)
     return items
 
@@ -266,8 +263,8 @@ class ViPDeepLabDecoder(layers.Layer):
     if self._depth_head is not None:
       feature_size = semantic_features.get_shape().as_list()[1:3]
       scaled_feature_size = utils.scale_mutable_sequence(feature_size, 2)
-      depth_features = utils.resize_align_corners(
-          semantic_features, scaled_feature_size)
+      depth_features = utils.resize_align_corners(semantic_features,
+                                                  scaled_feature_size)
       depth_prediction = self._depth_head(depth_features)
       for pred_key, pred_value in depth_prediction.items():
         pred_value = self._min_depth + tf.sigmoid(pred_value) * (

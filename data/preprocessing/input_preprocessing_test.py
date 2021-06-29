@@ -34,17 +34,16 @@ class InputPreprocessingTest(tf.test.TestCase):
 
     (original_image, processed_image, processed_label, prev_image, prev_label,
      _) = (
-        input_preprocessing.preprocess_image_and_label(
-            image=self._image,
-            label=self._label,
-            prev_image=tf.identity(self._image),
-            prev_label=tf.identity(self._label),
-            crop_height=crop_height,
-            crop_width=crop_width,
-            ignore_label=255))
+         input_preprocessing.preprocess_image_and_label(
+             image=self._image,
+             label=self._label,
+             prev_image=tf.identity(self._image),
+             prev_label=tf.identity(self._label),
+             crop_height=crop_height,
+             crop_width=crop_width,
+             ignore_label=255))
 
-    self.assertListEqual(original_image.shape.as_list(),
-                         [33, 33, 3])
+    self.assertListEqual(original_image.shape.as_list(), [33, 33, 3])
     self.assertListEqual(processed_image.shape.as_list(),
                          [crop_height, crop_width, 3])
     self.assertListEqual(processed_label.shape.as_list(),
@@ -57,24 +56,21 @@ class InputPreprocessingTest(tf.test.TestCase):
 
     (original_image, processed_image, processed_label, prev_image, prev_label,
      _) = (
-        input_preprocessing.preprocess_image_and_label(
-            image=self._image,
-            label=self._label,
-            prev_image=tf.identity(self._image),
-            prev_label=tf.identity(self._label),
-            crop_height=height,
-            crop_width=width,
-            min_resize_value=65,
-            max_resize_value=65,
-            resize_factor=32,
-            ignore_label=255))
+         input_preprocessing.preprocess_image_and_label(
+             image=self._image,
+             label=self._label,
+             prev_image=tf.identity(self._image),
+             prev_label=tf.identity(self._label),
+             crop_height=height,
+             crop_width=width,
+             min_resize_value=65,
+             max_resize_value=65,
+             resize_factor=32,
+             ignore_label=255))
 
-    self.assertListEqual(original_image.shape.as_list(),
-                         [height, width, 3])
-    self.assertListEqual(processed_image.shape.as_list(),
-                         [height, width, 3])
-    self.assertListEqual(processed_label.shape.as_list(),
-                         [height, width, 1])
+    self.assertListEqual(original_image.shape.as_list(), [height, width, 3])
+    self.assertListEqual(processed_image.shape.as_list(), [height, width, 3])
+    self.assertListEqual(processed_label.shape.as_list(), [height, width, 1])
     np.testing.assert_equal(processed_image.numpy(), prev_image.numpy())
     np.testing.assert_equal(processed_label.numpy(), prev_label.numpy())
 
@@ -83,23 +79,20 @@ class InputPreprocessingTest(tf.test.TestCase):
 
     (original_image, processed_image, processed_label, prev_image, prev_label,
      _) = (
-        input_preprocessing.preprocess_image_and_label(
-            image=self._image,
-            label=self._label,
-            prev_image=tf.identity(self._image),
-            prev_label=tf.identity(self._label),
-            crop_height=height,
-            crop_width=width,
-            min_scale_factor=0.5,
-            max_scale_factor=2.0,
-            ignore_label=255))
+         input_preprocessing.preprocess_image_and_label(
+             image=self._image,
+             label=self._label,
+             prev_image=tf.identity(self._image),
+             prev_label=tf.identity(self._label),
+             crop_height=height,
+             crop_width=width,
+             min_scale_factor=0.5,
+             max_scale_factor=2.0,
+             ignore_label=255))
 
-    self.assertListEqual(original_image.shape.as_list(),
-                         [33, 33, 3])
-    self.assertListEqual(processed_image.shape.as_list(),
-                         [height, width, 3])
-    self.assertListEqual(processed_label.shape.as_list(),
-                         [height, width, 1])
+    self.assertListEqual(original_image.shape.as_list(), [33, 33, 3])
+    self.assertListEqual(processed_image.shape.as_list(), [height, width, 3])
+    self.assertListEqual(processed_label.shape.as_list(), [height, width, 1])
     np.testing.assert_equal(processed_image.numpy(), prev_image.numpy())
     np.testing.assert_equal(processed_label.numpy(), prev_label.numpy())
 

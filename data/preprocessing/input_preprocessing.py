@@ -27,8 +27,13 @@ _PROB_OF_FLIP = 0.5
 _MEAN_PIXEL = [127.5, 127.5, 127.5]
 
 
-def _pad_image_and_label(image, label, offset_height, offset_width,
-                         target_height, target_width, ignore_label=None):
+def _pad_image_and_label(image,
+                         label,
+                         offset_height,
+                         offset_width,
+                         target_height,
+                         target_width,
+                         ignore_label=None):
   """Pads the image and the label to the given size.
 
   Args:
@@ -89,10 +94,9 @@ def _update_max_resize_value(max_resize_value, crop_size, is_inference=False):
   """Checks and may update max_resize_value.
 
   Args:
-    max_resize_value: A 2-tuple of (height, width), maximum allowed value
-      after resize. If a single element is given, then height and width
-      share the same value. None, empty or having 0 indicates no maximum value
-      will be used.
+    max_resize_value: A 2-tuple of (height, width), maximum allowed value after
+      resize. If a single element is given, then height and width share the same
+      value. None, empty or having 0 indicates no maximum value will be used.
     crop_size: A 2-tuple of (height, width), crop size used.
     is_inference: Boolean, whether the model is performing inference or not.
 
@@ -143,14 +147,12 @@ def preprocess_image_and_label(image,
     prev_image: An optional tensor of shape [image_height, image_width, 3].
     prev_label: An optional tensor of shape [label_height, label_width, 1].
     depth: An optional tensor of shape [label_height, label_width, 1].
-    min_resize_value: A 2-tuple of (height, width), desired minimum value
-      after resize. If a single element is given, then height and width share
-      the same value. None, empty or having 0 indicates no minimum value will
-      be used.
-    max_resize_value: A 2-tuple of (height, width), maximum allowed value
-      after resize. If a single element is given, then height and width
-      share the same value. None, empty or having 0 indicates no maximum value
-      will be used.
+    min_resize_value: A 2-tuple of (height, width), desired minimum value after
+      resize. If a single element is given, then height and width share the same
+      value. None, empty or having 0 indicates no minimum value will be used.
+    max_resize_value: A 2-tuple of (height, width), maximum allowed value after
+      resize. If a single element is given, then height and width share the same
+      value. None, empty or having 0 indicates no maximum value will be used.
     resize_factor: Resized dimensions are multiple of factor plus one.
     min_scale_factor: Minimum scale factor for random scale augmentation.
     max_scale_factor: Maximum scale factor for random scale augmentation.
@@ -163,7 +165,7 @@ def preprocess_image_and_label(image,
       evaluation.
     is_training: If the preprocessing is used for training or not.
     autoaugment_policy_name: String, autoaugment policy name. See
-        autoaugment_policy.py for available policies.
+      autoaugment_policy.py for available policies.
 
   Returns:
     resized_image: The resized input image without other augmentations as a
@@ -194,8 +196,8 @@ def preprocess_image_and_label(image,
     label = tf.cast(label, tf.int32)
 
   if depth is not None:
-    if (any(value != 0 for value in min_resize_value)
-            or any(value != 0 for value in max_resize_value)):
+    if (any(value != 0 for value in min_resize_value) or
+        any(value != 0 for value in max_resize_value)):
       raise ValueError(
           'Depth prediction with non-zero min_resize_value or max_resize_value'
           'is not supported.')
@@ -250,16 +252,16 @@ def preprocess_image_and_label(image,
       if prev_label is not None:
         prev_label.set_shape([crop_height, crop_width, 1])
     if depth is not None:
-      _, depth = _pad_image_and_label(
-          image_before_padding, depth, offset_height, offset_width, crop_height,
-          crop_width, ignore_depth)
+      _, depth = _pad_image_and_label(image_before_padding, depth,
+                                      offset_height, offset_width, crop_height,
+                                      crop_width, ignore_depth)
       depth.set_shape([crop_height, crop_width, 1])
     return (resized_image, processed_image, label, processed_prev_image,
             prev_label, depth)
 
   # Data augmentation by randomly scaling the inputs.
-  scale = preprocess_utils.get_random_scale(
-      min_scale_factor, max_scale_factor, scale_factor_step_size)
+  scale = preprocess_utils.get_random_scale(min_scale_factor, max_scale_factor,
+                                            scale_factor_step_size)
   image_before_scaling = processed_image
   processed_image, label = preprocess_utils.randomly_scale_image_and_label(
       processed_image, label, scale)
@@ -277,8 +279,9 @@ def preprocess_image_and_label(image,
 
   # Apply autoaugment if any.
   if autoaugment_policy_name:
-    processed_image, label = _autoaugment_helper(
-        processed_image, label, ignore_label, autoaugment_policy_name)
+    processed_image, label = _autoaugment_helper(processed_image, label,
+                                                 ignore_label,
+                                                 autoaugment_policy_name)
     if processed_prev_image is not None:
       processed_prev_image, prev_label = _autoaugment_helper(
           processed_prev_image, prev_label, ignore_label,
@@ -292,8 +295,10 @@ def preprocess_image_and_label(image,
 
   # Randomly crop the image and label.
   def _uniform_offset(margin):
-    return tf.random.uniform(
-        [], minval=0, maxval=tf.maximum(margin, 1), dtype=tf.int32)
+    return tf.random.uniform([],
+                             minval=0,
+                             maxval=tf.maximum(margin, 1),
+                             dtype=tf.int32)
 
   offset_height = _uniform_offset(crop_height - image_height)
   offset_width = _uniform_offset(crop_width - image_width)
@@ -308,14 +313,14 @@ def preprocess_image_and_label(image,
         target_height, target_width, ignore_label)
 
   if depth is not None:
-    _, depth = _pad_image_and_label(
-        image_before_padding, depth, offset_height, offset_width,
-        target_height, target_width, ignore_depth)
+    _, depth = _pad_image_and_label(image_before_padding, depth, offset_height,
+                                    offset_width, target_height, target_width,
+                                    ignore_depth)
 
   if processed_prev_image is not None:
     if depth is not None:
-      (processed_image, label, processed_prev_image,
-       prev_label, depth) = preprocess_utils.random_crop(
+      (processed_image, label, processed_prev_image, prev_label,
+       depth) = preprocess_utils.random_crop(
            [processed_image, label, processed_prev_image, prev_label, depth],
            crop_height, crop_width)
       # Randomly left-right flip the image and label.
