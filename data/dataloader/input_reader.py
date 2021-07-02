@@ -57,7 +57,8 @@ class InputReader(object):
     Returns:
       tf.data.Dataset object.
     """
-    dataset = tf.data.Dataset.list_files(self._file_pattern)
+    dataset = tf.data.Dataset.list_files(
+        self._file_pattern, shuffle=self._is_training)
 
     if self._is_training:
       # File level shuffle.
