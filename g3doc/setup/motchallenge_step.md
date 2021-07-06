@@ -75,7 +75,9 @@ In the following, we provide a step-by-step walk through to prepare the data.
 The groundtruth panoptic map is encoded in the same way as described in
 [KITTI-STEP dataset](./kitti_step.md).
 
-DeepLab2 requires the dataset to be converted to TfRecords for efficient reading and prefetching. To create the dataset for training and evaluation, run the following command:
+DeepLab2 requires the dataset to be converted to TfRecords for efficient 
+reading and prefetching. To create the dataset for training and evaluation, run
+the following command:
 
 ```bash
 python deeplab2/data/build_step_data.py \
@@ -84,10 +86,10 @@ python deeplab2/data/build_step_data.py \
 ```
 
 This script outputs three sharded tfrecord files:
-`{train|test}@10.tfrecord`. In the tfrecords, for `train` set, it
-contains the RGB image pixels as well as their panoptic maps. For `test` set, it
-contains RGB images only. These files will be used as the input for the model
-training and evaluation.
+`{train|test}@10.tfrecord`. In the tfrecords, for `train` set, it contains the 
+RGB image pixels as well as their panoptic maps. For `test` set, it contains 
+RGB images only. These files will be used as the input for the model training 
+and evaluation.
 
 Optionally, you can also specify with `--use_two_frames` to encode two
 consecutive frames into the tfrecord files.

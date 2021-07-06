@@ -148,7 +148,9 @@ Following the above guide, your data structure should look like this:
      +-- val
 ```
 
-DeepLab2 requires the dataset to be converted to TfRecords for efficient reading and prefetching. To create the dataset for training and evaluation, run the following command:
+DeepLab2 requires the dataset to be converted to TfRecords for efficient 
+reading and prefetching. To create the dataset for training and evaluation, run
+the following command:
 
 ```bash
 python deeplab2/data/build_step_data.py \
