@@ -70,7 +70,7 @@ In the following, we provide a step-by-step walk through to prepare the data.
     ```
 
 4.  Download groundtruth MOTChallenge-STEP panoptic maps from
-    http://storage.googleapis.com/gresearch/tf-deeplab/data/motchallenge-step.tar.gz
+    https://storage.googleapis.com/gresearch/tf-deeplab/data/motchallenge-step.tar.gz
 
     ```bash
     cd ${MOTCHALLENGE_STEP_ROOT}

@@ -104,13 +104,13 @@ In the following, we provide a step-by-step walk through to prepare the data.
     ```
 
 4.  Download groundtruth KITTI-STEP panoptic maps from
-    [here](http://storage.googleapis.com/gresearch/tf-deeplab/data/kitti-step.tar.gz).
+    [here](https://storage.googleapis.com/gresearch/tf-deeplab/data/kitti-step.tar.gz).
 
     ```bash
     # Goto ${KITTI_STEP_ROOT}
     cd ..
 
-    wget http://storage.googleapis.com/gresearch/tf-deeplab/data/kitti-step.tar.gz
+    wget https://storage.googleapis.com/gresearch/tf-deeplab/data/kitti-step.tar.gz
     tar -xvf kitti-step.tar.gz
     mv kitti-step/panoptic_maps panoptic_maps
     rm -r kitti-step
