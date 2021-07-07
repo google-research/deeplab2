@@ -50,6 +50,7 @@ In the following, we provide a step-by-step walk through to prepare the data.
     # Create directories.
     mkdir train
     mkdir train/0002
+    mkdir train/0009
     mkdir test
     mkdir test/0001
     mkdir test/0007

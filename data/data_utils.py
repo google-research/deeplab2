@@ -110,7 +110,7 @@ def create_features(image_data,
 
   Args:
     image_data: String or byte stream of encoded image data.
-    image_format: String, image data format, should be either 'jpeg', 'jpg' or
+    image_format: String, image data format, should be either 'jpeg', 'jpg', or
       'png'.
     filename: String, image filename.
     label_data: String or byte stream of (potentially) encoded label data. If
