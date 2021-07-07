@@ -56,8 +56,6 @@ void           | 255
 
 ### Prepare KITTI-STEP for Training and Evaluation
 
-#### Download data
-
 KITTI-STEP has the same train and test sequences as
 [KITTI-MOTS](http://www.cvlibs.net/datasets/kitti/eval_mots.php) (with 21 and 29
 sequences for training and testing, respectively). Similarly, the training
@@ -66,12 +64,20 @@ sequences are further split into training set (12 sequences) and validation set
 
 In the following, we provide a step-by-step walk through to prepare the data.
 
-1.  Create the KITTI-STEP directory: `bash mkdir ${KITTI_STEP_ROOT}/images cd
-    ${KITTI_STEP_ROOT}/images`
+1.  Create the KITTI-STEP directory:
+
+    ```bash
+    mkdir ${KITTI_STEP_ROOT}/images
+    cd ${KITTI_STEP_ROOT}/images
+    ```
 
 2.  Download KITTI images from their
-    [website](http://www.cvlibs.net/datasets/kitti/index.php) and unzip. `bash
-    wget ${KITTI_LINK} unzip ${KITTI_IMAGES}.zip`
+    [website](http://www.cvlibs.net/datasets/kitti/index.php) and unzip.
+
+    ```bash
+    wget ${KITTI_LINK}
+    unzip ${KITTI_IMAGES}.zip
+    ```
 
 3.  To prepare the dataset for our scripts, we need to move and rename some
     directories:
@@ -144,9 +150,9 @@ Following the above guide, your data structure should look like this:
      +-- val
 ```
 
-#### Create tfrecord files
-
-To create dataset for training and evaluation, run the following command:
+DeepLab2 requires the dataset to be converted to TfRecords for efficient reading
+and prefetching. To create the dataset for training and evaluation, run the
+following command:
 
 ```bash
 python deeplab2/data/build_step_data.py \
