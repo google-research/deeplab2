@@ -110,7 +110,8 @@ def create_features(image_data,
 
   Args:
     image_data: String or byte stream of encoded image data.
-    image_format: String, image data format, should be either 'jpeg' or 'png'.
+    image_format: String, image data format, should be either 'jpeg', 'jpg', or
+      'png'.
     filename: String, image filename.
     label_data: String or byte stream of (potentially) encoded label data. If
       None, we skip to write it to tf.train.Example.
@@ -120,7 +121,7 @@ def create_features(image_data,
   Returns:
     A dictionary of feature name to tf.train.Feature maaping.
   """
-  if image_format not in ('jpeg', 'png'):
+  if image_format not in ('jpeg', 'png', 'jpg'):
     raise ValueError('Unsupported image format: %s' % image_format)
 
   # Check color mode, and convert grey image to rgb image.

@@ -31,19 +31,69 @@ void           | 255
 
 ### Prepare MOTChallenge-STEP for Training and Evaluation
 
-#### Download data
+In the following, we provide a step-by-step walk through to prepare the data.
 
-1.  Download MOTChallenge images from https://motchallenge.net/
-2.  Download groundtruth MOTChallenge-STEP panoptic maps from
+1.  Create the MOTChallenge-STEP directory: 
+    ```bash
+    mkdir ${MOTCHALLENGE_STEP_ROOT}/images
+    cd ${MOTCHALLENGE_STEP_ROOT}/images
+    ```
+
+2.  Download MOTChallenge images from https://motchallenge.net/data/MOTS.zip and unzip.
+    ```bash
+    wget ${MOTCHALLENGE_LINK} 
+    unzip ${MOTCHALLENGE_IMAGES}.zip
+    ```
+
+3.  Move and rename the data:
+    ```bash
+    # Create directories.
+    mkdir train
+    mkdir train/0002
+    mkdir train/0009
+    mkdir test
+    mkdir test/0001
+    mkdir test/0007
+
+    # Copy data.
+    cp -r MOTS/train/MOTS20-02/* train/0002/
+    cp -r MOTS/train/MOTS20-09/* train/0009/
+    cp -r MOTS/test/MOTS20-01/* test/0001/
+    cp -r MOTS/test/MOTS20-07/* test/0007/
+
+    # Clean up.
+    rm -r MOTS
+    ```
+
+4.  Download groundtruth MOTChallenge-STEP panoptic maps from
     http://storage.googleapis.com/gresearch/tf-deeplab/data/motchallenge-step.tar.gz
+    ```bash
+    cd ${MOTCHALLENGE_STEP_ROOT}
+    wget ${MOTCHALLENGE_GT_LINK} 
+    tar -xvf ${MOTCHALLENGE_GT}.zip
+    ```
 
 The groundtruth panoptic map is encoded in the same way as described in
 [KITTI-STEP dataset](./kitti_step.md).
 
-#### Create tfrecord files
+DeepLab2 requires the dataset to be converted to TfRecords for efficient 
+reading and prefetching. To create the dataset for training and evaluation, run
+the following command:
 
-You should follow the same folder structure and run the command line script in
-[KITTI-STEP dataset](./kitti_step.md) to prepare MOTChallenge-STEP dataset.
+```bash
+python deeplab2/data/build_step_data.py \
+  --step_root=${MOTCHALLENGE_STEP_ROOT} \
+  --output_dir=${OUTPUT_DIR}
+```
+
+This script outputs three sharded tfrecord files:
+`{train|test}@10.tfrecord`. In the tfrecords, for `train` set, it contains the 
+RGB image pixels as well as their panoptic maps. For `test` set, it contains 
+RGB images only. These files will be used as the input for the model training 
+and evaluation.
+
+Optionally, you can also specify with `--use_two_frames` to encode two
+consecutive frames into the tfrecord files.
 
 ## Citing MOTChallenge-STEP
 
