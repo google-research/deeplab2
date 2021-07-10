@@ -81,7 +81,7 @@ In the following, we provide a step-by-step walk through to prepare the data.
 The groundtruth panoptic map is encoded in the same way as described in
 [KITTI-STEP dataset](./kitti_step.md).
 
-DeepLab2 requires the dataset to be converted to TfRecords for efficient reading
+DeepLab2 requires the dataset to be converted to TFRecords for efficient reading
 and prefetching. To create the dataset for training and evaluation, run the
 following command:
 

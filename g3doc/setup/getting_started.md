@@ -52,9 +52,9 @@ defined:
     for none or the path to a checkpoint (e.g., pretrained on ImageNet or fully
     trained by us.)
 3.  The training dataset `train_dataset_options.file_pattern`, which should
-    point to the TfRecords of the Cityscapes train set.
+    point to the TFRecords of the Cityscapes train set.
 4.  The evaluation dataset `eval_dataset_options.file_pattern`, which should
-    point to the TfRecords of the Cityscapes val set.
+    point to the TFRecords of the Cityscapes val set.
 5.  If the custom CUDA kernel is successfully compiled, we recommend to set
     `merge_semantic_and_instance_with_tf_op` to true.
 
