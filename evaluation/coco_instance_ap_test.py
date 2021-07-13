@@ -42,6 +42,13 @@ def combine_maps(semantic_map, instance_map, label_divisor):
 
 class CocoInstanceApTest(tf.test.TestCase):
 
+  def test_empty_evaluation(self):
+    metric_obj = coco_instance_ap.InstanceAveragePrecision()
+    result = metric_obj.result().numpy()
+    # Empty evaluation returns all zeros as a placeholder.
+    expected_result = np.zeros([12], dtype=np.float32)
+    np.testing.assert_array_almost_equal(result, expected_result)
+
   def test_evaluates_single_image(self):
     groundtruth_boxes = [
         [0.25, 0.4, 0.75, 1.0],

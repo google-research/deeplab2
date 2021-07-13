@@ -98,6 +98,10 @@ class InstanceAveragePrecision(tf.keras.metrics.Metric):
       coco_metric: float numpy array with shape [12] representing the
         coco-style evaluation metrics.
     """
+    if not self.detections:
+      logging.warn('No detections to evaluate.')
+      return np.zeros([12], dtype=np.float32)
+
     self.dataset['categories'] = [{
         'id': int(category_id)
     } for category_id in self.category_ids]
