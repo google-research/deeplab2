@@ -287,7 +287,7 @@ def _convert_dataset(coco_root: str, dataset_split: str,
         image_path = os.path.normpath(image_files[i])
         path_list = image_path.split(os.sep)
         file_name = path_list[-1]
-        file_prefix = file_name.replace(_DATA_FORMAT_MAP['image'], '')
+        file_prefix = os.path.splitext(file_name)[0]
         example = data_utils.create_tfexample(image_data,
                                               'jpeg',
                                               file_prefix, label_data,
