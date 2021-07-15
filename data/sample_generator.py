@@ -200,6 +200,10 @@ class PanopticSampleGenerator:
       if next_label is not None:
         original_next_label = tf.cast(
             next_label, dtype=tf.int32, name='original_next_label')
+    if depth is not None:
+      # Depth label storing depth * 256 as tf.int32.
+      original_depth = tf.cast(depth, dtype=tf.float32, name='original_depth')
+      original_depth = original_depth / 256
     # Reusing the preprocessing function for both next and prev samples.
     if next_image is not None:
       resized_image, image, label, next_image, next_label, depth = (
@@ -334,6 +338,8 @@ class PanopticSampleGenerator:
           if next_label is not None:
             sample[common.GT_NEXT_PANOPTIC_RAW] = tf.squeeze(
                 original_next_label, axis=2)
+      if depth is not None:
+        sample[common.GT_DEPTH_RAW] = original_depth
     return sample
 
   def _generate_thing_id_mask_and_class(self,

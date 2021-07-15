@@ -29,6 +29,7 @@ import tensorflow as tf
 from deeplab2 import common
 from deeplab2.data import dataset
 from deeplab2.evaluation import coco_instance_ap as instance_ap
+from deeplab2.evaluation import depth_metrics
 from deeplab2.evaluation import panoptic_quality
 from deeplab2.evaluation import segmentation_and_tracking_quality as stq
 from deeplab2.evaluation import video_panoptic_quality as vpq
@@ -124,6 +125,7 @@ class Evaluator(orbit.StandardEvaluator):
           self._dataset_info.ignore_label,
           self._dataset_info.panoptic_label_divisor,
           offset=_VIDEO_PANOPTIC_METRIC_OFFSET)
+      self._eval_depth_metric = depth_metrics.DepthMetrics()
 
   def _reset(self):
     for metric in self._eval_loss_metric_dict.values():
@@ -138,6 +140,7 @@ class Evaluator(orbit.StandardEvaluator):
     if (common.TASK_DEPTH_AWARE_VIDEO_PANOPTIC_SEGMENTATION
         in self._supported_tasks):
       self._eval_vpq_metric.reset_states()
+      self._eval_depth_metric.reset_states()
     self._sample_counter = 0
 
   def eval_begin(self):
@@ -151,6 +154,9 @@ class Evaluator(orbit.StandardEvaluator):
       tf.io.gfile.makedirs(os.path.join(self._vis_dir, 'raw_semantic'))
       if common.TASK_PANOPTIC_SEGMENTATION in self._supported_tasks:
         tf.io.gfile.makedirs(os.path.join(self._vis_dir, 'raw_panoptic'))
+      if (common.TASK_DEPTH_AWARE_VIDEO_PANOPTIC_SEGMENTATION
+          in self._supported_tasks):
+        tf.io.gfile.makedirs(os.path.join(self._vis_dir, 'raw_depth'))
 
   def eval_step(self, iterator):
     """Implements one step of evaluation.
@@ -231,6 +237,8 @@ class Evaluator(orbit.StandardEvaluator):
             inputs[common.GT_PANOPTIC_RAW], inputs[common.GT_NEXT_PANOPTIC_RAW],
             outputs[common.PRED_PANOPTIC_KEY],
             outputs[common.PRED_NEXT_PANOPTIC_KEY])
+        step_outputs[self._eval_depth_metric.name] = (
+            inputs[common.GT_DEPTH_RAW], outputs[common.PRED_DEPTH_KEY])
     else:
       # We only undo-preprocess for those defined in tuples in model/utils.py.
       outputs = utils.undo_preprocessing(outputs, resized_size,
@@ -302,6 +310,11 @@ class Evaluator(orbit.StandardEvaluator):
       eval_logs['evaluation/vpq_2frames/TP'] = vpq_results[3]
       eval_logs['evaluation/vpq_2frames/FN'] = vpq_results[4]
       eval_logs['evaluation/vpq_2frames/FP'] = vpq_results[5]
+      depth_results = self._eval_depth_metric.result()
+      eval_logs['evaluation/depth/SILog'] = depth_results[0]
+      eval_logs['evaluation/depth/SqErrorRel'] = depth_results[1]
+      eval_logs['evaluation/depth/AbsErrorRel'] = depth_results[2]
+      eval_logs['evaluation/depth/DepthInlier'] = depth_results[3]
     return eval_logs
 
   def eval_reduce(self, state=None, step_outputs=None):
@@ -380,6 +393,12 @@ class Evaluator(orbit.StandardEvaluator):
           self._eval_vpq_metric.update_state(
               [gt_panoptic[i], gt_next_panoptic[i]],
               [pred_panoptic[i], pred_next_panoptic[i]])
+      for depth_result in zip(*tuple(
+              step_outputs[self._eval_depth_metric.name])):
+        gt_depth, pred_depth = depth_result
+        batch_size = tf.shape(gt_depth)[0]
+        for i in range(batch_size):
+          self._eval_depth_metric.update_state(gt_depth[i], pred_depth[i])
     # We simply return state as it is, since our current implementation does not
     # keep track of state between steps.
     return state

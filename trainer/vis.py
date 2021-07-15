@@ -18,6 +18,7 @@ import os.path
 from typing import Any, Dict, List, Text
 
 import numpy as np
+import PIL
 import tensorflow as tf
 
 from deeplab2 import common
@@ -163,11 +164,16 @@ def store_raw_predictions(predictions: Dict[str, Any],
       image_filename,
       add_colormap=False)
 
-  if common.PRED_PANOPTIC_KEY in predictions:
+  pred_panoptic_keys = [common.PRED_PANOPTIC_KEY, common.PRED_NEXT_PANOPTIC_KEY]
+  pred_panoptic_keys = filter(lambda k: k in predictions, pred_panoptic_keys)
+  for pred_panoptic_key in pred_panoptic_keys:
+    panoptic_filename = image_filename
+    if pred_panoptic_key == common.PRED_NEXT_PANOPTIC_KEY:
+      panoptic_filename += '_next'
     # Save the predicted panoptic annotations in two-channel format, where the
     # R-channel stores the semantic label while the G-channel stores the
     # instance label.
-    panoptic_prediction = predictions[common.PRED_PANOPTIC_KEY]
+    panoptic_prediction = predictions[pred_panoptic_key]
     panoptic_outputs = np.zeros(
         (panoptic_prediction.shape[0], panoptic_prediction.shape[1], 3),
         dtype=panoptic_prediction.dtype)
@@ -177,7 +183,7 @@ def store_raw_predictions(predictions: Dict[str, Any],
       predicted_semantic_labels = _convert_train_id_to_eval_id(
           predicted_semantic_labels, dataset_info.dataset_name)
     predicted_instance_labels = predictions[
-        common.PRED_PANOPTIC_KEY] % dataset_info.panoptic_label_divisor
+        pred_panoptic_key] % dataset_info.panoptic_label_divisor
 
     output_folder = os.path.join(save_dir, 'raw_panoptic')
     if dataset_info.is_video_dataset:
@@ -196,7 +202,7 @@ def store_raw_predictions(predictions: Dict[str, Any],
       panoptic_outputs[:, :, 1] = predicted_instance_labels
       vis_utils.save_annotation(panoptic_outputs,
                                 output_folder,
-                                image_filename,
+                                panoptic_filename,
                                 add_colormap=False)
     elif raw_panoptic_format == 'three_channel_png':
       if np.max(predicted_semantic_labels) > 255:
@@ -212,17 +218,31 @@ def store_raw_predictions(predictions: Dict[str, Any],
       panoptic_outputs[:, :, 2] = predicted_instance_labels % 256
       vis_utils.save_annotation(panoptic_outputs,
                                 output_folder,
-                                image_filename,
+                                panoptic_filename,
                                 add_colormap=False)
     elif raw_panoptic_format == 'two_channel_numpy_array':
       panoptic_outputs[:, :, 0] = predicted_semantic_labels
       panoptic_outputs[:, :, 1] = predicted_instance_labels
       with tf.io.gfile.GFile(
-          os.path.join(output_folder, image_filename + '.npy'), 'w') as f:
+          os.path.join(output_folder, panoptic_filename + '.npy'), 'w') as f:
         np.save(f, panoptic_outputs)
     else:
       raise ValueError(
           'Unknown raw_panoptic_format %s.' % raw_panoptic_format)
+
+  if common.PRED_DEPTH_KEY in predictions:
+    output_folder = os.path.join(save_dir, 'raw_depth')
+    if dataset_info.is_video_dataset:
+      output_folder = os.path.join(output_folder, sequence)
+      tf.io.gfile.makedirs(output_folder)
+    depth_outputs = predictions[common.PRED_DEPTH_KEY]
+    depth_outputs = np.squeeze(depth_outputs)
+    depth_outputs = depth_outputs.astype(np.float32) * 256
+    depth_outputs = depth_outputs.astype(np.uint16)
+    depth_image = PIL.Image.fromarray(depth_outputs)
+    depth_filename = os.path.join(output_folder, image_filename + '.png')
+    with tf.io.gfile.GFile(depth_filename, mode='w') as f:
+      depth_image.save(f, 'PNG')
 
 
 def store_predictions(predictions: Dict[str, Any], inputs: Dict[str, Any],
