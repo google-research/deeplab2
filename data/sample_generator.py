@@ -200,6 +200,7 @@ class PanopticSampleGenerator:
       if next_label is not None:
         original_next_label = tf.cast(
             next_label, dtype=tf.int32, name='original_next_label')
+    original_depth = None
     if depth is not None:
       # Depth label storing depth * 256 as tf.int32.
       original_depth = tf.cast(depth, dtype=tf.float32, name='original_depth')

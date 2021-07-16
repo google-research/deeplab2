@@ -19,9 +19,11 @@ The metrics for monocular depth estimation includes scale invariant logarithmic
 error (SILog), relative squared error (SqErrorRel), relative absolute error
 (AbsErrorRel), and depth inlier metric (DepthInlier) at 1.25.
 
-Please see the paper for details:
-"Sparsity Invariant CNNs", Jonas Uhrig, Nick Schneider, Lukas Schneider, Uwe
-Franke, Thomas Brox, and Andreas Geiger. 3DV 2017.
+Please see the papers for details:
+[1] "Sparsity Invariant CNNs", Jonas Uhrig, Nick Schneider, Lukas Schneider, Uwe
+  Franke, Thomas Brox, and Andreas Geiger. 3DV 2017.
+[2] "Depth map prediction from a single image using a multi-scale deep network",
+  David Eigen, Christian Puhrsch, and Rob Fergus. NeurIPS 2014.
 """
 
 from typing import Dict, Text, Any
@@ -35,8 +37,10 @@ class DepthMetrics(tf.keras.metrics.Metric):
   logarithmic error (SILog), relative squared error (SqErrorRel), relative
   absolute error (AbsErrorRel), and depth inlier metric (DepthInlier) at 1.25.
 
-  "Sparsity Invariant CNNs", Jonas Uhrig, Nick Schneider, Lukas Schneider, Uwe
-  Franke, Thomas Brox, and Andreas Geiger. 3DV 2017.
+  [1] "Sparsity Invariant CNNs", Jonas Uhrig, Nick Schneider, Lukas Schneider,
+    Uwe Franke, Thomas Brox, and Andreas Geiger. 3DV 2017.
+  [2] "Depth map prediction from a single image using a multi-scale deep
+    network", David Eigen, Christian Puhrsch, and Rob Fergus. NeurIPS 2014.
 
   Stand-alone usage:
 

@@ -578,7 +578,8 @@ def save_annotation(label,
                     add_colormap=True,
                     normalize_to_unit_values=False,
                     scale_values=False,
-                    colormap_name='cityscapes'):
+                    colormap_name='cityscapes',
+                    output_dtype=np.uint8):
   """Saves the given label to image on disk.
 
   Args:
@@ -592,6 +593,7 @@ def save_annotation(label,
     colormap_name: A string specifying the dataset to choose the corresponding
       color map. Currently supported: 'cityscapes', 'motchallenge'. (Default:
       'cityscapes').
+    output_dtype: The numpy dtype of output before converting to PIL image.
   """
   # Add colormap for visualizing the prediction.
   if add_colormap:
@@ -608,6 +610,6 @@ def save_annotation(label,
     if scale_values:
       colored_label = 255. * colored_label
 
-  pil_image = PIL.Image.fromarray(colored_label.astype(dtype=np.uint8))
+  pil_image = PIL.Image.fromarray(colored_label.astype(dtype=output_dtype))
   with tf.io.gfile.GFile('%s/%s.png' % (save_dir, filename), mode='w') as f:
     pil_image.save(f, 'PNG')

@@ -18,7 +18,6 @@ import os.path
 from typing import Any, Dict, List, Text
 
 import numpy as np
-import PIL
 import tensorflow as tf
 
 from deeplab2 import common
@@ -238,11 +237,11 @@ def store_raw_predictions(predictions: Dict[str, Any],
     depth_outputs = predictions[common.PRED_DEPTH_KEY]
     depth_outputs = np.squeeze(depth_outputs)
     depth_outputs = depth_outputs.astype(np.float32) * 256
-    depth_outputs = depth_outputs.astype(np.uint16)
-    depth_image = PIL.Image.fromarray(depth_outputs)
-    depth_filename = os.path.join(output_folder, image_filename + '.png')
-    with tf.io.gfile.GFile(depth_filename, mode='w') as f:
-      depth_image.save(f, 'PNG')
+    vis_utils.save_annotation(depth_outputs,
+                              output_folder,
+                              image_filename,
+                              add_colormap=False,
+                              output_dtype=np.uint16)
 
 
 def store_predictions(predictions: Dict[str, Any], inputs: Dict[str, Any],
