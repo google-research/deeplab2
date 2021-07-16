@@ -236,11 +236,11 @@ def store_raw_predictions(predictions: Dict[str, Any],
       tf.io.gfile.makedirs(output_folder)
     depth_outputs = predictions[common.PRED_DEPTH_KEY]
     depth_outputs = np.squeeze(depth_outputs)
-    depth_outputs = depth_outputs.astype(np.float32) * 256
     vis_utils.save_annotation(depth_outputs,
                               output_folder,
                               image_filename,
                               add_colormap=False,
+                              scale_factor=256,
                               output_dtype=np.uint16)
 
 

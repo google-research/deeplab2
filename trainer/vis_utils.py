@@ -577,7 +577,7 @@ def save_annotation(label,
                     filename,
                     add_colormap=True,
                     normalize_to_unit_values=False,
-                    scale_values=False,
+                    scale_factor=None,
                     colormap_name='cityscapes',
                     output_dtype=np.uint8):
   """Saves the given label to image on disk.
@@ -589,7 +589,7 @@ def save_annotation(label,
     filename: String, the image filename.
     add_colormap: Boolean, add color map to the label or not.
     normalize_to_unit_values: Boolean, normalize the input values to [0, 1].
-    scale_values: Boolean, scale the input values to [0, 255] for visualization.
+    scale_factor: Float or None, the factor to scale the input values.
     colormap_name: A string specifying the dataset to choose the corresponding
       color map. Currently supported: 'cityscapes', 'motchallenge'. (Default:
       'cityscapes').
@@ -607,8 +607,8 @@ def save_annotation(label,
       if range_value != 0:
         colored_label = (colored_label - min_value) / range_value
 
-    if scale_values:
-      colored_label = 255. * colored_label
+    if scale_factor:
+      colored_label = scale_factor * colored_label
 
   pil_image = PIL.Image.fromarray(colored_label.astype(dtype=output_dtype))
   with tf.io.gfile.GFile('%s/%s.png' % (save_dir, filename), mode='w') as f:
