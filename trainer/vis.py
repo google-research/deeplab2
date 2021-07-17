@@ -199,10 +199,11 @@ def store_raw_predictions(predictions: Dict[str, Any],
             'G channel. Please save output as numpy arrays instead.')
       panoptic_outputs[:, :, 0] = predicted_semantic_labels
       panoptic_outputs[:, :, 1] = predicted_instance_labels
-      vis_utils.save_annotation(panoptic_outputs,
-                                output_folder,
-                                panoptic_filename,
-                                add_colormap=False)
+      vis_utils.save_annotation(
+          panoptic_outputs,
+          output_folder,
+          panoptic_filename,
+          add_colormap=False)
     elif raw_panoptic_format == 'three_channel_png':
       if np.max(predicted_semantic_labels) > 255:
         raise ValueError('Overflow: Semantic IDs greater 255 are not supported '
@@ -215,10 +216,11 @@ def store_raw_predictions(predictions: Dict[str, Any],
       panoptic_outputs[:, :, 0] = predicted_semantic_labels
       panoptic_outputs[:, :, 1] = predicted_instance_labels // 256
       panoptic_outputs[:, :, 2] = predicted_instance_labels % 256
-      vis_utils.save_annotation(panoptic_outputs,
-                                output_folder,
-                                panoptic_filename,
-                                add_colormap=False)
+      vis_utils.save_annotation(
+          panoptic_outputs,
+          output_folder,
+          panoptic_filename,
+          add_colormap=False)
     elif raw_panoptic_format == 'two_channel_numpy_array':
       panoptic_outputs[:, :, 0] = predicted_semantic_labels
       panoptic_outputs[:, :, 1] = predicted_instance_labels
@@ -236,12 +238,13 @@ def store_raw_predictions(predictions: Dict[str, Any],
       tf.io.gfile.makedirs(output_folder)
     depth_outputs = predictions[common.PRED_DEPTH_KEY]
     depth_outputs = np.squeeze(depth_outputs)
-    vis_utils.save_annotation(depth_outputs,
-                              output_folder,
-                              image_filename,
-                              add_colormap=False,
-                              scale_factor=256,
-                              output_dtype=np.uint16)
+    vis_utils.save_annotation(
+        depth_outputs,
+        output_folder,
+        image_filename,
+        add_colormap=False,
+        scale_factor=256,
+        output_dtype=np.uint16)
 
 
 def store_predictions(predictions: Dict[str, Any], inputs: Dict[str, Any],

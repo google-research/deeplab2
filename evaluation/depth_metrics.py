@@ -73,10 +73,10 @@ class DepthMetrics(tf.keras.metrics.Metric):
     y_pred = tf.boolean_mask(y_pred, valid_mask)
     # Computes SILog.
     err = tf.math.log(y_pred) - tf.math.log(y_true)
-    silog = tf.sqrt(tf.reduce_mean(err ** 2) - tf.reduce_mean(err) ** 2) * 100
+    silog = tf.sqrt(tf.reduce_mean(err**2) - tf.reduce_mean(err)**2) * 100
     self._silog.append(silog)
     # Computes SqErrorRel.
-    sq_error_rel = tf.reduce_mean(((y_true - y_pred) / y_true) ** 2)
+    sq_error_rel = tf.reduce_mean(((y_true - y_pred) / y_true)**2)
     self._sq_error_rel.append(sq_error_rel)
     # Computes AbsErrorRel.
     abs_error_rel = tf.reduce_mean(tf.abs(y_true - y_pred) / y_true)

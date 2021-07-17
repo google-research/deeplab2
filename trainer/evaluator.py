@@ -393,8 +393,8 @@ class Evaluator(orbit.StandardEvaluator):
           self._eval_vpq_metric.update_state(
               [gt_panoptic[i], gt_next_panoptic[i]],
               [pred_panoptic[i], pred_next_panoptic[i]])
-      for depth_result in zip(*tuple(
-              step_outputs[self._eval_depth_metric.name])):
+      for depth_result in zip(
+          *tuple(step_outputs[self._eval_depth_metric.name])):
         gt_depth, pred_depth = depth_result
         batch_size = tf.shape(gt_depth)[0]
         for i in range(batch_size):
