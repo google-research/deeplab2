@@ -55,6 +55,7 @@ GT_SEMANTIC_RAW = 'semantic_raw'
 GT_IS_CROWD_RAW = 'is_crowd_raw'
 GT_SIZE_RAW = 'size_raw'
 GT_NEXT_PANOPTIC_RAW = 'next_panoptic_raw'
+GT_DEPTH_RAW = 'depth_raw'
 
 # Loss keys.
 SEMANTIC_LOSS = 'semantic_loss'
