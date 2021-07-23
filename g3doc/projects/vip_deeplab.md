@@ -24,8 +24,8 @@ sub-tasks. The GIF below shows the results of ViP-DeepLab.
 [SemKITTI-DVPS](https://github.com/joe-siyuan-qiao/ViP-DeepLab/tree/master/semkitti-dvps), [Cityscapes-DVPS](https://github.com/joe-siyuan-qiao/ViP-DeepLab/tree/master/cityscapes-dvps)).
 
 3. Download the pretrained Panoptic-DeepLab
-[checkpoints](./panoptic_deeplab.md), and update the
-`initial_checkpoint` path in the config files.
+[checkpoints](./panoptic_deeplab.md) with ResNet-50-Beta for Cityscapes panoptic
+segmentation, and update the `initial_checkpoint` path in the config files.
 
 ## Citing ViP-DeepLab
 
