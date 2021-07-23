@@ -1,12 +1,31 @@
-TODO: Prepare model zoo and some model introduction.
+# ViP-DeepLab
 
-References below are really meant for reference when writing the doc.
-Please remove the references once ready.
+ViP-DeepLab is a state-of-the-art system for the task depth-aware video panoptic
+segmentation that aims to simultaneously tackle video panoptic segmentation [1]
+and monocular depth estimation [2]. The goal is to assign a unique value that
+encodes both semantic label and temporally consistent instance ID to every pixel
+in an image while estimating its depth from the camera.
 
-References:
+ViP-DeepLab extends Panoptic-DeepLab by adding network branches for depth and
+video predictions. It is a unified model that jointly performs video panoptic
+segmentation and monocular depth estimation for each pixel on the image plane,
+and achieves state-of-the-art performance on several academic datasets for the
+sub-tasks. The GIF below shows the results of ViP-DeepLab.
 
-* https://github.com/tensorflow/models/blob/master/research/deeplab/g3doc/model_zoo.md
-* https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/tf2_detection_zoo.md
+<p align="center">
+   <img src="../img/vip_deeplab/demo.gif" width=800>
+</p>
+
+## Prerequisite
+
+1. Make sure the software is properly [installed](../setup/installation.md).
+
+2. Make sure the target dataset is correctly prepared (e.g.,
+[SemKITTI-DVPS](https://github.com/joe-siyuan-qiao/ViP-DeepLab/tree/master/semkitti-dvps), [Cityscapes-DVPS](https://github.com/joe-siyuan-qiao/ViP-DeepLab/tree/master/cityscapes-dvps)).
+
+3. Download the pretrained Panoptic-DeepLab
+[checkpoints](./panoptic_deeplab.md), and update the
+`initial_checkpoint` path in the config files.
 
 ## Citing ViP-DeepLab
 
@@ -38,4 +57,8 @@ results, please use the following BibTeX entry.
 ```
 
 ### References
-Add some related works if any
+1. Dahun Kim, Sanghyun Woo, Joon-Young Lee, and In So Kweon. "Video panoptic
+   segmentation." In CVPR, 2020.
+
+2. David Eigen, Christian Puhrsch, and Rob Fergus. "Depth map prediction from a
+   single image using a multi-scale deep network." In NeurIPS, 2014.

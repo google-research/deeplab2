@@ -89,6 +89,7 @@ _CITYSCAPES_PANOPTIC = 'cityscapes_panoptic'
 _KITTI_STEP = 'kitti_step'
 _MOTCHALLENGE_STEP = 'motchallenge_step'
 _CITYSCAPES_DVPS = 'cityscapes_dvps'
+_SEMKITTI_DVPS = 'semkitti_dvps'
 _COCO_PANOPTIC = 'coco_panoptic'
 
 # Colormap names.
@@ -209,6 +210,22 @@ CITYSCAPES_DVPS_INFORMATION = DatasetDescriptor(
     ignore_depth=0,
 )
 
+SEMKITTI_DVPS_INFORMATION = DatasetDescriptor(
+    dataset_name=_SEMKITTI_DVPS,
+    splits_to_sizes={'train': 19120,
+                     'val': 4070,
+                     'test': 4340},
+    num_classes=19,
+    ignore_label=255,
+    panoptic_label_divisor=65536,
+    class_has_instances_list=tuple(range(8)),
+    is_video_dataset=True,
+    # Reuses Cityscapes colormap.
+    colormap=_CITYSCAPES_COLORMAP,
+    is_depth_dataset=True,
+    ignore_depth=0,
+)
+
 COCO_PANOPTIC_INFORMATION = DatasetDescriptor(
     dataset_name=_COCO_PANOPTIC,
     splits_to_sizes={'train': 118287,
@@ -231,6 +248,7 @@ MAP_NAME_TO_DATASET_INFO = {
     _MOTCHALLENGE_STEP: MOTCHALLENGE_STEP_INFORMATION,
     _CITYSCAPES_DVPS: CITYSCAPES_DVPS_INFORMATION,
     _COCO_PANOPTIC: COCO_PANOPTIC_INFORMATION,
+    _SEMKITTI_DVPS: SEMKITTI_DVPS_INFORMATION,
 }
 
 MAP_NAMES = list(MAP_NAME_TO_DATASET_INFO.keys())
