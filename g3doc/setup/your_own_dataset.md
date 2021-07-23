@@ -42,12 +42,16 @@ guidances and hopefully that will facillitate the preparation process.
 Finally, if your dataset only contains semantic segmentation annotations,
 you could still use DeepLab2 framework with some minor changes:
 
-1. Set `panoptic_label_divisor=None` in dataset.py (we also provide one
-example in dataset.py, where we only train with semantic segmentation on
-Cityscapes).
+1. Since the code only reads panoptic data at the moment, you need to set
+`panoptic_label_divisor = k`, where k is any positive integer,
+`instance_id = 0`, and `class_has_instances_list = []` (i.e., we treat the
+dataset as the one that contains only `stuff` classes), when you are (1)
+converting the dataset to TFRecord (e.g.,
+[build_step_data.py](../../data/build_step_data.py)),
+and (2) adding dataset information in dataset.py.
 2. Have a config similar to
-`${DEEPLAB2}/configs/cityscapes/panoptic_deeplab/
-resnet50_os32_semseg.textproto`, where the instance branch is not
+`${DEEPLAB2}/configs/cityscapes/panoptic_deeplab/resnet50_os32_semseg.textproto`
+, where the instance branch is not
 initiated.
 
 At this point, you are good to go! Enjoy training DeepLab2!

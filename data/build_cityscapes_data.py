@@ -47,7 +47,7 @@ flags.DEFINE_boolean('treat_crowd_as_ignore', True,
                      'panoptic label.')
 
 _NUM_SHARDS = 10
-_SPLITS_TO_SIZES = dataset.CITYSCAPES_INFORMATION.splits_to_sizes
+_SPLITS_TO_SIZES = dataset.CITYSCAPES_PANOPTIC_INFORMATION.splits_to_sizes
 _IGNORE_LABEL = dataset.CITYSCAPES_PANOPTIC_INFORMATION.ignore_label
 _CLASS_HAS_INSTANCE_LIST = dataset.CITYSCAPES_PANOPTIC_INFORMATION.class_has_instances_list
 _PANOPTIC_LABEL_DIVISOR = dataset.CITYSCAPES_PANOPTIC_INFORMATION.panoptic_label_divisor

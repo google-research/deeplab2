@@ -84,7 +84,6 @@ import collections
 
 
 # Dataset names.
-_CITYSCAPES = 'cityscapes'
 _CITYSCAPES_PANOPTIC = 'cityscapes_panoptic'
 _KITTI_STEP = 'kitti_step'
 _MOTCHALLENGE_STEP = 'motchallenge_step'
@@ -124,24 +123,6 @@ DatasetDescriptor = collections.namedtuple(
         # The ignore label for depth annotations.
         'ignore_depth',
     ]
-)
-
-CITYSCAPES_INFORMATION = DatasetDescriptor(
-    dataset_name=_CITYSCAPES,
-    splits_to_sizes={'train_fine': 2975,
-                     'train_coarse': 22973,
-                     'trainval_fine': 3475,
-                     'trainval_coarse': 23473,
-                     'val_fine': 500,
-                     'test_fine': 1525},
-    num_classes=19,
-    ignore_label=255,
-    panoptic_label_divisor=None,
-    class_has_instances_list=None,
-    is_video_dataset=False,
-    colormap=_CITYSCAPES_COLORMAP,
-    is_depth_dataset=False,
-    ignore_depth=None,
 )
 
 CITYSCAPES_PANOPTIC_INFORMATION = DatasetDescriptor(
@@ -225,7 +206,6 @@ COCO_PANOPTIC_INFORMATION = DatasetDescriptor(
 )
 
 MAP_NAME_TO_DATASET_INFO = {
-    _CITYSCAPES: CITYSCAPES_INFORMATION,
     _CITYSCAPES_PANOPTIC: CITYSCAPES_PANOPTIC_INFORMATION,
     _KITTI_STEP: KITTI_STEP_INFORMATION,
     _MOTCHALLENGE_STEP: MOTCHALLENGE_STEP_INFORMATION,
