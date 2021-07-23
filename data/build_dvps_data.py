@@ -91,7 +91,7 @@ flags.DEFINE_string('dvps_root', None, 'DVPS dataset root folder.')
 flags.DEFINE_string('output_dir', None,
                     'Path to save converted TFRecord of TensorFlow examples.')
 
-flags.DEFINE_integer('panoptic_divisor', default=0,
+flags.DEFINE_integer('panoptic_divisor', default=65536,
                      help='Panoptic divisor used to encode 3-channel label.')
 
 _ENCODED_INSTANCE_LABEL_DIVISOR = 256

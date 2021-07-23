@@ -57,8 +57,20 @@ results, please use the following BibTeX entry.
 ```
 
 ### References
-1. Dahun Kim, Sanghyun Woo, Joon-Young Lee, and In So Kweon. "Video panoptic
-   segmentation." In CVPR, 2020.
+1. Dahun Kim, Sanghyun Woo, Joon-Young Lee, and In So Kweon. "Video Panoptic
+   Segmentation." In CVPR, 2020.
 
-2. David Eigen, Christian Puhrsch, and Rob Fergus. "Depth map prediction from a
-   single image using a multi-scale deep network." In NeurIPS, 2014.
+2. David Eigen, Christian Puhrsch, and Rob Fergus. "Depth Map Prediction from a
+   Single Image Using a Multi-Scale Deep Network." In NeurIPS, 2014.
+
+3. Marius Cordts, Mohamed Omran, Sebastian Ramos, Timo Rehfeld, Markus
+   Enzweiler, Rodrigo Benenson, Uwe Franke, Stefan Roth, and Bernt Schiele, "The
+   Cityscapes Dataset for Semantic Urban Scene Understanding." In CVPR, 2016.
+
+4. Andreas Geiger and Philip Lenz and Raquel Urtasun, "Are We Ready for
+   Autonomous Driving? The KITTI Vision Benchmark Suite." In CVPR, 2012.
+
+5. Jens Behley, Martin Garbade, Andres Milioto, Jan Quenzel, Sven Behnke, Cyrill
+   Stachniss, and Jurgen Gall. "SemanticKITTI: A Dataset for Semantic Scene
+   Understanding of LiDAR Sequences." In ICCV, 2019.
+

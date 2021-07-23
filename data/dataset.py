@@ -40,9 +40,14 @@ provided MSCOCO panoptic segmentation format to the following one:
 panoptic label = semantic label * 256 + instance id.
 
 5. Cityscapes-DVPS (https://github.com/joe-siyuan-qiao/ViP-DeepLab)
+
 The Cityscapes-DVPS dataset augments Cityscapes-VPS
 (https://github.com/mcahny/vps) with depth annotations.
 
+6. SemKITTI-DVPS (https://github.com/joe-siyuan-qiao/ViP-DeepLab)
+
+The SemKITTI-DVPS dataset converts 3D point annotations of SemanticKITTI
+(http://www.semantic-kitti.org) into 2D image labels.
 
 References:
 
@@ -74,6 +79,10 @@ References:
 
 - Dahun Kim, Sanghyun Woo, Joon-Young Lee, and In So Kweon. "Video panoptic
   segmentation." In CVPR, 2020.
+
+- Jens Behley, Martin Garbade, Andres Milioto, Jan Quenzel, Sven Behnke, Cyrill
+  Stachniss, and Jurgen Gall. "Semantickitti: A dataset for semantic scene
+  understanding of lidar sequences." In ICCV, 2019.
 
 - Siyuan Qiao, Yukun Zhu, Hartwig Adam, Alan Yuille, and Liang-Chieh Chen.
   "ViP-DeepLab: Learning Visual Perception with Depth-aware Video Panoptic
