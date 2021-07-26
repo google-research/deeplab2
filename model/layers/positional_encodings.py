@@ -40,6 +40,7 @@ relative positional encodings for query, key, and value.
       Georg Heigold, Sylvain Gelly, Jakob Uszkoreit, Neil Houlsby.
 """
 
+from absl import logging
 import tensorflow as tf
 
 # MAX_SPAN defines the maximum shape of positional encoding. It is set as a
@@ -82,10 +83,10 @@ def _compute_relative_distance_matrix(query_length, key_length):
   # distance_matrix distance will index a relative positional embedding.
   distance_matrix = distance_matrix + MAX_SPAN - 1
   if query_length + (key_length - query_length) // 2 > MAX_SPAN:
-    tf.logging.warn('Axial attention span is larger than MAX_SPAN. In this '
-                    'case, we use a single shared embedding for all positions '
-                    'beyond this relative distance. Please make sure, this '
-                    'behavior is intended.')
+    logging.warn(
+        'Axial attention span is larger than MAX_SPAN. In this case, we use a '
+        'single shared embedding for all positions beyond this relative '
+        'distance. Please make sure, this behavior is intended.')
     distance_matrix = tf.clip_by_value(distance_matrix, 0, MAX_SPAN * 2 - 2)
   return distance_matrix
 
@@ -98,7 +99,7 @@ class RelativePositionalEncoding(tf.keras.layers.Layer):
   https://github.com/tensorflow/tensor2tensor/blob/5623deb79cfcd28f8f8c5463b58b5bd76a81fd0d/tensor2tensor/layers/common_attention.py#L1691
   """
 
-  def __init__(self, query_length, key_length, depth, num_heads, name,
+  def __init__(self, query_length, key_length, depth, name,
                initialization_std=1.0, conv_kernel_weight_decay=0.0):
     """Initializes a relative position encoding layer.
 
@@ -106,14 +107,13 @@ class RelativePositionalEncoding(tf.keras.layers.Layer):
       query_length: An integer, the length of queries.
       key_length: An integer, the length of keys.
       depth: An integer, the number of embedding channels per head.
-      num_heads: An integer, the number of heads in multi-head attention.
       name: A string, the name of the embedding.
       initialization_std: A float, the initialization std for the embedding.
       conv_kernel_weight_decay: A float, the weight decay for convolution
         kernels.
 
     Returns:
-      output: A [num_heads, query, key, depth] tensor, the relative positional
+      output: A [query, key, depth] tensor, the relative positional
         encodings for each head and each query-key-pair.
     """
     super(RelativePositionalEncoding, self).__init__(name=name)
@@ -123,7 +123,6 @@ class RelativePositionalEncoding(tf.keras.layers.Layer):
 
     self._relative_distance_matrix = _compute_relative_distance_matrix(
         query_length, key_length)
-    self._num_heads = num_heads
     self._embedding_shape = (MAX_SPAN * 2 - 1, depth)
 
   def build(self, input_shape):
@@ -139,9 +138,7 @@ class RelativePositionalEncoding(tf.keras.layers.Layer):
     """A forward pass that gathers the relative positional encoding."""
     del inputs
     # Gather the embeddings according to the relative distances.
-    embeddings = tf.gather(self._embeddings, self._relative_distance_matrix)
-    return tf.tile(tf.expand_dims(embeddings, axis=0),
-                   [self._num_heads, 1, 1, 1])
+    return tf.gather(self._embeddings, self._relative_distance_matrix)
 
 
 class AddAbsolutePositionalEncoding(tf.keras.layers.Layer):

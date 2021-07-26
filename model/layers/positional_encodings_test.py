@@ -28,9 +28,9 @@ class PositionalEncodingsTest(tf.test.TestCase):
 
   def test_relative_positional_encoding_output_shape(self):
     layer = positional_encodings.RelativePositionalEncoding(
-        33, 97, 32, 8, 'rpe')
+        33, 97, 32, 'rpe')
     output = layer(None)
-    self.assertListEqual(output.get_shape().as_list(), [8, 33, 97, 32])
+    self.assertListEqual(output.get_shape().as_list(), [33, 97, 32])
 
   def test_add_absolute_positional_encoding_1d_output_shape(self):
     layer = positional_encodings.AddAbsolutePositionalEncoding(

@@ -18,21 +18,23 @@ sub-tasks. The GIF below shows the results of ViP-DeepLab.
 
 ## Prerequisite
 
-1. Make sure the software is properly [installed](../setup/installation.md).
+1.  Make sure the software is properly [installed](../setup/installation.md).
 
-2. Make sure the target dataset is correctly prepared (e.g.,
-[SemKITTI-DVPS](https://github.com/joe-siyuan-qiao/ViP-DeepLab/tree/master/semkitti-dvps), [Cityscapes-DVPS](https://github.com/joe-siyuan-qiao/ViP-DeepLab/tree/master/cityscapes-dvps)).
+2.  Make sure the target dataset is correctly prepared (e.g.,
+    [SemKITTI-DVPS](https://github.com/joe-siyuan-qiao/ViP-DeepLab/tree/master/semkitti-dvps),
+    [Cityscapes-DVPS](https://github.com/joe-siyuan-qiao/ViP-DeepLab/tree/master/cityscapes-dvps)).
 
-3. Download the pretrained Panoptic-DeepLab
-[checkpoints](./panoptic_deeplab.md) with ResNet-50-Beta for Cityscapes panoptic
-segmentation, and update the `initial_checkpoint` path in the config files.
+3.  Download the pretrained Panoptic-DeepLab
+    [checkpoints](./panoptic_deeplab.md) with ResNet-50-Beta for Cityscapes
+    panoptic segmentation, and update the `initial_checkpoint` path in the
+    config files.
 
 ## Citing ViP-DeepLab
 
 If you find this code helpful in your research or wish to refer to the baseline
 results, please use the following BibTeX entry.
 
-* ViP-DeepLab:
+*   ViP-DeepLab:
 
 ```
 @inproceedings{vip_deeplab_2021,
@@ -44,7 +46,7 @@ results, please use the following BibTeX entry.
 
 ```
 
-* Panoptic-DeepLab:
+*   Panoptic-DeepLab:
 
 ```
 @inproceedings{panoptic_deeplab_2020,
@@ -57,20 +59,21 @@ results, please use the following BibTeX entry.
 ```
 
 ### References
-1. Dahun Kim, Sanghyun Woo, Joon-Young Lee, and In So Kweon. "Video Panoptic
-   Segmentation." In CVPR, 2020.
 
-2. David Eigen, Christian Puhrsch, and Rob Fergus. "Depth Map Prediction from a
-   Single Image Using a Multi-Scale Deep Network." In NeurIPS, 2014.
+1.  Dahun Kim, Sanghyun Woo, Joon-Young Lee, and In So Kweon. "Video Panoptic
+    Segmentation." In CVPR, 2020.
 
-3. Marius Cordts, Mohamed Omran, Sebastian Ramos, Timo Rehfeld, Markus
-   Enzweiler, Rodrigo Benenson, Uwe Franke, Stefan Roth, and Bernt Schiele, "The
-   Cityscapes Dataset for Semantic Urban Scene Understanding." In CVPR, 2016.
+2.  David Eigen, Christian Puhrsch, and Rob Fergus. "Depth Map Prediction from a
+    Single Image Using a Multi-Scale Deep Network." In NeurIPS, 2014.
 
-4. Andreas Geiger and Philip Lenz and Raquel Urtasun, "Are We Ready for
-   Autonomous Driving? The KITTI Vision Benchmark Suite." In CVPR, 2012.
+3.  Marius Cordts, Mohamed Omran, Sebastian Ramos, Timo Rehfeld, Markus
+    Enzweiler, Rodrigo Benenson, Uwe Franke, Stefan Roth, and Bernt Schiele,
+    "The Cityscapes Dataset for Semantic Urban Scene Understanding." In
+    CVPR, 2016.
 
-5. Jens Behley, Martin Garbade, Andres Milioto, Jan Quenzel, Sven Behnke, Cyrill
-   Stachniss, and Jurgen Gall. "SemanticKITTI: A Dataset for Semantic Scene
-   Understanding of LiDAR Sequences." In ICCV, 2019.
+4.  Andreas Geiger and Philip Lenz and Raquel Urtasun, "Are We Ready for
+    Autonomous Driving? The KITTI Vision Benchmark Suite." In CVPR, 2012.
 
+5.  Jens Behley, Martin Garbade, Andres Milioto, Jan Quenzel, Sven Behnke,
+    Cyrill Stachniss, and Jurgen Gall. "SemanticKITTI: A Dataset for Semantic
+    Scene Understanding of LiDAR Sequences." In ICCV, 2019.

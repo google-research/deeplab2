@@ -194,7 +194,6 @@ class AxialAttention(tf.keras.layers.Layer):
           self._query_shape,
           self._memory_shape,
           self._key_depth_per_head,
-          self._num_heads,
           'query_rpe',
           initialization_std=self._initialization_std_for_query_key_rpe,
           conv_kernel_weight_decay=self._conv_kernel_weight_decay)
@@ -204,7 +203,6 @@ class AxialAttention(tf.keras.layers.Layer):
           self._query_shape,
           self._memory_shape,
           self._key_depth_per_head,
-          self._num_heads,
           'key_rpe',
           initialization_std=self._initialization_std_for_query_key_rpe,
           conv_kernel_weight_decay=self._conv_kernel_weight_decay)
@@ -214,7 +212,6 @@ class AxialAttention(tf.keras.layers.Layer):
           self._query_shape,
           self._memory_shape,
           self._total_value_depth // self._num_heads,
-          self._num_heads,
           'value_rpe',
           initialization_std=self._initialization_std_for_value_rpe,
           conv_kernel_weight_decay=self._conv_kernel_weight_decay)
@@ -267,14 +264,14 @@ class AxialAttention(tf.keras.layers.Layer):
     if self._use_query_rpe_similarity:
       query_rpe = self._query_rpe(None)
       query_rpe_similarity = tf.einsum(
-          'bhld,hlmd->bhlm', query, query_rpe, name='query_rpe_similarity')
+          'bhld,lmd->bhlm', query, query_rpe, name='query_rpe_similarity')
       similarity_logits.append(query_rpe_similarity)
 
     # Compute the key rpe similarity term: k * rpe.
     if self._use_key_rpe_similarity:
       key_rpe = self._key_rpe(None)
       key_rpe_similarity = tf.einsum(
-          'bhmd,hlmd->bhlm', key, key_rpe, name='key_rpe_similarity')
+          'bhmd,lmd->bhlm', key, key_rpe, name='key_rpe_similarity')
       similarity_logits.append(key_rpe_similarity)
 
     # Apply an optional batch norm to the similarities and sum them.
@@ -299,7 +296,7 @@ class AxialAttention(tf.keras.layers.Layer):
     if self._retrieve_value_rpe:
       value_rpe = self._value_rpe(None)
       retrieved_rpe = tf.einsum(
-          'bhlm,hlmd->bhld', weights, value_rpe, name='retrieve_value_rpe')
+          'bhlm,lmd->bhld', weights, value_rpe, name='retrieve_value_rpe')
       retrieve_list.append(retrieved_rpe)
 
     # Apply batch norms to retrieved contents and rpes respectively.
