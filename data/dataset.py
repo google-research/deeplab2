@@ -40,9 +40,14 @@ provided MSCOCO panoptic segmentation format to the following one:
 panoptic label = semantic label * 256 + instance id.
 
 5. Cityscapes-DVPS (https://github.com/joe-siyuan-qiao/ViP-DeepLab)
+
 The Cityscapes-DVPS dataset augments Cityscapes-VPS
 (https://github.com/mcahny/vps) with depth annotations.
 
+6. SemKITTI-DVPS (https://github.com/joe-siyuan-qiao/ViP-DeepLab)
+
+The SemKITTI-DVPS dataset converts 3D point annotations of SemanticKITTI
+(http://www.semantic-kitti.org) into 2D image labels.
 
 References:
 
@@ -75,6 +80,10 @@ References:
 - Dahun Kim, Sanghyun Woo, Joon-Young Lee, and In So Kweon. "Video panoptic
   segmentation." In CVPR, 2020.
 
+- Jens Behley, Martin Garbade, Andres Milioto, Jan Quenzel, Sven Behnke, Cyrill
+  Stachniss, and Jurgen Gall. "Semantickitti: A dataset for semantic scene
+  understanding of lidar sequences." In ICCV, 2019.
+
 - Siyuan Qiao, Yukun Zhu, Hartwig Adam, Alan Yuille, and Liang-Chieh Chen.
   "ViP-DeepLab: Learning Visual Perception with Depth-aware Video Panoptic
   Segmentation." In CVPR, 2021.
@@ -88,6 +97,7 @@ _CITYSCAPES_PANOPTIC = 'cityscapes_panoptic'
 _KITTI_STEP = 'kitti_step'
 _MOTCHALLENGE_STEP = 'motchallenge_step'
 _CITYSCAPES_DVPS = 'cityscapes_dvps'
+_SEMKITTI_DVPS = 'semkitti_dvps'
 _COCO_PANOPTIC = 'coco_panoptic'
 
 # Colormap names.
@@ -190,6 +200,22 @@ CITYSCAPES_DVPS_INFORMATION = DatasetDescriptor(
     ignore_depth=0,
 )
 
+SEMKITTI_DVPS_INFORMATION = DatasetDescriptor(
+    dataset_name=_SEMKITTI_DVPS,
+    splits_to_sizes={'train': 19120,
+                     'val': 4070,
+                     'test': 4340},
+    num_classes=19,
+    ignore_label=255,
+    panoptic_label_divisor=65536,
+    class_has_instances_list=tuple(range(8)),
+    is_video_dataset=True,
+    # Reuses Cityscapes colormap.
+    colormap=_CITYSCAPES_COLORMAP,
+    is_depth_dataset=True,
+    ignore_depth=0,
+)
+
 COCO_PANOPTIC_INFORMATION = DatasetDescriptor(
     dataset_name=_COCO_PANOPTIC,
     splits_to_sizes={'train': 118287,
@@ -211,6 +237,7 @@ MAP_NAME_TO_DATASET_INFO = {
     _MOTCHALLENGE_STEP: MOTCHALLENGE_STEP_INFORMATION,
     _CITYSCAPES_DVPS: CITYSCAPES_DVPS_INFORMATION,
     _COCO_PANOPTIC: COCO_PANOPTIC_INFORMATION,
+    _SEMKITTI_DVPS: SEMKITTI_DVPS_INFORMATION,
 }
 
 MAP_NAMES = list(MAP_NAME_TO_DATASET_INFO.keys())

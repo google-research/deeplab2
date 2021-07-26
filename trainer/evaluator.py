@@ -37,10 +37,7 @@ from deeplab2.model import utils
 from deeplab2.trainer import runner_utils
 from deeplab2.trainer import vis
 
-_PANOPTIC_METRIC_OFFSET = 256 * 256
-# Video Panoptic Segmentation requires a larger offset value for accommodating
-# more instance IDs.
-_VIDEO_PANOPTIC_METRIC_OFFSET = _PANOPTIC_METRIC_OFFSET * 256
+_PANOPTIC_METRIC_OFFSET = 256 * 256 * 256
 _PREDICTIONS_KEY = 'unique_key_for_storing_predictions'
 _LABELS_KEY = 'unique_key_for_storing_labels'
 
@@ -115,7 +112,7 @@ class Evaluator(orbit.StandardEvaluator):
           self._dataset_info.class_has_instances_list,
           self._dataset_info.ignore_label,
           self._dataset_info.panoptic_label_divisor,
-          offset=_VIDEO_PANOPTIC_METRIC_OFFSET)
+          offset=_PANOPTIC_METRIC_OFFSET)
     if (common.TASK_DEPTH_AWARE_VIDEO_PANOPTIC_SEGMENTATION
         in self._supported_tasks):
       # We compute two-frame video panoptic quality as an additional metric
@@ -124,7 +121,7 @@ class Evaluator(orbit.StandardEvaluator):
           self._dataset_info.num_classes,
           self._dataset_info.ignore_label,
           self._dataset_info.panoptic_label_divisor,
-          offset=_VIDEO_PANOPTIC_METRIC_OFFSET)
+          offset=_PANOPTIC_METRIC_OFFSET)
       self._eval_depth_metric = depth_metrics.DepthMetrics()
 
   def _reset(self):

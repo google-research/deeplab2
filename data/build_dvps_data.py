@@ -64,7 +64,8 @@ Example to run the scipt:
 
    python deeplab2/data/build_dvps_data.py \
      --dvps_root=${DVPS_ROOT} \
-     --output_dir=${OUTPUT_DIR}
+     --output_dir=${OUTPUT_DIR} \
+     --panoptic_divisor=${PANOPTIC_DIVISOR}
 """
 
 import math
@@ -90,6 +91,10 @@ flags.DEFINE_string('dvps_root', None, 'DVPS dataset root folder.')
 flags.DEFINE_string('output_dir', None,
                     'Path to save converted TFRecord of TensorFlow examples.')
 
+flags.DEFINE_integer('panoptic_divisor', default=65536,
+                     help='Panoptic divisor used to encode 3-channel label.')
+
+_ENCODED_INSTANCE_LABEL_DIVISOR = 256
 _PANOPTIC_DEPTH_FORMAT = 'raw'
 _NUM_SHARDS = 1000
 _TF_RECORD_PATTERN = '%s-%05d-of-%05d.tfrecord'
@@ -144,6 +149,12 @@ def _decode_panoptic_or_depth_map(map_path: str) -> Optional[str]:
     return None
   with tf.io.gfile.GFile(map_path, 'rb') as f:
     decoded_map = np.array(Image.open(f)).astype(np.int32)
+  if FLAGS.panoptic_divisor > 0 and map_path.endswith(_LABEL_SUFFIX):
+    semantic_map = decoded_map[:, :, 0]
+    instance_map = (
+        decoded_map[:, :, 1] * _ENCODED_INSTANCE_LABEL_DIVISOR +
+        decoded_map[:, :, 2])
+    decoded_map = semantic_map * FLAGS.panoptic_divisor + instance_map
   return decoded_map.tobytes()
 
 
