@@ -21,7 +21,6 @@ rate. It also has optional pre- and post-global context layers.
     with Recursive Feature Pyramid and Switchable Atrous Convolution.
     arXiv:2006.02334
 """
-import functools
 from typing import Optional
 
 from absl import logging
@@ -86,8 +85,7 @@ class SwitchableAtrousConvolution(tf.keras.layers.Conv2D):
         kernel_initializer='zeros',
         bias_initializer='zeros')
 
-  def build(self, input_shape):
-    super().build(input_shape)
+  def large_convolution_op(self, inputs, kernel):
     if self.padding == 'causal':
       tf_padding = 'VALID'
     elif isinstance(self.padding, str):
@@ -96,13 +94,14 @@ class SwitchableAtrousConvolution(tf.keras.layers.Conv2D):
       tf_padding = self.padding
     large_dilation_rate = list(self.dilation_rate)
     large_dilation_rate = [r * 3 for r in large_dilation_rate]
-    self._large_convolution_op = functools.partial(
-        tf.nn.convolution,
+    return tf.nn.convolution(
+        inputs, kernel,
         strides=list(self.strides),
         padding=tf_padding,
         dilations=large_dilation_rate,
         data_format=self._tf_data_format,
-        name=self.__class__.__name__ + '_large')
+        name=self.__class__.__name__ + '_large'
+        )
 
   def call(self, inputs):
     # Reference: tf.keras.layers.convolutional.Conv.
@@ -112,8 +111,8 @@ class SwitchableAtrousConvolution(tf.keras.layers.Conv2D):
     if self._is_causal:  # Apply causal padding to inputs for Conv1D.
       inputs = tf.compat.v1.pad(inputs, self._compute_causal_padding(inputs))
 
-    outputs = self._convolution_op(inputs, self.kernel)
-    outputs_large = self._large_convolution_op(inputs, self.kernel)
+    outputs = self.convolution_op(inputs, self.kernel)
+    outputs_large = self.large_convolution_op(inputs, self.kernel)
 
     outputs = switches * outputs_large + (1 - switches) * outputs
 
