@@ -24,7 +24,6 @@
 # - Bowen Cheng, et al. "Panoptic-DeepLab: A Simple, Strong, and Fast Baseline
 #   for Bottom-Up Panoptic Segmentation." In CVPR, 2020.
 
-
 # Use a unique experiment_name for each experiment.
 experiment_name: "${EXPERIMENT_NAME}"
 model_options {
@@ -142,7 +141,7 @@ eval_dataset_options {
   small_instance_weight: 3.0
 }
 evaluator_options {
-  continuous_eval_timeout: 43200
+  continuous_eval_timeout: -1
   stuff_area_limit: 4096
   center_score_threshold: 0.1
   nms_kernel: 41

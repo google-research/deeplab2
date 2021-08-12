@@ -40,7 +40,7 @@ class EvaluatorTest(tf.test.TestCase):
         max_resize_value: 0
       }
       evaluator_options {
-        continuous_eval_timeout: 43200
+        continuous_eval_timeout: -1
         stuff_area_limit: 2048
         center_score_threshold: 0.1
         nms_kernel: 13

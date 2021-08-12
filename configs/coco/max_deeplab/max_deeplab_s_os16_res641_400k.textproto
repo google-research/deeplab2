@@ -124,7 +124,7 @@ eval_dataset_options {
   thing_id_mask_annotations: true
 }
 evaluator_options {
-  continuous_eval_timeout: 43200
+  continuous_eval_timeout: -1
   thing_area_limit: 100
   stuff_area_limit: 1600
   transformer_class_confidence_threshold: 0.7

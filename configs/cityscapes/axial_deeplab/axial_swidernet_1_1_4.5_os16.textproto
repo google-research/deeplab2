@@ -114,7 +114,7 @@ trainer_options {
 }
 train_dataset_options {
   dataset: "cityscapes_panoptic"
-    # Update the path to training set.
+  # Update the path to training set.
   file_pattern: "${TRAIN_SET}"
   # Adjust the batch_size accordingly to better fit your GPU/TPU memory.
   # Also see Q1 in g3doc/faq.md.
@@ -148,7 +148,7 @@ eval_dataset_options {
   small_instance_weight: 3.0
 }
 evaluator_options {
-  continuous_eval_timeout: 43200
+  continuous_eval_timeout: -1
   stuff_area_limit: 2048
   center_score_threshold: 0.1
   nms_kernel: 13

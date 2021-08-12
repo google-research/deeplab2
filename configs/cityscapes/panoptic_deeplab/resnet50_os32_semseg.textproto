@@ -107,7 +107,7 @@ eval_dataset_options {
   max_resize_value: 0
 }
 evaluator_options {
-  continuous_eval_timeout: 43200
+  continuous_eval_timeout: -1
   save_predictions: true
   save_raw_predictions: false
 }
