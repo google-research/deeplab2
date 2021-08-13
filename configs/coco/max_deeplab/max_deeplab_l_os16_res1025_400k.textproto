@@ -1,0 +1,146 @@
+# proto-file: deeplab2/config.proto
+# proto-message: ExperimentOptions
+#
+# MaX-DeepLab-L with resolution 1025x1025 and 400k training steps.
+#
+############### PLEASE READ THIS BEFORE USING THIS CONFIG ###############
+# Before using this config, you need to update the following fields:
+# - experiment_name: Use a unique experiment name for each experiment.
+# - initial_checkpoint: Update the path to the initial checkpoint.
+# - train_dataset_options.file_pattern: Update the path to the
+#   training set. e.g., your_dataset/train*.tfrecord
+# - eval_dataset_options.file_pattern: Update the path to the
+#   validation set, e.g., your_dataset/eval*.tfrecord
+#########################################################################
+#
+# MaX-DeepLab-L replaces the last two stages of Wide ResNet-41 with axial-
+# attention blocks and applies a large dual-path transformer.
+# Wide ResNet-41 improves over Wide ResNet-38 by (1) removing the last residual
+# block, and (2) repeating the second last residual block two more times.
+#
+# For Wide ResNet-38, see
+# - Zifeng Wu, et al. "Wider or deeper: Revisiting the ResNet model for
+#   visual recognition." Pattern Recognition, 2019.
+# For Wide ResNet-41, see
+# - Liang-Chieh Chen, et al. "Naive-Student: Leveraging Semi-Supervised
+#   Learning in Video Sequences for Urban Scene Segmentation.", In ECCV, 2020.
+# For axial-attention, see
+# - Huiyu Wang, et al. "Axial-DeepLab: Stand-Alone Axial-Attention for Panoptic
+#   Segmentation." In ECCV, 2020.
+# For MaX-DeepLab, see
+# - Huiyu Wang, et al. "MaX-DeepLab: End-to-End Panoptic Segmentation with Mask
+#   Transformers." In CVPR, 2021.
+
+# Use a unique experiment_name for each experiment.
+experiment_name: "${EXPERIMENT_NAME}"
+model_options {
+  # Update the path to the initial checkpoint (e.g., ImageNet
+  # pretrained checkpoint).
+  initial_checkpoint: "${INIT_CHECKPOINT}"
+  backbone {
+    name: "max_deeplab_l"
+    output_stride: 16
+    drop_path_keep_prob: 0.8
+    drop_path_schedule: "linear"
+  }
+  decoder {
+    feature_key: "feature_semantic"
+    decoder_channels: 256
+    aspp_channels: 256
+    atrous_rates: 6
+    atrous_rates: 12
+    atrous_rates: 18
+  }
+  max_deeplab {
+    pixel_space_head {
+      output_channels: 128
+      head_channels: 256
+    }
+    auxiliary_low_level {
+      feature_key: "res3"
+      channels_project: 64
+    }
+    auxiliary_low_level {
+      feature_key: "res2"
+      channels_project: 32
+    }
+    auxiliary_semantic_head {
+      output_channels: 134
+      head_channels: 256
+    }
+  }
+}
+trainer_options {
+  save_checkpoints_steps: 1000
+  save_summaries_steps: 100
+  steps_per_loop: 100
+  loss_options {
+    semantic_loss {
+      name: "softmax_cross_entropy"
+      weight: 1.0
+    }
+    pq_style_loss {
+      weight: 3.0
+    }
+    mask_id_cross_entropy_loss {
+      weight: 0.3
+    }
+    instance_discrimination_loss {
+      weight: 1.0
+    }
+  }
+  solver_options {
+    base_learning_rate: 0.0003
+    training_number_of_steps: 400000
+    warmup_steps: 5000
+    backbone_learning_rate_multiplier: 0.1
+  }
+}
+train_dataset_options {
+  dataset: "coco_panoptic"
+  file_pattern: "${TRAIN_SET}"
+  # Adjust the batch_size accordingly to better fit your GPU/TPU memory.
+  # Also see Q1 in g3doc/faq.md.
+  batch_size: 64
+  crop_size: 1025
+  crop_size: 1025
+  min_resize_value: 1025
+  max_resize_value: 1025
+  augmentations {
+    min_scale_factor: 0.5
+    max_scale_factor: 1.5
+    scale_factor_step_size: 0.1
+    autoaugment_policy_name: "simple_classification_policy"
+  }
+  increase_small_instance_weights: true
+  small_instance_weight: 3.0
+  # This option generates ground truth labels for MaX-Deeplab.
+  thing_id_mask_annotations: true
+}
+eval_dataset_options {
+  dataset: "coco_panoptic"
+  # Update the path to validation set.
+  file_pattern: "${VAL_SET}"
+  batch_size: 1
+  crop_size: 1025
+  crop_size: 1025
+  min_resize_value: 1025
+  max_resize_value: 1025
+  # Add options to make the evaluation loss comparable to the training loss.
+  increase_small_instance_weights: true
+  small_instance_weight: 3.0
+  # This option generates ground truth labels for MaX-Deeplab.
+  thing_id_mask_annotations: true
+}
+evaluator_options {
+  continuous_eval_timeout: -1
+  thing_area_limit: 256
+  stuff_area_limit: 4096
+  transformer_class_confidence_threshold: 0.7
+  pixel_confidence_threshold: 0.4
+  save_predictions: true
+  save_raw_predictions: false
+  # Some options are inapplicable to MaX-DeepLab, including nms_kernel,
+  # merge_semantic_and_instance_with_tf_op, center_score_threshold,
+  # keep_k_centers, add_flipped_images, and eval_scales.
+}
