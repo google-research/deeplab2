@@ -12,6 +12,20 @@ should serve the purpose. Additionally, this codebase includes our recent and
 state-of-the-art research models on deep labeling. We hope you will find it
 useful for your projects.
 
+## Change logs
+
+* 08/13/2021: Open-source MaX-DeepLab-L COCO checkpoints (51.3% PQ on COCO
+  val set).
+
+* 07/26/2021: Add ViP-DeepLab support for SemKITTI-DVPS.
+
+* 07/07/2021: KITTI-STEP and MOTChallenge-STEP are ready to use.
+
+* 06/07/2021: Add hungarian matching support on TPU for MaX-DeepLab, thanks
+  to the help from Jiquan Ngiam and Amil Merchant.
+
+* 06/01/2021: "Hello, World!", DeepLab2 made publicly available.
+
 ## Installation
 
 See [Installation](g3doc/setup/installation.md).
@@ -57,10 +71,6 @@ python trainer/train.py \
     --model_dir=${BASE_MODEL_DIRECTORY} \
     --num_gpus=${NUM_GPUS}
 ```
-
-## Change logs
-
-See [Change logs](g3doc/change_logs.md) for recent updates.
 
 ## Contacts (Maintainers)
 
