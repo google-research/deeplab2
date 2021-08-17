@@ -126,7 +126,7 @@ class DeepLabModule(tf.Module):
       processed_image = tf.concat(
           [processed_image, processed_prev_image], axis=2)
     else:
-      (resized_image, processed_image, _, _, _) = self._preprocess_fn(
+      (resized_image, processed_image, _, _, _, _) = self._preprocess_fn(
           image=input_tensor)
 
     resized_size = tf.shape(resized_image)[0:2]
