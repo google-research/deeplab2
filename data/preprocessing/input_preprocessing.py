@@ -172,6 +172,9 @@ def preprocess_image_and_label(image,
       tf.Tensor.
     processed_image: The preprocessed image as a tf.Tensor.
     label: The preprocessed groundtruth segmentation label as a tf.Tensor.
+    preprocessed_prev_image: The preprocessed prev_image as a tf.Tensor.
+    prev_label: The preprocessed prev_label as a tf.Tensor.
+    depth: The preprocessed depth as a tf.Tensor.
 
   Raises:
     ValueError: Ground truth label not provided during training.
