@@ -122,7 +122,7 @@ class DeepLabModule(tf.Module):
       # frame before preprocessing, and re-assemble them.
       image, prev_image = tf.split(input_tensor, 2, axis=2)
       (resized_image, processed_image, _, processed_prev_image,
-       _) = self._preprocess_fn(image=image, prev_image=prev_image)
+       _, _) = self._preprocess_fn(image=image, prev_image=prev_image)
       processed_image = tf.concat(
           [processed_image, processed_prev_image], axis=2)
     else:
