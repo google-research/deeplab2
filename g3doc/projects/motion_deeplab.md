@@ -1,17 +1,13 @@
-TODO: Prepare model zoo and some model introduction.
-
-References below are really meant for reference when writing the doc.
-Please remove the references once ready.
-
-References:
-
-* https://github.com/tensorflow/models/blob/master/research/deeplab/g3doc/model_zoo.md
-* https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/tf2_detection_zoo.md
-
 # Motion-DeepLab
 
-TODO: Add model introduction and maybe a figure.
-Motion-DeepLab is xxxxx
+Motion-DeepLab is a unified model for the task of video panoptic segmentation,
+which requires to segment and track every pixel. It is built on top of
+Panoptic-DeepLab and uses an additional branch to regress each pixel to its
+center location in the previous frame. Instead of using a single RGB image as
+input, the network input contains two consecutive frames, i.e., the current and
+previous frame, as well as the center heatmap from the previous frame, similar
+to CenterTrack [1]. The output is used to assign consistent track IDs to all
+instances throughout a video sequence.
 
 ## Prerequisite
 
@@ -53,7 +49,7 @@ ResNet-50 ([config](../../configs/kitti/panoptic_deeplab/resnet50_os32_trainval.
 &dagger;: See Q4 in [FAQ](../faq.md).
 
 This single-frame baseline could be used together with other state-of-the-art
-optical flow methods (e.g., RAFT [1]) for propagating mask predictions
+optical flow methods (e.g., RAFT [2]) for propagating mask predictions
 from one frame to another, as shown in our STEP paper.
 
 **Motion-DeepLab (two-frame-baseline)**:
@@ -95,7 +91,7 @@ ResNet-50 | 32 | MOTChallenge-STEP trainval set | - | - | -
 &dagger;: See Q4 in [FAQ](../faq.md).
 
 This single-frame baseline could be used together with other state-of-the-art
-optical flow methods (e.g., RAFT [1]) for propagating mask predictions
+optical flow methods (e.g., RAFT [2]) for propagating mask predictions
 from one frame to another, as shown in our STEP paper.
 
 **Motion-DeepLab (two-frame-baseline)**:
@@ -128,5 +124,8 @@ results, please use the following BibTeX entry.
 
 ### References
 
-1. Zachary Teed and Jia Deng. RAFT: recurrent all-pairs field
-transforms for optical flow. In ECCV, 2020
+1. Xingyi Zhou, Vladlen Koltun, and Philipp Krahenbuhl. Tracking objects as
+points. ECCV, 2020
+
+2. Zachary Teed and Jia Deng. RAFT: recurrent all-pairs field transforms for
+optical flow. In ECCV, 2020
