@@ -233,8 +233,12 @@ class Trainer(orbit.StandardTrainer):
       # during the apply_gradients call.
       loss_dict = self._loss(inputs, outputs)
       # Average over the batch.
-      average_loss_dict = {
-          key: tf.reduce_mean(value) for key, value in loss_dict.items()}
+      average_loss_dict = {}
+      for name, loss in loss_dict.items():
+        averaged_loss = tf.reduce_mean(loss)
+        average_loss_dict[name] = tf.where(tf.math.is_nan(averaged_loss),
+                                           0.0, averaged_loss)
+
       total_loss = average_loss_dict[common.TOTAL_LOSS]
       scaled_loss = total_loss / self.strategy.num_replicas_in_sync
 
