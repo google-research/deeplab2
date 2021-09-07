@@ -190,6 +190,7 @@ class InvertedBottleneckBlock(tf.keras.layers.Layer):
         name='project_conv')
 
   def call(self, inputs, training=None):
+    depthwise_output = None
     shortcut = inputs
     if self._expand_ratio > 1:
       x = self._conv1_bn_act(inputs, training=training)
@@ -198,6 +199,7 @@ class InvertedBottleneckBlock(tf.keras.layers.Layer):
 
     if self._use_depthwise:
       x = self._conv2_bn_act(x, training=training)
+      depthwise_output = x
 
     if self._squeeze_excitation is not None:
       x = self._squeeze_excitation(x)
@@ -208,4 +210,4 @@ class InvertedBottleneckBlock(tf.keras.layers.Layer):
         self._in_filters == self._out_filters):
       x = tf.add(x, shortcut)
 
-    return x
+    return x, depthwise_output

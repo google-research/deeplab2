@@ -164,7 +164,7 @@ class DeeplabTest(tf.test.TestCase):
         expected_instance_regression_shape)
     num_params = np.sum(
         [np.prod(v.get_shape().as_list()) for v in model.trainable_weights])
-    self.assertEqual(num_params, 18226550)
+    self.assertEqual(num_params, 18236534)
 
   def test_deeplab_with_max_deeplab(self):
     model, experiment_options = _create_model_from_test_proto(

@@ -117,9 +117,11 @@ SUPPORTED_SPECS_MAP = {
 
 
 # pylint: disable=invalid-name
-def _block_spec_decoder(specs: Mapping[Any, Any],
-                        width_multiplier: float,
-                        divisible_by: int = 8) -> Sequence[Mapping[str, Any]]:
+def _block_spec_decoder(
+    specs: Mapping[Any, Any],
+    width_multiplier: float,
+    divisible_by: int = 8,
+    reduce_last_block_filters: bool = False) -> Sequence[Mapping[str, Any]]:
   """Decodes specs for a block.
 
   Args:
@@ -130,6 +132,8 @@ def _block_spec_decoder(specs: Mapping[Any, Any],
       computation cost of the model.
     divisible_by: An `int` that ensures all inner dimensions are divisible by
       this number.
+    reduce_last_block_filters: A bool indicates whether to reduce the final
+      block's filters.
 
   Returns:
     A list of block spec in dictionary that defines structure of the layers.
@@ -153,11 +157,19 @@ def _block_spec_decoder(specs: Mapping[Any, Any],
     spec_dict = dict(zip(block_spec_schema, spec))
     decoded_specs.append(spec_dict)
 
+  block_id = 1
+  first_layer = False
   for ds in decoded_specs:
     ds['filters'] = utils.make_divisible(
         value=ds['filters'] * width_multiplier,
         divisor=divisible_by,
         min_value=8)
+    if block_id >= 5 and reduce_last_block_filters:
+      ds['filters'] = ds['filters'] // 2
+      if first_layer:
+        ds['expand_ratio'] = ds['expand_ratio'] // 2
+    block_id = block_id + 1 if ds['is_endpoint'] else block_id
+    first_layer = ds['is_endpoint']
 
   return decoded_specs
 # pylint: enable=invalid-name
@@ -176,6 +188,7 @@ class MobileNet(tf.keras.Model):
       regularize_depthwise: bool = False,
       bn_layer: Callable[..., Any] = tf.keras.layers.BatchNormalization,
       conv_kernel_weight_decay: float = 0.0,
+      reduce_last_block_filters: bool = False,
       name: str = 'MobilenNetV3'):
     """Initializes a MobileNet V3 model.
 
@@ -201,6 +214,8 @@ class MobileNet(tf.keras.Model):
         normalization (default: tf.keras.layers.BatchNormalization).
       conv_kernel_weight_decay: A float, the weight decay for convolution
         kernels.
+      reduce_last_block_filters: A bool indicates whether to reduce the final
+        block's filters by a factor of 2.
       name: Model name.
 
     Raises:
@@ -230,6 +245,7 @@ class MobileNet(tf.keras.Model):
     self._regularize_depthwise = regularize_depthwise
     self._bn_layer = bn_layer
     self._conv_kernel_weight_decay = conv_kernel_weight_decay
+    self._reduce_last_block_filters = reduce_last_block_filters
     self._blocks = []
     self._endpoint_names = []
 
@@ -237,7 +253,8 @@ class MobileNet(tf.keras.Model):
     self._decoded_specs = _block_spec_decoder(
         specs=block_specs,
         width_multiplier=self._width_multiplier,
-        divisible_by=self._divisible_by)
+        divisible_by=self._divisible_by,
+        reduce_last_block_filters=self._reduce_last_block_filters)
 
     self._mobilenet_base()
 
@@ -258,7 +275,7 @@ class MobileNet(tf.keras.Model):
     in_filters = _INPUT_CHANNELS
     for i, block_def in enumerate(self._decoded_specs):
       # We only need to build up to 'res5' endpoint for segmentation task.
-      if endpoint_level > 5 and not self._classification_mode:
+      if endpoint_level > 5:
         break
 
       block_name = '{}_{}'.format(block_def['block_fn'], i + 1)
@@ -346,9 +363,16 @@ class MobileNet(tf.keras.Model):
     net = input_tensor
     endpoints = {}
     for block, endpoint_name in zip(self._blocks, self._endpoint_names):
-      net = block(net, training=training)
-      if endpoint_name is not None:
-        endpoints[endpoint_name] = net
+      if isinstance(block, blocks.InvertedBottleneckBlock):
+        net, depthwise_output = block(net, training=training)
+        if endpoint_name is not None:
+          # Use the corresponding layer's 'depthwise_output' as the endpoint for
+          # segmentation task if possible.
+          endpoints[endpoint_name] = depthwise_output
+      else:
+        net = block(net, training=training)
+        if endpoint_name is not None:
+          endpoints[endpoint_name] = net
     return endpoints
 
 
@@ -357,6 +381,7 @@ def MobileNetV3Small(
     output_stride: int = 32,
     bn_layer: Callable[..., Any] = tf.keras.layers.BatchNormalization,
     conv_kernel_weight_decay: float = 0.0,
+    reduce_last_block_filters: bool = False,
     name: str = 'MobileNetV3Small') -> tf.keras.Model:
   """Creates a MobileNetV3Small model.
 
@@ -367,6 +392,8 @@ def MobileNetV3Small(
     bn_layer: An optional tf.keras.layers.Layer that computes the
         normalization (default: tf.keras.layers.BatchNormalization).
     conv_kernel_weight_decay: A float, the weight decay for convolution kernels.
+    reduce_last_block_filters: A bool indicates whether to reduce the final
+      block's filters by a factor of 2.
     name: Model name.
 
   Returns:
@@ -377,6 +404,7 @@ def MobileNetV3Small(
                     output_stride=output_stride,
                     bn_layer=bn_layer,
                     conv_kernel_weight_decay=conv_kernel_weight_decay,
+                    reduce_last_block_filters=reduce_last_block_filters,
                     name=name)
   return model
 
@@ -386,6 +414,7 @@ def MobileNetV3Large(
     output_stride: int = 32,
     bn_layer: Callable[..., Any] = tf.keras.layers.BatchNormalization,
     conv_kernel_weight_decay: float = 0.0,
+    reduce_last_block_filters: bool = False,
     name: str = 'MobileNetV3Large') -> tf.keras.Model:
   """Creates a MobileNetV3Large model.
 
@@ -396,6 +425,8 @@ def MobileNetV3Large(
     bn_layer: An optional tf.keras.layers.Layer that computes the
         normalization (default: tf.keras.layers.BatchNormalization).
     conv_kernel_weight_decay: A float, the weight decay for convolution kernels.
+    reduce_last_block_filters: A bool indicates whether to reduce the final
+      block's filters by a factor of 2.
     name: Model name.
 
   Returns:
@@ -406,5 +437,6 @@ def MobileNetV3Large(
                     output_stride=output_stride,
                     bn_layer=bn_layer,
                     conv_kernel_weight_decay=conv_kernel_weight_decay,
+                    reduce_last_block_filters=reduce_last_block_filters,
                     name=name)
   return model

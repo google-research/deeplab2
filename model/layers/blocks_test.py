@@ -33,7 +33,7 @@ class BlocksTest(tf.test.TestCase):
         strides=1,
         name='inverted_bottleneck',
     )
-    output_tensor = ivb_block(input_tensor)
+    output_tensor, _ = ivb_block(input_tensor)
     self.assertListEqual(output_tensor.get_shape().as_list(),
                          [batch, height, width, output_channels])
 
@@ -51,7 +51,7 @@ class BlocksTest(tf.test.TestCase):
     )
     ivb_block1(input_tensor, False)
     weights = ivb_block1.get_weights()
-    output_tensor = ivb_block1(input_tensor, False)
+    output_tensor, _ = ivb_block1(input_tensor, False)
 
     ivb_block2 = blocks.InvertedBottleneckBlock(
         in_filters=input_channels,
@@ -62,7 +62,7 @@ class BlocksTest(tf.test.TestCase):
     )
     ivb_block2(input_tensor, False)
     ivb_block2.set_weights(weights)
-    expected = ivb_block2(input_tensor, False)[:, ::2, ::2, :]
+    expected = ivb_block2(input_tensor, False)[0][:, ::2, ::2, :]
 
     self.assertAllClose(ivb_block1.get_weights(), ivb_block2.get_weights(),
                         atol=1e-4, rtol=1e-4)

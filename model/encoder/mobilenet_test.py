@@ -37,10 +37,36 @@ class MobilenetTest(tf.test.TestCase, parameterized.TestCase):
     mobilenet_channels = {
         # The number of filters of layers having outputs been collected
         # for filter_size_scale = 1.0
-        'MobileNetV3Small': [16, 24, 48, 576],
-        'MobileNetV3Large': [24, 40, 112, 960],
+        'MobileNetV3Small': [16, 88, 144, 576],
+        'MobileNetV3Large': [72, 120, 672, 960],
     }
     network = mobilenet_models[str(model_name)](width_multiplier=1.0)
+
+    inputs = tf.ones([1, input_size, input_size, 3])
+    endpoints = network(inputs)
+
+    for idx, num_filter in enumerate(mobilenet_channels[model_name]):
+      self.assertAllEqual(
+          [1, input_size / 2 ** (idx+2), input_size / 2 ** (idx+2), num_filter],
+          endpoints['res'+str(idx+2)].shape.as_list())
+
+  @parameterized.parameters('MobileNetV3Small', 'MobileNetV3Large')
+  def test_mobilenetv3_rf2_construct_graph(self, model_name):
+    tf.keras.backend.set_image_data_format('channels_last')
+    input_size = 128
+
+    mobilenet_models = {
+        'MobileNetV3Small': mobilenet.MobileNetV3Small,
+        'MobileNetV3Large': mobilenet.MobileNetV3Large,
+    }
+    mobilenet_channels = {
+        # The number of filters of layers having outputs been collected
+        # for filter_size_scale = 1.0
+        'MobileNetV3Small': [16, 88, 144, 288],
+        'MobileNetV3Large': [72, 120, 672, 480],
+    }
+    network = mobilenet_models[str(model_name)](width_multiplier=1.0,
+                                                reduce_last_block_filters=True)
 
     inputs = tf.ones([1, input_size, input_size, 3])
     endpoints = network(inputs)
@@ -71,8 +97,8 @@ class MobilenetTest(tf.test.TestCase, parameterized.TestCase):
     mobilenet_channels = {
         # The number of filters of layers having outputs been collected
         # for filter_size_scale = 1.0
-        'MobileNetV3Small': [16, 24, 48, 576],
-        'MobileNetV3Large': [24, 40, 112, 960],
+        'MobileNetV3Small': [16, 88, 144, 576],
+        'MobileNetV3Large': [72, 120, 672, 960],
     }
     network = mobilenet_models[str(model_name)](
         width_multiplier=1.0,
