@@ -15,7 +15,7 @@
 
 """Numpy Implementation of the Segmentation and Tracking Quality (STQ) metric.
 
-This implementation is designed to work stand-alone. Please feel free to copy 
+This implementation is designed to work stand-alone. Please feel free to copy
 this file and the corresponding unit-test to your project.
 """
 
@@ -42,7 +42,7 @@ class STQuality(object):
 
   Please see the following paper for more details about the metric:
 
-  "STEP: Segmenting and Tracking Every Pixel", Weber et al., arXiv:2102.11859, 
+  "STEP: Segmenting and Tracking Every Pixel", Weber et al., arXiv:2102.11859,
   2021.
 
 
@@ -63,13 +63,8 @@ class STQuality(object):
   result = stq_obj.result()
   """
 
-  def __init__(self,
-               num_classes: int,
-               things_list: Sequence[int],
-               ignore_label: int,
-               label_bit_shift: int,
-               offset: int
-               ):
+  def __init__(self, num_classes: int, things_list: Sequence[int],
+               ignore_label: int, label_bit_shift: int, offset: int):
     """Initialization of the STQ metric.
 
     Args:
@@ -78,7 +73,7 @@ class STQuality(object):
       ignore_label: The class id to be ignored in evaluation as an integer or
         integer tensor.
       label_bit_shift: The number of bits the class label is shifted as an
-        integer: (class_label << bits) + trackingID
+        integer -> (class_label << bits) + trackingID
       offset: The maximum number of unique labels as an integer or integer
         tensor.
     """
@@ -86,7 +81,7 @@ class STQuality(object):
     self._ignore_label = ignore_label
     self._things_list = things_list
     self._label_bit_shift = label_bit_shift
-    self._bit_mask = (2 ** label_bit_shift) - 1
+    self._bit_mask = (2**label_bit_shift) - 1
 
     if ignore_label >= num_classes:
       self._confusion_matrix_size = num_classes + 1
@@ -113,8 +108,7 @@ class STQuality(object):
     """Returns the semantic class from a panoptic label map."""
     return y >> self._label_bit_shift
 
-  def update_state(self, y_true: np.ndarray, y_pred: np.ndarray,
-                   sequence_id=0):
+  def update_state(self, y_true: np.ndarray, y_pred: np.ndarray, sequence_id=0):
     """Accumulates the segmentation and tracking quality statistics.
 
     IMPORTANT: When encoding the parameters y_true and y_pred, please be aware
@@ -138,25 +132,29 @@ class STQuality(object):
     # map `_ignore_label` to `_num_classes`, so it can be used to create the
     # confusion matrix.
     if self._ignore_label > self._num_classes:
-      semantic_label = np.where(
-          semantic_label != self._ignore_label, semantic_label,
-          self._num_classes)
-      semantic_prediction = np.where(
-          semantic_prediction != self._ignore_label,
-          semantic_prediction, self._num_classes)
+      semantic_label = np.where(semantic_label != self._ignore_label,
+                                semantic_label, self._num_classes)
+      semantic_prediction = np.where(semantic_prediction != self._ignore_label,
+                                     semantic_prediction, self._num_classes)
     if sequence_id in self._iou_confusion_matrix_per_sequence:
-      idxs = (np.reshape(semantic_label, [-1]) << self._label_bit_shift) + np.reshape(
-          semantic_prediction, [-1])
+      idxs = (np.reshape(semantic_label, [-1]) <<
+              self._label_bit_shift) + np.reshape(semantic_prediction, [-1])
       unique_idxs, counts = np.unique(idxs, return_counts=True)
       self._iou_confusion_matrix_per_sequence[sequence_id][
-          unique_idxs >> self._label_bit_shift, unique_idxs & self._bit_mask] += counts
+          unique_idxs >> self._label_bit_shift,
+          unique_idxs & self._bit_mask] += counts
       self._sequence_length[sequence_id] += 1
     else:
       self._iou_confusion_matrix_per_sequence[sequence_id] = np.zeros(
-          (self._confusion_matrix_size, self._confusion_matrix_size), dtype=np.int64)
-      idxs = np.stack([np.reshape(semantic_label, [-1]), 
-                np.reshape(semantic_prediction, [-1])], axis=0)
-      np.add.at(self._iou_confusion_matrix_per_sequence[sequence_id], tuple(idxs), 1)
+          (self._confusion_matrix_size, self._confusion_matrix_size),
+          dtype=np.int64)
+      idxs = np.stack([
+          np.reshape(semantic_label, [-1]),
+          np.reshape(semantic_prediction, [-1])
+      ],
+                      axis=0)
+      np.add.at(self._iou_confusion_matrix_per_sequence[sequence_id],
+                tuple(idxs), 1)
 
       self._predictions[sequence_id] = {}
       self._ground_truth[sequence_id] = {}
@@ -168,10 +166,9 @@ class STQuality(object):
     label_mask = np.zeros_like(semantic_label, dtype=np.bool)
     prediction_mask = np.zeros_like(semantic_prediction, dtype=np.bool)
     for things_class_id in self._things_list:
-      label_mask = np.logical_or(label_mask,
-                                 semantic_label == things_class_id)
-      prediction_mask = np.logical_or(
-          prediction_mask, semantic_prediction == things_class_id)
+      label_mask = np.logical_or(label_mask, semantic_label == things_class_id)
+      prediction_mask = np.logical_or(prediction_mask,
+                                      semantic_prediction == things_class_id)
 
     # Select the `crowd` region of the current class. This region is encoded
     # instance id `0`.
@@ -239,7 +236,8 @@ class STQuality(object):
         outer_sum += 1.0 / gt_size * inner_sum
       aq_per_seq[index] = outer_sum
 
-    aq_mean = np.sum(aq_per_seq) / np.maximum(np.sum(num_tubes_per_seq), _EPSILON)
+    aq_mean = np.sum(aq_per_seq) / np.maximum(
+        np.sum(num_tubes_per_seq), _EPSILON)
     aq_per_seq = aq_per_seq / np.maximum(num_tubes_per_seq, _EPSILON)
 
     # Compute IoU scores.
@@ -262,8 +260,9 @@ class STQuality(object):
       unions = intersections + fps + fns
 
       num_classes = np.count_nonzero(unions)
-      ious = (intersections.astype(np.double) /
-              np.maximum(unions, 1e-15).astype(np.double))
+      ious = (
+          intersections.astype(np.double) /
+          np.maximum(unions, 1e-15).astype(np.double))
       iou_per_seq[index] = np.sum(ious) / num_classes
 
     # `intersections` corresponds to true positives.
@@ -273,21 +272,23 @@ class STQuality(object):
     unions = intersections + fps + fns
 
     num_classes = np.count_nonzero(unions)
-    ious = (intersections.astype(np.double) /
-            np.maximum(unions, _EPSILON).astype(np.double))
+    ious = (
+        intersections.astype(np.double) /
+        np.maximum(unions, _EPSILON).astype(np.double))
     iou_mean = np.sum(ious) / num_classes
 
     st_quality = np.sqrt(aq_mean * iou_mean)
     st_quality_per_seq = np.sqrt(aq_per_seq * iou_per_seq)
-    return {'STQ': st_quality,
-            'AQ': aq_mean,
-            'IoU': float(iou_mean),
-            'STQ_per_seq': st_quality_per_seq,
-            'AQ_per_seq': aq_per_seq,
-            'IoU_per_seq': iou_per_seq,
-            'ID_per_seq': id_per_seq,
-            'Length_per_seq': list(self._sequence_length.values()),
-            }
+    return {
+        'STQ': st_quality,
+        'AQ': aq_mean,
+        'IoU': float(iou_mean),
+        'STQ_per_seq': st_quality_per_seq,
+        'AQ_per_seq': aq_per_seq,
+        'IoU_per_seq': iou_per_seq,
+        'ID_per_seq': id_per_seq,
+        'Length_per_seq': list(self._sequence_length.values()),
+    }
 
   def reset_states(self):
     """Resets all states that accumulated data."""

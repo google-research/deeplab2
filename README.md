@@ -17,6 +17,9 @@ useful for your projects.
 * 09/07/2021: Add numpy implementation of Segmentation and Tracking Quality.
 Find it [here](evaluation/numpy/segmentation_and_tracking_quality.py)
 
+* 09/06/2021: Update Panoptic-DeepLab w/ MobileNetv3 backbone results on
+  Cityscapes.
+
 * 08/13/2021: Open-source MaX-DeepLab-L COCO checkpoints (51.3% PQ on COCO
   val set).
 

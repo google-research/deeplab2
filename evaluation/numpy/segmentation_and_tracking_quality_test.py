@@ -15,15 +15,15 @@
 
 """Tests for segmentation_and_tracking_quality.py.
 
-This implementation is designed to work stand-alone. Please feel free to copy 
-this file and the corresponding segmentation_and_tracking_quality.py to your 
+This implementation is designed to work stand-alone. Please feel free to copy
+this file and the corresponding segmentation_and_tracking_quality.py to your
 project.
 """
 
 import unittest
 import numpy as np
 
-import segmentation_and_tracking_quality as stq
+import segmentation_and_tracking_quality as numpy_stq
 
 
 def _compute_metric_and_compare(metric, ground_truth, prediction,
@@ -108,8 +108,7 @@ class STQualityTest(unittest.TestCase):
         ground_truth_instance_1, ground_truth_instance_2,
         ground_truth_instance_3
     ])
-    ground_truth = ((ground_truth_semantic << bit_shit)
-                    + ground_truth_instance)
+    ground_truth = ((ground_truth_semantic << bit_shit) + ground_truth_instance)
 
     prediction_semantic_1 = np.array([[0, 0, 0, 0, 0, 0, 0, 0],
                                       [0, 0, 0, 0, 0, 0, 0, 0],
@@ -164,18 +163,15 @@ class STQualityTest(unittest.TestCase):
                                       [2, 2, 2, 2, 0, 0, 0, 0]])
     prediction_instance = np.stack(
         [prediction_instance_1, prediction_instance_2, prediction_instance_3])
-    prediction = ((prediction_semantic << bit_shit)
-                  + prediction_instance)
+    prediction = ((prediction_semantic << bit_shit) + prediction_instance)
 
     # Compute STQuality.
-    stq_metric = stq.STQuality(
-        n_classes, things_list, ignore_label, bit_shit, 2 ** 24)
+    stq_metric = numpy_stq.STQuality(n_classes, things_list, ignore_label,
+                                     bit_shit, 2**24)
 
     for i in range(3):
-      stq_metric.update_state(
-          ground_truth[i, ...].astype(dtype=np.int32),
-          prediction[i, ...].astype(dtype=np.int32),
-          1)
+      stq_metric.update_state(ground_truth[i, ...].astype(dtype=np.int32),
+                              prediction[i, ...].astype(dtype=np.int32), 1)
 
     result = stq_metric.result()
 
@@ -198,8 +194,8 @@ class STQualityTest(unittest.TestCase):
     # Since the semantic label is `0`, the instance ID is enough.
     ground_truth_track = np.array([[1, 1, 1, 1, 1]])
 
-    stq_metric = stq.STQuality(
-        n_classes, things_list, ignore_label, bit_shift, 2 ** 24)
+    stq_metric = numpy_stq.STQuality(n_classes, things_list, ignore_label,
+                                     bit_shift, 2**24)
 
     with self.subTest('Example 0'):
       predicted_track = np.array([[1, 1, 1, 1, 1]])
@@ -267,16 +263,14 @@ class STQualityTest(unittest.TestCase):
     with self.subTest('Example 10'):
       predicted_track = np.array([[2, 2, 2, 1, 1]])
       _compute_metric_and_compare(stq_metric, ground_truth_track,
-                                  predicted_track,
-                                  [0.42426407, 0.45, 0.4])
+                                  predicted_track, [0.42426407, 0.45, 0.4])
 
     with self.subTest('Example 11'):
       predicted_track = (
           np.array([[2, 2, 0, 1, 1]]) +
           (np.array([[0, 0, 1, 0, 0]]) << bit_shift))
       _compute_metric_and_compare(stq_metric, ground_truth_track,
-                                  predicted_track,
-                                  [0.3, 0.3, 0.3])
+                                  predicted_track, [0.3, 0.3, 0.3])
 
 
 if __name__ == '__main__':
