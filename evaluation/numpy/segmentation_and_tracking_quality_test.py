@@ -13,7 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for segmentation_and_tracking_quality.py."""
+"""Tests for segmentation_and_tracking_quality.py.
+
+This implementation is designed to work stand-alone. Please feel free to copy 
+this file and the corresponding segmentation_and_tracking_quality.py to your 
+project.
+"""
 
 import unittest
 import numpy as np

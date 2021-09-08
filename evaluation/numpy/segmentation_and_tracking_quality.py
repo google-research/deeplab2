@@ -13,7 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Implementation of the Segmentation and Tracking Quality (STQ) metric."""
+"""Numpy Implementation of the Segmentation and Tracking Quality (STQ) metric.
+
+This implementation is designed to work stand-alone. Please feel free to copy 
+this file and the corresponding unit-test to your project.
+"""
 
 import collections
 from typing import Mapping, MutableMapping, Sequence, Text, Any
