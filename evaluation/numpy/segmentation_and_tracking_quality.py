@@ -16,8 +16,10 @@
 """Implementation of the Segmentation and Tracking Quality (STQ) metric."""
 
 import collections
-from typing import MutableMapping, Sequence, Dict, Text, Any
+from typing import Mapping, MutableMapping, Sequence, Text, Any
 import numpy as np
+
+_EPSILON = 1e-15
 
 
 def _update_dict_stats(stat_dict: MutableMapping[int, np.ndarray],
@@ -33,6 +35,12 @@ def _update_dict_stats(stat_dict: MutableMapping[int, np.ndarray],
 
 class STQuality(object):
   """Metric class for the Segmentation and Tracking Quality (STQ).
+
+  Please see the following paper for more details about the metric:
+
+  "STEP: Segmenting and Tracking Every Pixel", Weber et al., arXiv:2102.11859, 
+  2021.
+
 
   The metric computes the geometric mean of two terms.
   - Association Quality: This term measures the quality of the track ID
@@ -56,8 +64,7 @@ class STQuality(object):
                things_list: Sequence[int],
                ignore_label: int,
                label_bit_shift: int,
-               offset: int,
-               name='stq'
+               offset: int
                ):
     """Initialization of the STQ metric.
 
@@ -70,9 +77,7 @@ class STQuality(object):
         integer: (class_label << bits) + trackingID
       offset: The maximum number of unique labels as an integer or integer
         tensor.
-      name: An optional name. (default: 'st_quality')
     """
-    self._name = name
     self._num_classes = num_classes
     self._ignore_label = ignore_label
     self._things_list = things_list
@@ -100,7 +105,7 @@ class STQuality(object):
                        'Please choose an offset that is higher than num_classes'
                        ' * max_instances_per_category = %d' % lower_bound)
 
-  def get_semantic(self, y: np.array) -> np.array:
+  def get_semantic(self, y: np.ndarray) -> np.ndarray:
     """Returns the semantic class from a panoptic label map."""
     return y >> self._label_bit_shift
 
@@ -154,8 +159,7 @@ class STQuality(object):
       self._intersections[sequence_id] = {}
       self._sequence_length[sequence_id] = 1
 
-    # instance_label = y_true % self._max_instances_per_category
-    instance_label = y_true & self._bit_mask # 0xFFFF == 2 ^ 16 - 1
+    instance_label = y_true & self._bit_mask  # 0xFFFF == 2 ^ 16 - 1
 
     label_mask = np.zeros_like(semantic_label, dtype=np.bool)
     prediction_mask = np.zeros_like(semantic_prediction, dtype=np.bool)
@@ -189,7 +193,7 @@ class STQuality(object):
         y_pred[non_crowd_intersection])
     _update_dict_stats(seq_intersects, intersection_ids)
 
-  def result(self) -> Dict[Text, Any]:
+  def result(self) -> Mapping[Text, Any]:
     """Computes the segmentation and tracking quality.
 
     Returns:
@@ -200,7 +204,8 @@ class STQuality(object):
         - 'STQ_per_seq': A list of the STQ score per sequence.
         - 'AQ_per_seq': A list of the AQ score per sequence.
         - 'IoU_per_seq': A list of mean IoU per sequence.
-        - 'Id_per_seq': A list of sequence Ids to map list index to sequence.
+        - 'Id_per_seq': A list of string-type sequence Ids to map list index to
+            sequence.
         - 'Length_per_seq': A list of the length of each sequence.
     """
     # Compute association quality (AQ)
@@ -230,8 +235,8 @@ class STQuality(object):
         outer_sum += 1.0 / gt_size * inner_sum
       aq_per_seq[index] = outer_sum
 
-    aq_mean = np.sum(aq_per_seq) / np.maximum(np.sum(num_tubes_per_seq), 1e-15)
-    aq_per_seq = aq_per_seq / np.maximum(num_tubes_per_seq, 1e-15)
+    aq_mean = np.sum(aq_per_seq) / np.maximum(np.sum(num_tubes_per_seq), _EPSILON)
+    aq_per_seq = aq_per_seq / np.maximum(num_tubes_per_seq, _EPSILON)
 
     # Compute IoU scores.
     # The rows correspond to ground-truth and the columns to predictions.
@@ -241,7 +246,6 @@ class STQuality(object):
         dtype=np.int64)
     for index, confusion in enumerate(
         self._iou_confusion_matrix_per_sequence.values()):
-      confusion = confusion
       removal_matrix = np.zeros_like(confusion)
       removal_matrix[self._include_indices, :] = 1.0
       confusion *= removal_matrix
@@ -266,7 +270,7 @@ class STQuality(object):
 
     num_classes = np.count_nonzero(unions)
     ious = (intersections.astype(np.double) /
-            np.maximum(unions, 1e-15).astype(np.double))
+            np.maximum(unions, _EPSILON).astype(np.double))
     iou_mean = np.sum(ious) / num_classes
 
     st_quality = np.sqrt(aq_mean * iou_mean)
