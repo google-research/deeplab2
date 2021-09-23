@@ -54,26 +54,26 @@ def _create_loss_and_weight(
         pred_key,
         weight_key,
         top_k_percent_pixels=loss_options.top_k_percent,
-        **kwargs), loss_options.weight
+        **kwargs), loss_options.weight  # pytype: disable=bad-return-type  # typed-keras
   elif loss_options.name == 'l1':
     return base_loss.TopKGeneralLoss(
         base_loss.mean_absolute_error,
         gt_key,
         pred_key,
         weight_key,
-        top_k_percent_pixels=loss_options.top_k_percent), loss_options.weight
+        top_k_percent_pixels=loss_options.top_k_percent), loss_options.weight  # pytype: disable=bad-return-type  # typed-keras
   elif loss_options.name == 'mse':
     return base_loss.TopKGeneralLoss(
         base_loss.mean_squared_error,
         gt_key,
         pred_key,
         weight_key,
-        top_k_percent_pixels=loss_options.top_k_percent), loss_options.weight
+        top_k_percent_pixels=loss_options.top_k_percent), loss_options.weight  # pytype: disable=bad-return-type  # typed-keras
   elif loss_options.name == 'depth_loss':
     return base_loss.SILogPlusRelativeSquaredLoss(
         gt_key,
         pred_key,
-        **kwargs), loss_options.weight
+        **kwargs), loss_options.weight  # pytype: disable=bad-return-type  # typed-keras
 
   raise ValueError('Loss %s is not a valid loss.' % loss_options.name)
 
