@@ -119,7 +119,7 @@ def override(config_dict, override_dict):
   return output_dict
 
 
-class AxialResNetInstance(axial_resnet.AxialResNet):
+class AxialResNetInstance(axial_resnet.AxialResNet):  # pytype: disable=ignored-abstractmethod  # abcmeta-check
   """A base Axial-ResNet model."""
 
   @classmethod
