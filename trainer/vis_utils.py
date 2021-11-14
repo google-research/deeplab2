@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import PIL
 import tensorflow as tf
+from data.utils.create_scannetv2_panoptic_maps import create_label_conversion_dict
 
 from deeplab2.data import coco_constants
 
@@ -388,6 +389,55 @@ def create_coco_label_colormap():
     colormap[category['id']] = category['color']
   return colormap
 
+def create_scannetv2_nyu40_label_colormap():
+  """Creates a label colormap for the ScanNetV2 indoor segmentation benchmark.
+
+  Returns:
+    A colormap for visualizing segmentation results.
+  """
+  colormap = np.zeros((256, 3), dtype=np.uint8)
+  colormap[0] = [128, 64, 128]
+  colormap[1] = [244, 35, 232]
+  colormap[2] = [70, 70, 70]
+  colormap[3] = [102, 102, 156]
+  colormap[4] = [190, 153, 153]
+  colormap[5] = [153, 153, 153]
+  colormap[6] = [250, 170, 30]
+  colormap[7] = [220, 220, 0]
+  colormap[8] = [107, 142, 35]
+  colormap[9] = [152, 251, 152]
+  colormap[10] = [70, 130, 180]
+  colormap[11] = [220, 20, 60]
+  colormap[12] = [255, 0, 0]
+  colormap[13] = [0, 0, 142]
+  colormap[14] = [0, 0, 70]
+  colormap[15] = [0, 60, 100]
+  colormap[16] = [0, 80, 100]
+  colormap[17] = [0, 0, 230]
+  colormap[18] = [119, 11, 32]
+  colormap[19] = [220, 20, 60]
+  colormap[20] = [255, 0, 0]
+  colormap[21] = [0, 0, 142]
+  colormap[22] = [0, 0, 70]
+  colormap[23] = [0, 60, 100]
+  colormap[24] = [0, 80, 100]
+  colormap[25] = [0, 0, 230]
+  colormap[26] = [119, 11, 32]
+  colormap[27] = [119, 11, 32]
+  colormap[28] = [119, 11, 32]
+  colormap[29] = [119, 11, 32]
+  colormap[30] = [119, 11, 32]
+  colormap[31] = [119, 11, 32]
+  colormap[32] = [119, 11, 32]
+  colormap[33] = [119, 11, 32]
+  colormap[34] = [119, 11, 32]
+  colormap[35] = [119, 11, 32]
+  colormap[36] = [119, 11, 32]
+  colormap[37] = [119, 11, 32]
+  colormap[38] = [119, 11, 32]
+  colormap[39] = [119, 11, 32]
+  return colormap
+
 
 def label_to_color_image(label, colormap_name='cityscapes'):
   """Adds color defined by the colormap derived from the dataset to the label.
@@ -420,6 +470,8 @@ def label_to_color_image(label, colormap_name='cityscapes'):
     colormap = create_motchallenge_label_colormap()
   elif colormap_name == 'coco':
     colormap = create_coco_label_colormap()
+  elif colormap_name == 'scannetv2_nyu40':
+    colormap = create_scannetv2_nyu40_label_colormap()
   else:
     raise ValueError('Could not find a colormap for dataset %s.' %
                      colormap_name)

@@ -16,3 +16,6 @@ __pycache__/
 # Generated files
 *.o
 *.so
+
+# virtualenv python
+venv
