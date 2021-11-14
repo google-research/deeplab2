@@ -111,7 +111,7 @@ def _get_default_config():
 def override(config_dict, override_dict):
   """Recursively overrides a config dict with another."""
   output_dict = copy.deepcopy(config_dict)
-  for key, value in override_dict.items():
+  for key, value in override_dict.items():  # pytype: disable=attribute-error  # class-cleanup
     if isinstance(value, collections.abc.Mapping):
       output_dict[key] = override(config_dict.get(key, {}), value)
     else:
@@ -119,7 +119,7 @@ def override(config_dict, override_dict):
   return output_dict
 
 
-class AxialResNetInstance(axial_resnet.AxialResNet):
+class AxialResNetInstance(axial_resnet.AxialResNet):  # pytype: disable=ignored-abstractmethod  # abcmeta-check
   """A base Axial-ResNet model."""
 
   @classmethod

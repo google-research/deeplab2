@@ -1,0 +1,158 @@
+# proto-file: deeplab2/config.proto
+# proto-message: ExperimentOptions
+#
+# Panoptic-DeepLab with MobilenetV3-Large and output stride 16.
+#
+############### PLEASE READ THIS BEFORE USING THIS CONFIG ###############
+# Before using this config, you need to update the following fields:
+# - experiment_name: Use a unique experiment name for each experiment.
+# - initial_checkpoint: Update the path to the initial checkpoint.
+# - train_dataset_options.file_pattern: Update the path to the
+#   training set. e.g., your_dataset/train*.tfrecord
+# - eval_dataset_options.file_pattern: Update the path to the
+#   validation set, e.g., your_dataset/eval*.tfrecord
+# - (optional) set merge_semantic_and_instance_with_tf_op: true, if you
+#   could successfully compile the provided efficient merging operation
+#   under the folder `tensorflow_ops`.
+#########################################################################
+#
+# For Mobilenet V3, see
+# - Andrew Howard, et al. "Searching for MobileNetV3" In ICCV, 2019.
+#
+# For Panoptic-DeepLab, see
+# - Bowen Cheng, et al. "Panoptic-DeepLab: A Simple, Strong, and Fast
+#   Baseline for Bottom-Up Panoptic Segmentation." In CVPR, 2020.
+
+# Use a unique experiment_name for each experiment.
+experiment_name: "${EXPERIMENT_NAME}"
+model_options {
+  # Update the path to the initial checkpoint (e.g., ImageNet
+  # pretrained checkpoint).
+  initial_checkpoint: "${INIT_CHECKPOINT}"
+  backbone {
+    name: "mobilenet_v3_large"
+    use_squeeze_and_excite: true
+    output_stride: 16
+  }
+  decoder {
+    feature_key: "res5"
+    decoder_channels: 256
+    aspp_channels: 256
+    atrous_rates: 6
+    atrous_rates: 12
+    atrous_rates: 18
+  }
+  panoptic_deeplab {
+    low_level {
+      feature_key: "res3"
+      channels_project: 64
+    }
+    low_level {
+      feature_key: "res2"
+      channels_project: 32
+    }
+    instance {
+      low_level_override {
+        feature_key: "res3"
+        channels_project: 32
+      }
+      low_level_override {
+        feature_key: "res2"
+        channels_project: 16
+      }
+      instance_decoder_override {
+        feature_key: "res5"
+        decoder_channels: 128
+        atrous_rates: 6
+        atrous_rates: 12
+        atrous_rates: 18
+      }
+      center_head {
+        output_channels: 1
+        head_channels: 32
+      }
+      regression_head {
+        output_channels: 2
+        head_channels: 32
+      }
+    }
+    semantic_head {
+      output_channels: 19
+      head_channels: 256
+    }
+  }
+}
+trainer_options {
+  save_checkpoints_steps: 1000
+  save_summaries_steps: 100
+  steps_per_loop: 100
+  loss_options {
+    semantic_loss {
+      name: "softmax_cross_entropy"
+      weight: 1.0
+      top_k_percent: 0.2
+    }
+    center_loss {
+      name: "mse"
+      weight: 200
+    }
+    regression_loss {
+      name: "l1"
+      weight: 0.01
+    }
+  }
+  solver_options {
+    base_learning_rate: 0.001
+    training_number_of_steps: 60000
+    warmup_steps: 500
+    batchnorm_epsilon: 0.00001
+  }
+}
+train_dataset_options {
+  dataset: "cityscapes_panoptic"
+  # Update the path to train set.
+  file_pattern: "${TRAIN_SET}"
+  # Adjust the batch_size accordingly to better fit your GPU/TPU memory.
+  # Also see Q1 in g3doc/faq.md.
+  batch_size: 64
+  crop_size: 1025
+  crop_size: 2049
+  # Skip resizing.
+  min_resize_value: 0
+  max_resize_value: 0
+  augmentations {
+    min_scale_factor: 0.5
+    max_scale_factor: 2.0
+    scale_factor_step_size: 0.1
+    autoaugment_policy_name: "simple_classification_policy_magnitude_scale_0.2"
+  }
+  increase_small_instance_weights: false
+  small_instance_weight: 1.0
+}
+eval_dataset_options {
+  dataset: "cityscapes_panoptic"
+  # Update the path to validation set.
+  file_pattern: "${VAL_SET}"
+  batch_size: 1
+  crop_size: 1025
+  crop_size: 2049
+  # Skip resizing.
+  min_resize_value: 0
+  max_resize_value: 0
+  # Add options to make the evaluation loss comparable to the training loss.
+  increase_small_instance_weights: false
+  small_instance_weight: 1.0
+}
+evaluator_options {
+  continuous_eval_timeout: -1
+  stuff_area_limit: 2048
+  center_score_threshold: 0.1
+  nms_kernel: 7
+  save_predictions: true
+  save_raw_predictions: false
+  # Use pure tf functions (i.e., no CUDA kernel) to merge semantic and
+  # instance maps. For faster speed, compile TensorFlow with provided kernel
+  # implementation under the folder `tensorflow_ops`, and set
+  # merge_semantic_and_instance_with_tf_op to true.
+  merge_semantic_and_instance_with_tf_op: false
+}

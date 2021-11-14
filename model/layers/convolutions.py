@@ -183,7 +183,7 @@ class Conv2DSame(tf.keras.layers.Layer):
       activation: Optional[str] = None,
       use_switchable_atrous_conv: bool = False,
       use_global_context_in_sac: bool = False,
-      conv_kernel_weight_decay: float = 0.0):
+      conv_kernel_weight_decay: float = 0.0):  # pytype: disable=annotation-type-mismatch  # typed-keras
     """Initializes convolution with zero padding aligned to the top-left corner.
 
     DeepLab aligns zero padding differently to tf.keras 'same' padding.
@@ -406,7 +406,7 @@ class SeparableConv2DSame(tf.keras.layers.Layer):
       use_bias: bool = True,
       use_bn: bool = False,
       bn_layer: tf.keras.layers.Layer = tf.keras.layers.BatchNormalization,
-      activation: Optional[str] = None):
+      activation: Optional[str] = None):  # pytype: disable=annotation-type-mismatch  # typed-keras
     """Initializes a 2D separable convolution.
 
     Args:
@@ -490,7 +490,7 @@ class StackedConv2DSame(tf.keras.layers.Layer):
       use_bias: bool = True,
       use_bn: bool = False,
       bn_layer: tf.keras.layers.Layer = tf.keras.layers.BatchNormalization,
-      activation: Optional[str] = None):
+      activation: Optional[str] = None):  # pytype: disable=annotation-type-mismatch  # typed-keras
     """Initializes a stack of convolutions.
 
     Args:
@@ -592,7 +592,7 @@ class Conv1D(tf.keras.layers.Layer):
       conv_kernel_weight_decay: float = 0.0,
       kernel_initializer='he_normal',
       kernel_size: int = 1,
-      padding: str = 'valid'):
+      padding: str = 'valid'):  # pytype: disable=annotation-type-mismatch  # typed-keras
     """Initializes a Conv1D.
 
     Args:

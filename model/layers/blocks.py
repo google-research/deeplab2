@@ -56,7 +56,7 @@ class InvertedBottleneckBlock(tf.keras.layers.Layer):
                regularize_depthwise: bool = False,
                use_depthwise: bool = True,
                use_residual: bool = True,
-               name: Optional[str] = None):
+               name: Optional[str] = None):  # pytype: disable=annotation-type-mismatch  # typed-keras
     """Initializes an inverted bottleneck block with BN after convolutions.
 
     Args:
