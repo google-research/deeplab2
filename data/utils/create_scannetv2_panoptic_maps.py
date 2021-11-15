@@ -1,14 +1,13 @@
 import functools
-from pathlib import Path
-import numpy as np
+import os
 import multiprocessing
-import pandas as pd
 import shutil
 import zipfile
+from pathlib import Path
+from typing import Dict, List
 
-from typing import Dict
-
-
+import numpy as np
+import pandas as pd
 from absl import app
 from absl import flags
 from absl import logging
@@ -53,6 +52,8 @@ _INSTANCE_MAPS_ARCHIVE_SUFFIX = "_2d-instance-filt.zip"
 _INSTANCE_MAPS_DIR_NAME = "instance-filt"
 _PANOPTIC_MAPS_DIR_NAME = "panoptic"
 
+_NYU40_STUFF_CLASSES = [1, 3, 22]
+
 
 def _scan_has_panoptic(scan_dir_path: Path):
     panoptic_maps_dir_path = scan_dir_path / _PANOPTIC_MAPS_DIR_NAME
@@ -89,7 +90,13 @@ def create_label_conversion_dict(label_conversion_table: pd.DataFrame, labels_se
     return label_conversion_dict
 
 
-def normalize_instance_map(instance_map: np.ndarray):
+def normalize_instance_map(
+    instance_map: np.ndarray, semantic_map: np.array, stuff_classes: List[int]
+):
+    # Convert the instance id of all stuff classes to zero first
+    instance_map[np.isin(semantic_map, stuff_classes)] = 0
+
+    # Convert instance ids so they start from 0
     instance_ids = np.unique(instance_map).tolist()
     # Remove 0 if present
     try:
@@ -97,19 +104,22 @@ def normalize_instance_map(instance_map: np.ndarray):
     except ValueError:
         pass
 
-    # Generate new instance ids
-    new_instance_ids = [i for i in range(1, len(instance_ids) + 1)]
+    # Generate new instance ids starting from 1
+    new_instance_ids = list(range(1, len(instance_ids) + 1))
 
     # Create conversion dict
     conversion_dict = dict(zip(instance_ids, new_instance_ids))
-    conversion_dict[0] = 0
+
+    # Add 0 to 0 mapping to use vectorize
+    conversion_dict.update({0: 0})
 
     # Now convert the instance map
     return np.vectorize(conversion_dict.get)(instance_map)
 
 
 def make_panoptic_from_semantic_and_instance(
-    semantic_map: np.ndarray, instance_map: np.ndarray,
+    semantic_map: np.ndarray,
+    instance_map: np.ndarray,
 ):
     panoptic_map = semantic_map * _LABEL_DIVISOR + instance_map
     return panoptic_map.astype(np.int32)
@@ -130,11 +140,15 @@ def generate_deeplab2_panoptic_map(
     )
 
     # Normalize the instance map so that all the instance ids are between 1 and #instances
-    normalized_instanced_map = normalize_instance_map(instance_map)
+    normalized_instance_map = normalize_instance_map(
+        instance_map,
+        converted_semantic_map,
+        _NYU40_STUFF_CLASSES,
+    )
 
     # Make panoptic map
     panoptic_map = make_panoptic_from_semantic_and_instance(
-        converted_semantic_map, normalized_instanced_map
+        converted_semantic_map, normalized_instance_map
     )
 
     # Save panoptic map to disk
@@ -143,14 +157,11 @@ def generate_deeplab2_panoptic_map(
     panoptic_map_image.save(str(panoptic_map_file_path))
 
 
-def create_panoptic_maps_for_scan(
+def _create_panoptic_maps_for_scan(
     scan_dir_path: Path,
     label_conversion_dict: Dict,
     remove_semantic_and_instance: bool,
 ):
-    if not scan_dir_path.is_dir():
-        return
-
     # Check if panoptic maps have already been created for this scans
     if _scan_has_panoptic(scan_dir_path):
         logging.warn(f"{scan_dir_path.name} already has panoptic!")
@@ -203,7 +214,7 @@ def create_panoptic_maps_for_scan(
             panoptic_maps_dir_path,
             label_conversion_dict,
         )
-    
+
     # Delete semantic and instance maps
     if remove_semantic:
         shutil.rmtree(semantic_maps_dir_path)
@@ -228,14 +239,17 @@ def create_scannetv2_panoptic_maps(_):
         label_conversion_master_table, FLAGS.labels_set
     )
 
+    # Get all the scan dirs
+    scan_dir_paths = [
+        p for p in sorted(list(scans_root_dir_path.glob("scene*"))) if p.is_dir()
+    ]
+
+    # Create panoptic maps for every directory in parallel
     job_fn = functools.partial(
-        create_panoptic_maps_for_scan,
+        _create_panoptic_maps_for_scan,
         label_conversion_dict=label_conversion_dict,
         remove_semantic_and_instance=remove_semantic_and_instance,
     )
-
-    # Loop over all the scans
-    scan_dir_paths = sorted(list(scans_root_dir_path.glob("scene*")))
     with multiprocessing.Pool(processes=n_jobs) as p:
         p.map(job_fn, scan_dir_paths)
 
