@@ -60,10 +60,10 @@ In the following, we provide a step-by-step walk through to prepare the data.
     mkdir test/0007
 
     # Copy data.
-    cp -r MOTS/train/MOTS20-02/* train/0002/
-    cp -r MOTS/train/MOTS20-09/* train/0009/
-    cp -r MOTS/test/MOTS20-01/* test/0001/
-    cp -r MOTS/test/MOTS20-07/* test/0007/
+    cp -r MOTS/train/MOTS20-02/img1/* train/0002/
+    cp -r MOTS/train/MOTS20-09/img1/* train/0009/
+    cp -r MOTS/test/MOTS20-01/img1/* test/0001/
+    cp -r MOTS/test/MOTS20-07/img1/* test/0007/
 
     # Clean up.
     rm -r MOTS
