@@ -33,7 +33,7 @@ void           | 255
 
 In the following, we provide a step-by-step walk through to prepare the data.
 
-1.  Create the MOTChallenge-STEP directory:
+1.  Create the MOTChallenge-STEP directory: 
 
     ```bash
     mkdir ${MOTCHALLENGE_STEP_ROOT}/images
@@ -44,7 +44,7 @@ In the following, we provide a step-by-step walk through to prepare the data.
     unzip.
 
     ```bash
-    wget ${MOTCHALLENGE_LINK}
+    wget ${MOTCHALLENGE_LINK} 
     unzip ${MOTCHALLENGE_IMAGES}.zip
     ```
 
@@ -60,21 +60,21 @@ In the following, we provide a step-by-step walk through to prepare the data.
     mkdir test/0007
 
     # Copy data.
-    cp -r MOTS/train/MOTS20-02/* train/0002/
-    cp -r MOTS/train/MOTS20-09/* train/0009/
-    cp -r MOTS/test/MOTS20-01/* test/0001/
-    cp -r MOTS/test/MOTS20-07/* test/0007/
+    cp -r MOTS/train/MOTS20-02/img1/* train/0002/
+    cp -r MOTS/train/MOTS20-09/img1/* train/0009/
+    cp -r MOTS/test/MOTS20-01/img1/* test/0001/
+    cp -r MOTS/test/MOTS20-07/img1/* test/0007/
 
     # Clean up.
     rm -r MOTS
     ```
 
 4.  Download groundtruth MOTChallenge-STEP panoptic maps from
-    https://storage.googleapis.com/gresearch/tf-deeplab/data/motchallenge-step.tar.gz
+    https://motchallenge.net/data/motchallenge-step.tar.gz
 
     ```bash
     cd ${MOTCHALLENGE_STEP_ROOT}
-    wget ${MOTCHALLENGE_GT_LINK}
+    wget ${MOTCHALLENGE_GT_LINK} 
     tar -xvf ${MOTCHALLENGE_GT}.zip
     ```
 
