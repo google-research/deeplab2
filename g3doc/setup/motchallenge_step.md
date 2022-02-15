@@ -33,7 +33,7 @@ void           | 255
 
 In the following, we provide a step-by-step walk through to prepare the data.
 
-1.  Create the MOTChallenge-STEP directory: 
+1.  Create the MOTChallenge-STEP directory:
 
     ```bash
     mkdir ${MOTCHALLENGE_STEP_ROOT}/images
@@ -44,7 +44,7 @@ In the following, we provide a step-by-step walk through to prepare the data.
     unzip.
 
     ```bash
-    wget ${MOTCHALLENGE_LINK} 
+    wget ${MOTCHALLENGE_LINK}
     unzip ${MOTCHALLENGE_IMAGES}.zip
     ```
 
@@ -74,7 +74,7 @@ In the following, we provide a step-by-step walk through to prepare the data.
 
     ```bash
     cd ${MOTCHALLENGE_STEP_ROOT}
-    wget ${MOTCHALLENGE_GT_LINK} 
+    wget ${MOTCHALLENGE_GT_LINK}
     tar -xvf ${MOTCHALLENGE_GT}.zip
     ```
 

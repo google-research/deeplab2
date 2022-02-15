@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2021 The Deeplab2 Authors.
+# Copyright 2022 The Deeplab2 Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -101,9 +101,9 @@ _SEMKITTI_DVPS = 'semkitti_dvps'
 _COCO_PANOPTIC = 'coco_panoptic'
 
 # Colormap names.
-_CITYSCAPES_COLORMAP = 'cityscapes'
-_MOTCHALLENGE_COLORMAP = 'motchallenge'
-_COCO_COLORMAP = 'coco'
+CITYSCAPES_COLORMAP = 'cityscapes'
+MOTCHALLENGE_COLORMAP = 'motchallenge'
+COCO_COLORMAP = 'coco'
 
 
 # Named tuple to describe dataset properties.
@@ -146,7 +146,7 @@ CITYSCAPES_PANOPTIC_INFORMATION = DatasetDescriptor(
     panoptic_label_divisor=1000,
     class_has_instances_list=tuple(range(11, 19)),
     is_video_dataset=False,
-    colormap=_CITYSCAPES_COLORMAP,
+    colormap=CITYSCAPES_COLORMAP,
     is_depth_dataset=False,
     ignore_depth=None,
 )
@@ -161,7 +161,7 @@ KITTI_STEP_INFORMATION = DatasetDescriptor(
     panoptic_label_divisor=1000,
     class_has_instances_list=(11, 13),
     is_video_dataset=True,
-    colormap=_CITYSCAPES_COLORMAP,
+    colormap=CITYSCAPES_COLORMAP,
     is_depth_dataset=False,
     ignore_depth=None,
 )
@@ -176,7 +176,7 @@ MOTCHALLENGE_STEP_INFORMATION = DatasetDescriptor(
     panoptic_label_divisor=1000,
     class_has_instances_list=(4,),
     is_video_dataset=True,
-    colormap=_MOTCHALLENGE_COLORMAP,
+    colormap=MOTCHALLENGE_COLORMAP,
     is_depth_dataset=False,
     ignore_depth=None,
 )
@@ -195,7 +195,7 @@ CITYSCAPES_DVPS_INFORMATION = DatasetDescriptor(
     panoptic_label_divisor=1000,
     class_has_instances_list=tuple(range(11, 19)),
     is_video_dataset=True,
-    colormap=_CITYSCAPES_COLORMAP,
+    colormap=CITYSCAPES_COLORMAP,
     is_depth_dataset=True,
     ignore_depth=0,
 )
@@ -211,7 +211,7 @@ SEMKITTI_DVPS_INFORMATION = DatasetDescriptor(
     class_has_instances_list=tuple(range(8)),
     is_video_dataset=True,
     # Reuses Cityscapes colormap.
-    colormap=_CITYSCAPES_COLORMAP,
+    colormap=CITYSCAPES_COLORMAP,
     is_depth_dataset=True,
     ignore_depth=0,
 )
@@ -226,7 +226,7 @@ COCO_PANOPTIC_INFORMATION = DatasetDescriptor(
     panoptic_label_divisor=256,
     class_has_instances_list=tuple(range(1, 81)),
     is_video_dataset=False,
-    colormap=_COCO_COLORMAP,
+    colormap=COCO_COLORMAP,
     is_depth_dataset=False,
     ignore_depth=None,
 )
