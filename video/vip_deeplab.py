@@ -88,6 +88,8 @@ class ViPDeepLab(tf.keras.Model):
       self._eval_scales = config.evaluator_options.eval_scales
 
     self._label_divisor = dataset_descriptor.panoptic_label_divisor
+    self._video_stitcher = vip_deeplab.VideoPanopticPredictionStitcher(
+        self._label_divisor)
 
   def _inference(self, input_tensor: tf.Tensor, next_input_tensor: tf.Tensor,
                  training: bool) -> Dict[Text, Any]:
@@ -228,13 +230,9 @@ class ViPDeepLab(tf.keras.Model):
             concat_result_dict[result_key], num_or_size_splits=2, axis=2)
       result_dict[common.PRED_CONCAT_NEXT_PANOPTIC_KEY] = next_result_dict[
           common.PRED_PANOPTIC_KEY]
-      result_dict[common.PRED_NEXT_PANOPTIC_KEY] = tf.numpy_function(
-          func=vip_deeplab.stitch_video_panoptic_prediction,
-          inp=[
-              result_dict[common.PRED_CONCAT_NEXT_PANOPTIC_KEY],
-              result_dict[common.PRED_NEXT_PANOPTIC_KEY], self._label_divisor
-          ],
-          Tout=tf.int32)
+      result_dict[common.PRED_NEXT_PANOPTIC_KEY] = self._video_stitcher(
+          result_dict[common.PRED_CONCAT_NEXT_PANOPTIC_KEY],
+          result_dict[common.PRED_NEXT_PANOPTIC_KEY])
       result_dict[common.PRED_NEXT_PANOPTIC_KEY].set_shape(
           result_dict[common.PRED_CONCAT_NEXT_PANOPTIC_KEY].get_shape())
     if common.PRED_CENTER_HEATMAP_KEY in result_dict:
