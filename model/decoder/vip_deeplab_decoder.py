@@ -297,9 +297,16 @@ class ViPDeepLabDecoder(layers.Layer):
       next_high_level_features = next_features[high_level_feature_name]
       next_high_level_features = tf.concat(
           [high_level_features, next_high_level_features], axis=3)
-      next_features[high_level_feature_name] = next_high_level_features
+      # Create a new dict for next_features to keep the original next_features
+      # untouched for model exporting.
+      new_next_features = dict()
+      for key in next_features:
+        if key == high_level_feature_name:
+          new_next_features[key] = next_high_level_features
+        else:
+          new_next_features[key] = next_features[key]
       next_regression_features = self._next_instance_decoder(
-          next_features, training=training)
+          new_next_features, training=training)
       next_regression_predictions = self._next_instance_regression_head(
           next_regression_features, training=training)
       if results.keys() & next_regression_predictions.keys():

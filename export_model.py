@@ -72,9 +72,9 @@ class DeepLabModule(tf.Module):
     deeplab_model = train_lib.create_deeplab_model(
         config,
         dataset.MAP_NAME_TO_DATASET_INFO[dataset_name])
-    self._is_motion_deeplab = (
-        config.model_options.WhichOneof('meta_architecture') ==
-        'motion_deeplab')
+    meta_architecture = config.model_options.WhichOneof('meta_architecture')
+    self._is_motion_deeplab = meta_architecture == 'motion_deeplab'
+    self._is_vip_deeplab = meta_architecture == 'vip_deeplab'
 
     # For now we only support batch size of 1 for saved model.
     input_shape = train_lib.build_deeplab_model(
@@ -117,14 +117,14 @@ class DeepLabModule(tf.Module):
     """
     input_size = [tf.shape(input_tensor)[0], tf.shape(input_tensor)[1]]
 
-    if self._is_motion_deeplab:
-      # For motion deeplab, split the input tensor to current and previous
-      # frame before preprocessing, and re-assemble them.
-      image, prev_image = tf.split(input_tensor, 2, axis=2)
-      (resized_image, processed_image, _, processed_prev_image,
-       _, _) = self._preprocess_fn(image=image, prev_image=prev_image)
+    if self._is_motion_deeplab or self._is_vip_deeplab:
+      # For motion deeplab / vip-deeplab, split the input tensor to current
+      # and previous / next frame before preprocessing, and re-assemble them.
+      image_1, image_2 = tf.split(input_tensor, 2, axis=2)
+      (resized_image, processed_image_1, _, processed_image_2,
+       _, _) = self._preprocess_fn(image=image_1, prev_image=image_2)
       processed_image = tf.concat(
-          [processed_image, processed_prev_image], axis=2)
+          [processed_image_1, processed_image_2], axis=2)
     else:
       (resized_image, processed_image, _, _, _, _) = self._preprocess_fn(
           image=input_tensor)
