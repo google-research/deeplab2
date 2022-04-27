@@ -34,8 +34,10 @@ model_options {
   # pretrained checkpoint).
   initial_checkpoint: "${INIT_CHECKPOINT}"
   backbone {
-    name: "resnet50_beta"
-    output_stride: 32
+    name: "wide_resnet41"
+    output_stride: 16
+    drop_path_keep_prob: 0.8
+    drop_path_schedule: "linear"
   }
   decoder {
     feature_key: "res5"
@@ -128,14 +130,14 @@ trainer_options {
   }
 }
 train_dataset_options {
-  dataset: "semkitti_dvps"
+  dataset: "cityscapes_dvps"
   # Update the path to training set.
   file_pattern: "${TRAIN_SET}"
   # Adjust the batch_size accordingly to better fit your GPU/TPU memory.
   # Also see Q1 in g3doc/fag.md.
   batch_size: 16
-  crop_size: 385
-  crop_size: 1281
+  crop_size: 513
+  crop_size: 1025
   # Skip resizing.
   min_resize_value: 0
   max_resize_value: 0
@@ -149,12 +151,12 @@ train_dataset_options {
   use_next_frame: true
 }
 eval_dataset_options {
-  dataset: "semkitti_dvps"
+  dataset: "cityscapes_dvps"
   # Update the path to validation set.
   file_pattern: "${VAL_SET}"
   batch_size: 1
-  crop_size: 385
-  crop_size: 1281
+  crop_size: 1025
+  crop_size: 2049
   # Skip resizing.
   min_resize_value: 0
   max_resize_value: 0

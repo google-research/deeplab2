@@ -123,8 +123,8 @@ trainer_options {
     }
   }
   solver_options {
-    base_learning_rate: 0.00003125
-    training_number_of_steps: 60000
+    base_learning_rate: 0.00025
+    training_number_of_steps: 120000
   }
 }
 train_dataset_options {
@@ -133,7 +133,7 @@ train_dataset_options {
   file_pattern: "${TRAIN_SET}"
   # Adjust the batch_size accordingly to better fit your GPU/TPU memory.
   # Also see Q1 in g3doc/fag.md.
-  batch_size: 4
+  batch_size: 16
   crop_size: 513
   crop_size: 1025
   # Skip resizing.

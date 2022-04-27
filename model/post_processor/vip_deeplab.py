@@ -15,39 +15,28 @@
 
 """This file contains functions to post-process ViP-DeepLab results."""
 
-from typing import Tuple
+from typing import MutableMapping, Tuple
 
 import numpy as np
 import tensorflow as tf
 
 
-def stitch_video_panoptic_prediction(concat_panoptic: np.ndarray,
-                                     next_panoptic: np.ndarray,
-                                     label_divisor: int,
-                                     overlap_offset: int = 128,
-                                     combine_offset: int = 2**32) -> np.ndarray:
-  """The numpy implementation of the stitching algorithm in ViP-DeepLab.
-
-  This function stitches a pair of image panoptic predictions to form video
-  panoptic predictions by propagating instance IDs from concat_panoptic to
-  next_panoptic based on IoU matching.
-
-  Siyuan Qiao, Yukun Zhu, Hartwig Adam, Alan Yuille, and Liang-Chieh Chen.
-  "ViP-DeepLab: Learning Visual Perception with Depth-aware Video Panoptic
-  Segmentation." CVPR, 2021.
+def get_stitch_video_panoptic_prediction_info(
+    concat_panoptic: np.ndarray,
+    next_panoptic: np.ndarray,
+    label_divisor: int,
+    combine_offset: int = 2**32) -> MutableMapping[int, int]:
+  """Prepares the information for the stitching algorithm in ViP-DeepLab.
 
   Args:
     concat_panoptic: Panoptic prediction of the next frame by concatenating it
       with the current frame.
     next_panoptic: Panoptic prediction of the next frame.
     label_divisor: An integer specifying the label divisor of the dataset.
-    overlap_offset: An integer offset to avoid overlap between the IDs in
-      next_panoptic and the propagated IDs from concat_panoptic.
     combine_offset: An integer offset to combine concat and next panoptic.
 
   Returns:
-    Panoptic prediction of the next frame with the instance IDs propragated
-      from the concatenated panoptic prediction.
+    A map from the next frame instance IDs to the concatenated instances IDs.
   """
 
   def _ids_to_counts(id_array: np.ndarray):
@@ -55,14 +44,6 @@ def stitch_video_panoptic_prediction(concat_panoptic: np.ndarray,
     ids, counts = np.unique(id_array, return_counts=True)
     return dict(zip(ids, counts))
 
-  new_panoptic = next_panoptic.copy()
-  # Increase the panoptic instance ID to avoid overlap.
-  new_category = new_panoptic // label_divisor
-  new_instance = new_panoptic % label_divisor
-  # We skip 0 which is reserved for crowd.
-  instance_mask = new_instance > 0
-  new_instance[instance_mask] = new_instance[instance_mask] + overlap_offset
-  new_panoptic = new_category * label_divisor + new_instance
   # Pre-compute areas for all the segments.
   concat_segment_areas = _ids_to_counts(concat_panoptic)
   next_segment_areas = _ids_to_counts(next_panoptic)
@@ -98,12 +79,58 @@ def stitch_video_panoptic_prediction(concat_panoptic: np.ndarray,
   for (concat_panoptic_label, next_panoptic_label, iou) in intersection_ious:
     map_concat_to_next[concat_panoptic_label] = next_panoptic_label
     map_next_to_concat[next_panoptic_label] = concat_panoptic_label
+
+  remap_info = {
+      next_label: concat_label
+      for (concat_label, next_label) in map_concat_to_next.items()
+      if map_next_to_concat[next_label] == concat_label
+  }
+  return remap_info
+
+
+def stitch_video_panoptic_prediction(concat_panoptic: np.ndarray,
+                                     next_panoptic: np.ndarray,
+                                     label_divisor: int,
+                                     overlap_offset: int = 128,
+                                     combine_offset: int = 2**32) -> np.ndarray:
+  """The numpy implementation of the stitching algorithm in ViP-DeepLab.
+
+  This function stitches a pair of image panoptic predictions to form video
+  panoptic predictions by propagating instance IDs from concat_panoptic to
+  next_panoptic based on IoU matching.
+
+  Siyuan Qiao, Yukun Zhu, Hartwig Adam, Alan Yuille, and Liang-Chieh Chen.
+  "ViP-DeepLab: Learning Visual Perception with Depth-aware Video Panoptic
+  Segmentation." CVPR, 2021.
+
+  Args:
+    concat_panoptic: Panoptic prediction of the next frame by concatenating it
+      with the current frame.
+    next_panoptic: Panoptic prediction of the next frame.
+    label_divisor: An integer specifying the label divisor of the dataset.
+    overlap_offset: An integer offset to avoid overlap between the IDs in
+      next_panoptic and the propagated IDs from concat_panoptic.
+    combine_offset: An integer offset to combine concat and next panoptic.
+
+  Returns:
+    Panoptic prediction of the next frame with the instance IDs propragated
+      from the concatenated panoptic prediction.
+  """
+  remap_info = get_stitch_video_panoptic_prediction_info(
+      concat_panoptic, next_panoptic, label_divisor, combine_offset)
+
+  new_panoptic = next_panoptic.copy()
+  # Increase the panoptic instance ID to avoid overlap.
+  new_category = new_panoptic // label_divisor
+  new_instance = new_panoptic % label_divisor
+  # We skip 0 which is reserved for crowd.
+  instance_mask = new_instance > 0
+  new_instance[instance_mask] = new_instance[instance_mask] + overlap_offset
+  new_panoptic = new_category * label_divisor + new_instance
   # Match and propagate.
-  for (concat_panoptic_label,
-       next_panoptic_label) in map_concat_to_next.items():
-    if map_next_to_concat[next_panoptic_label] == concat_panoptic_label:
-      propagate_mask = next_panoptic == next_panoptic_label
-      new_panoptic[propagate_mask] = concat_panoptic_label
+  for (next_panoptic_label, concat_panoptic_label) in remap_info.items():
+    propagate_mask = next_panoptic == next_panoptic_label
+    new_panoptic[propagate_mask] = concat_panoptic_label
   return new_panoptic
 
 
@@ -172,14 +199,13 @@ class VideoPanopticPredictionStitcher(tf.keras.Model):
         tf.reduce_max(instance + self._overlap_offset),
         self._label_divisor,
         message='Any new instance IDs cannot exceed label_divisor.')
-    instance = tf.where(instance_mask,
-                        instance + self._overlap_offset,
+    instance = tf.where(instance_mask, instance + self._overlap_offset,
                         instance)
     return category * self._label_divisor + instance
 
   def _compute_and_sort_iou_between_panoptic_ids(
-      self, panoptic_1: tf.Tensor, panoptic_2: tf.Tensor
-      ) -> Tuple[tf.Tensor, tf.Tensor]:
+      self, panoptic_1: tf.Tensor,
+      panoptic_2: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]:
     """Computes and sorts intersecting panoptic IDs by IoU.
 
     Args:
@@ -197,29 +223,26 @@ class VideoPanopticPredictionStitcher(tf.keras.Model):
         tf.cast(panoptic_2, tf.int64))
     intersection_areas_table = self._ids_to_counts(intersection_id_array)
     intersection_ids, intersection_areas = intersection_areas_table.export()
-    panoptic_ids_1 = tf.cast(
-        intersection_ids // self._combine_offset, tf.int32)
-    panoptic_ids_2 = tf.cast(
-        intersection_ids % self._combine_offset, tf.int32)
+    panoptic_ids_1 = tf.cast(intersection_ids // self._combine_offset, tf.int32)
+    panoptic_ids_2 = tf.cast(intersection_ids % self._combine_offset, tf.int32)
     category_ids_1 = panoptic_ids_1 // self._label_divisor
     category_ids_2 = panoptic_ids_2 // self._label_divisor
     instance_ids_1 = panoptic_ids_1 % self._label_divisor
     instance_ids_2 = panoptic_ids_2 % self._label_divisor
-    unions = (segment_areas_1.lookup(panoptic_ids_1)
-              + segment_areas_2.lookup(panoptic_ids_2)
-              - intersection_areas)
+    unions = (
+        segment_areas_1.lookup(panoptic_ids_1) +
+        segment_areas_2.lookup(panoptic_ids_2) - intersection_areas)
     intersection_ious = intersection_areas / unions
     is_valid_intersection = tf.logical_and(
         tf.equal(category_ids_1, category_ids_2),
         tf.logical_and(
-            tf.not_equal(instance_ids_1, 0),
-            tf.not_equal(instance_ids_2, 0)))
-    intersection_ious = tf.gather(
-        intersection_ious, tf.where(is_valid_intersection)[:, 0])
-    panoptic_ids_1 = tf.gather(
-        panoptic_ids_1, tf.where(is_valid_intersection)[:, 0])
-    panoptic_ids_2 = tf.gather(
-        panoptic_ids_2, tf.where(is_valid_intersection)[:, 0])
+            tf.not_equal(instance_ids_1, 0), tf.not_equal(instance_ids_2, 0)))
+    intersection_ious = tf.gather(intersection_ious,
+                                  tf.where(is_valid_intersection)[:, 0])
+    panoptic_ids_1 = tf.gather(panoptic_ids_1,
+                               tf.where(is_valid_intersection)[:, 0])
+    panoptic_ids_2 = tf.gather(panoptic_ids_2,
+                               tf.where(is_valid_intersection)[:, 0])
     ious_indices = tf.argsort(intersection_ious)
     panoptic_ids_1 = tf.gather(panoptic_ids_1, ious_indices)
     panoptic_ids_2 = tf.gather(panoptic_ids_2, ious_indices)
@@ -229,9 +252,7 @@ class VideoPanopticPredictionStitcher(tf.keras.Model):
     return panoptic_ids_1, panoptic_ids_2
 
   def _match_and_propagate_instance_ids(
-      self,
-      concat_panoptic: tf.Tensor,
-      next_panoptic: tf.Tensor,
+      self, concat_panoptic: tf.Tensor, next_panoptic: tf.Tensor,
       concat_panoptic_ids: tf.Tensor,
       next_panoptic_ids: tf.Tensor) -> tf.Tensor:
     """Propagates instance ids based on instance id matching.
@@ -265,10 +286,10 @@ class VideoPanopticPredictionStitcher(tf.keras.Model):
         matched_next_panoptic_ids)
     matched_ids_mask = tf.equal(matched_concat_panoptic_ids,
                                 returned_concat_panoptic_ids)
-    matched_concat_panoptic_ids = tf.gather(
-        matched_concat_panoptic_ids, tf.where(matched_ids_mask)[:, 0])
-    matched_next_panoptic_ids = tf.gather(
-        matched_next_panoptic_ids, tf.where(matched_ids_mask)[:, 0])
+    matched_concat_panoptic_ids = tf.gather(matched_concat_panoptic_ids,
+                                            tf.where(matched_ids_mask)[:, 0])
+    matched_next_panoptic_ids = tf.gather(matched_next_panoptic_ids,
+                                          tf.where(matched_ids_mask)[:, 0])
     matched_concat_panoptic_ids = tf.expand_dims(
         tf.expand_dims(matched_concat_panoptic_ids, axis=-1), axis=-1)
     matched_next_panoptic_ids = tf.expand_dims(
@@ -276,16 +297,17 @@ class VideoPanopticPredictionStitcher(tf.keras.Model):
     propagate_mask = tf.equal(next_panoptic, matched_next_panoptic_ids)
     panoptic_to_replace = tf.reduce_sum(
         tf.where(propagate_mask, matched_concat_panoptic_ids, 0),
-        axis=0, keepdims=True)
-    panoptic = tf.where(tf.reduce_any(propagate_mask, axis=0, keepdims=True),
-                        panoptic_to_replace, next_panoptic)
+        axis=0,
+        keepdims=True)
+    panoptic = tf.where(
+        tf.reduce_any(propagate_mask, axis=0, keepdims=True),
+        panoptic_to_replace, next_panoptic)
     panoptic = tf.ensure_shape(panoptic, next_panoptic.get_shape())
     map_concat_to_next.remove(map_concat_to_next.export()[0])
     map_next_to_concat.remove(map_next_to_concat.export()[0])
     return panoptic
 
-  def call(self,
-           concat_panoptic: tf.Tensor,
+  def call(self, concat_panoptic: tf.Tensor,
            next_panoptic: tf.Tensor) -> tf.Tensor:
     """Stitches the prediction from concat_panoptic and next_panoptic.
 
@@ -299,8 +321,10 @@ class VideoPanopticPredictionStitcher(tf.keras.Model):
     """
     next_panoptic = self._increase_instance_ids_by_offset(next_panoptic)
     concat_panoptic_ids, next_panoptic_ids = (
-        self._compute_and_sort_iou_between_panoptic_ids(
-            concat_panoptic, next_panoptic))
-    panoptic = self._match_and_propagate_instance_ids(
-        concat_panoptic, next_panoptic, concat_panoptic_ids, next_panoptic_ids)
+        self._compute_and_sort_iou_between_panoptic_ids(concat_panoptic,
+                                                        next_panoptic))
+    panoptic = self._match_and_propagate_instance_ids(concat_panoptic,
+                                                      next_panoptic,
+                                                      concat_panoptic_ids,
+                                                      next_panoptic_ids)
     return panoptic

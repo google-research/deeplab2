@@ -14,8 +14,11 @@ useful for your projects.
 
 ## Change logs
 
+* 04/27/2022: Add ViP-DeepLab [demo](ViP_DeepLab_Demo.ipynb) and update
+ViP-DeepLab [model zoo](g3doc/projects/vip_deeplab.md).
+
 * 09/07/2021: Add numpy implementation of Segmentation and Tracking Quality.
-Find it [here](evaluation/numpy/segmentation_and_tracking_quality.py)
+Find it [here](evaluation/numpy/segmentation_and_tracking_quality.py).
 
 * 09/06/2021: Update Panoptic-DeepLab w/ MobileNetv3 backbone results on
   Cityscapes.
