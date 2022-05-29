@@ -23,43 +23,7 @@ from deeplab2 import common
 from deeplab2 import config_pb2
 from deeplab2.model import utils
 from deeplab2.trainer import runner_utils
-
-
-class WarmUp(tf.keras.optimizers.schedules.LearningRateSchedule):
-  """Applies a warmup schedule on a given learning rate decay schedule."""
-
-  def __init__(self,
-               initial_learning_rate,
-               decay_schedule_fn,
-               warmup_steps,
-               name=None):
-    super(WarmUp, self).__init__()
-    self.initial_learning_rate = initial_learning_rate
-    self.warmup_steps = warmup_steps
-    self.decay_schedule_fn = decay_schedule_fn
-    self.name = name
-
-  def __call__(self, step):
-    with tf.name_scope(self.name or 'WarmUp') as name:
-      # Implements linear warmup. i.e., if global_step < warmup_steps, the
-      # learning rate will be `global_step/num_warmup_steps * init_lr`.
-      global_step_float = tf.cast(step, tf.float32)
-      warmup_steps_float = tf.cast(self.warmup_steps, tf.float32)
-      warmup_percent_done = global_step_float / warmup_steps_float
-      warmup_learning_rate = self.initial_learning_rate * warmup_percent_done
-      return tf.cond(
-          global_step_float < warmup_steps_float,
-          lambda: warmup_learning_rate,
-          lambda: self.decay_schedule_fn(step),
-          name=name)
-
-  def get_config(self):
-    return {
-        'initial_learning_rate': self.initial_learning_rate,
-        'decay_schedule_fn': self.decay_schedule_fn,
-        'warmup_steps': self.warmup_steps,
-        'name': self.name
-    }
+from deeplab2.trainer import trainer_utils
 
 
 def _create_optimizer(
@@ -97,7 +61,7 @@ def _create_optimizer(
                      solver_config.learning_policy)
 
   if solver_config.warmup_steps:
-    lr_scheduler = WarmUp(
+    lr_scheduler = trainer_utils.WarmUp(
         initial_learning_rate=learning_rate,
         decay_schedule_fn=lr_scheduler,
         warmup_steps=solver_config.warmup_steps,
@@ -109,6 +73,14 @@ def _create_optimizer(
     # We use momentum = 0.9, the most frequently used case.
     return tf.keras.optimizers.SGD(learning_rate=lr_scheduler,
                                    momentum=0.9)
+  elif solver_config.optimizer == 'adamw':
+    return trainer_utils.AdamWeightDecay(
+        learning_rate=lr_scheduler,
+        weight_decay_rate=solver_config.adamw_weight_decay,
+        # Weight decay is only applied to convolution/linear kernels/weights.
+        include_in_weight_decay=[r'.*(kernel|weight):0$'],
+        exclude_from_weight_decay=[r'.*$'],
+        gradient_clip_norm=0.0)
 
   raise ValueError('Optimizer %s is not supported.' % solver_config.optimizer)
 
