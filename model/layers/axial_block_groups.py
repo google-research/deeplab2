@@ -81,7 +81,8 @@ class BlockGroup(tf.keras.layers.Layer):
                dual_path_transformer_layer_config=None,
                bn_layer=tf.keras.layers.BatchNormalization,
                conv_kernel_weight_decay=0.0,
-               auxiliary_predictor_func=None):
+               auxiliary_predictor_func=None,
+               use_axial_block=True):
     """Initializes a BlockGroup layer.
 
     Args:
@@ -165,6 +166,9 @@ class BlockGroup(tf.keras.layers.Layer):
         kernels.
       auxiliary_predictor_func: A callable function that returns an
         initialization of auxiliary predictor.
+      use_axial_block: A boolean. When set to False, the axial block will be
+        disabled. This is helpful when we just want to perform
+        dual-path transformer (i.e., no pixel2pixel attention). Default to True.
 
     Raises:
       ValueError: If backbone_type is not one of 'resnet', 'resnet_beta', or
@@ -184,6 +188,7 @@ class BlockGroup(tf.keras.layers.Layer):
     self._drop_path_keep_prob = []
     self._recompute_grad = []
     self._transformer_use_recompute_grad = transformer_use_recompute_grad
+    self._use_axial_block = use_axial_block
     if dual_path_transformer_layer_config is None:
       dual_path_transformer_layer_config = {}
     original_resnet_current_stride = original_resnet_input_stride
@@ -267,22 +272,24 @@ class BlockGroup(tf.keras.layers.Layer):
 
       self._drop_path_keep_prob.append(current_drop_path_keep_prob)
       # Apply the residual block.
-      # The inputs to block_fn should be activated features.
-      block_fn = axial_blocks.AxialBlock(
-          filters_list,
-          kernel_size=3,
-          strides=current_strides,
-          atrous_rate=atrous_rate,
-          use_squeeze_and_excite=use_squeeze_and_excite,
-          use_sac=use_sac,
-          bn_layer=bn_layer,
-          activation=activation,
-          name=current_name[1:],
-          conv_kernel_weight_decay=conv_kernel_weight_decay,
-          basic_block_second_conv_atrous_rate=(
-              basic_block_second_conv_atrous_rate),
-          attention_type=attention_type,
-          axial_layer_config=axial_layer_config)
+      block_fn = None
+      if use_axial_block:
+        # The inputs to block_fn should be activated features.
+        block_fn = axial_blocks.AxialBlock(
+            filters_list,
+            kernel_size=3,
+            strides=current_strides,
+            atrous_rate=atrous_rate,
+            use_squeeze_and_excite=use_squeeze_and_excite,
+            use_sac=use_sac,
+            bn_layer=bn_layer,
+            activation=activation,
+            name=current_name[1:],
+            conv_kernel_weight_decay=conv_kernel_weight_decay,
+            basic_block_second_conv_atrous_rate=(
+                basic_block_second_conv_atrous_rate),
+            attention_type=attention_type,
+            axial_layer_config=axial_layer_config)
       self._recompute_grad.append(recompute_grad)
       utils.safe_setattr(self, current_name, block_fn)
 
@@ -362,36 +369,41 @@ class BlockGroup(tf.keras.layers.Layer):
           self, transformer_current_name)
       current_drop_path_keep_prob = self._drop_path_keep_prob[index]
 
-      # Wrap the layer if we want to recompute it in the backward pass.
-      if (self._recompute_grad[index] and training):
-        # The seed is not actually used since we do not have any random
-        # operation in the recomputed function. The purpose of the provided seed
-        # is to prevent recompute_grad from generating a new seed variable which
-        # is not compatible with model exporting.
-        block_fn = recompute_grad_lib.recompute_grad(
-            block_fn_no_recompute, seed=tf.constant(0, tf.int32))
+      if self._use_axial_block:
+        # Wrap the layer if we want to recompute it in the backward pass.
+        if (self._recompute_grad[index] and training):
+          # The seed is not actually used since we do not have any random
+          # operation in the recomputed function. The purpose of the provided
+          # seed is to prevent recompute_grad from generating a new seed
+          # variable which is not compatible with model exporting.
+          block_fn = recompute_grad_lib.recompute_grad(
+              block_fn_no_recompute, seed=tf.constant(0, tf.int32))
+        else:
+          block_fn = block_fn_no_recompute
+
+        # The inputs to block_fn should be activated features.
+        block_fn_inputs = [activated_features, float_tensor_training]
+        # We have to define drop_path_masks outside the layer call and pass it
+        # into the layer, because tf.recompute_grad (gradient checkpointing)
+        # does not allow any randomness within the function call. In addition,
+        # recompute_grad functions can only take Tensors as inputs, so we do not
+        # pass the drop_path_random_mask (when it is None) into block_fn.
+        if current_drop_path_keep_prob < 1.0 and training:
+          drop_path_random_mask = drop_path.generate_drop_path_random_mask(
+              activated_features, current_drop_path_keep_prob)
+
+          block_fn_inputs.append(drop_path_random_mask)
+
+        # Build the sub-layers when the block_fn is called for the first time.
+        # Otherwise, recompute_grad will not track newly built model parameters.
+        if self._first_building_call:
+          _ = block_fn_no_recompute(tuple(block_fn_inputs))
+        # Apply the residual block.
+        features, activated_features = block_fn(tuple(block_fn_inputs))
       else:
-        block_fn = block_fn_no_recompute
-
-      # The inputs to block_fn should be activated features.
-      block_fn_inputs = [activated_features, float_tensor_training]
-      # We have to define drop_path_masks outside the layer call and pass it
-      # into the layer, because tf.recompute_grad (gradient checkpointing) does
-      # not allow any randomness within the function call. In addition,
-      # recompute_grad functions can only take Tensors as inputs, so we do not
-      # pass the drop_path_random_mask (when it is None) into block_fn.
-      if current_drop_path_keep_prob < 1.0 and training:
-        drop_path_random_mask = drop_path.generate_drop_path_random_mask(
-            activated_features, current_drop_path_keep_prob)
-
-        block_fn_inputs.append(drop_path_random_mask)
-
-      # Build the sub-layers when the block_fn is called for the first time.
-      # Otherwise, recompute_grad will not track newly built model parameters.
-      if self._first_building_call:
-        _ = block_fn_no_recompute(tuple(block_fn_inputs))
-      # Apply the residual block.
-      features, activated_features = block_fn(tuple(block_fn_inputs))
+        # When we only would like to perform dual-path transformer, the input
+        # is expected to be un-activated features.
+        features = activated_features
 
       if index == 0 and self._add_absolute_positional_encoding is not None:
         features = self._add_absolute_positional_encoding(features,
