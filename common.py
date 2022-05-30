@@ -37,6 +37,8 @@ PRED_PIXEL_SPACE_NORMALIZED_FEATURE_KEY = 'pixel_space_normalized_feature'
 PRED_PIXEL_SPACE_MASK_LOGITS_KEY = 'pixel_space_mask_logits'
 PRED_TRANSFORMER_CLASS_LOGITS_KEY = 'transformer_class_logits'
 
+PRED_AUXILIARY_OUTPUTS = 'auxiliary_outputs_pred'
+
 # Ground-truth keys used by the model.
 GT_PANOPTIC_KEY = 'panoptic_gt'
 GT_SEMANTIC_KEY = 'semantic_gt'

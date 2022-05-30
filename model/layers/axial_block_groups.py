@@ -80,7 +80,8 @@ class BlockGroup(tf.keras.layers.Layer):
                axial_layer_config=None,
                dual_path_transformer_layer_config=None,
                bn_layer=tf.keras.layers.BatchNormalization,
-               conv_kernel_weight_decay=0.0):
+               conv_kernel_weight_decay=0.0,
+               auxiliary_predictor_func=None):
     """Initializes a BlockGroup layer.
 
     Args:
@@ -162,6 +163,8 @@ class BlockGroup(tf.keras.layers.Layer):
         normalization (default: tf.keras.layers.BatchNormalization).
       conv_kernel_weight_decay: A float, the weight decay for convolution
         kernels.
+      auxiliary_predictor_func: A callable function that returns an
+        initialization of auxiliary predictor.
 
     Raises:
       ValueError: If backbone_type is not one of 'resnet', 'resnet_beta', or
@@ -301,6 +304,7 @@ class BlockGroup(tf.keras.layers.Layer):
             activation=activation,
             bn_layer=bn_layer,
             conv_kernel_weight_decay=conv_kernel_weight_decay,
+            auxiliary_predictor_func=auxiliary_predictor_func,
             **dual_path_transformer_layer_config)
         utils.safe_setattr(self, transformer_current_name, transformer_block_fn)
       else:
@@ -313,11 +317,12 @@ class BlockGroup(tf.keras.layers.Layer):
     """Performs a forward pass.
 
     Args:
-      inputs: two tensors. The first tensor is a pixel_space_input with shape
-        [batch, height, width, pixel_channels]. The second tensor is
-        memory_space_input with shape [batch, length, memory_channels]. This
-        input will be used only if a transformer is used. Otherwise, the input
-        is returned unmodified.
+      inputs: A list of tensors or tuples. The first tensor is a
+        pixel_space_input with shape [batch, height, width, pixel_channels].
+        The second tensor is memory_space_input with shape [batch, length,
+        memory_channels]. The third one is an optional auxiliary_outputs which
+        is a tuple containing auxiliary outputs, where each element has the
+        dictionary type.
       training: A boolean flag indicating whether training behavior should be
         used (default: False).
 
@@ -327,9 +332,22 @@ class BlockGroup(tf.keras.layers.Layer):
         tensor.
       memory_space_output: A memory space output [batch, length,
         memory_channels] tensor.
+      auxiliary_outputs: An optional tuple containing auxiliary outputs, where
+        each element has the dictionary type.
+
+    Raises:
+      ValueError: If the length of inputs is not 2 or 3.
     """
     # The pixel space inputs are activated features.
-    activated_features, memory_space_output = inputs
+    if len(inputs) == 2:
+      activated_features, memory_space_output = inputs
+      auxiliary_outputs = ()
+      return_auxiliary_outputs = False
+    elif len(inputs) == 3:
+      activated_features, memory_space_output, auxiliary_outputs = inputs
+      return_auxiliary_outputs = True
+    else:
+      raise ValueError('The length of inputs should be either 2 or 3!')
 
     # Recompute_grad takes only float tensors as inputs. It does not allow
     # bools or boolean tensors. For this reason, we cast training to a float
@@ -381,11 +399,6 @@ class BlockGroup(tf.keras.layers.Layer):
         activated_features = self._activation_fn(features)
 
       if transformer_block_fn_no_recompute is not None:
-        # Reshape pixel space features from 4D to 3D.
-        _, height, width, channels = features.get_shape().as_list()
-        features = tf.reshape(
-            features, [-1, height * width, channels])
-
         # Wrap the layer if we want to recompute it in the backward pass.
         if (self._transformer_use_recompute_grad and training):
           # The seed is not actually used since we do not have any random
@@ -398,7 +411,8 @@ class BlockGroup(tf.keras.layers.Layer):
           transformer_block_fn = transformer_block_fn_no_recompute
 
         transformer_block_fn_input_list = [
-            features, memory_space_output, float_tensor_training]
+            features, memory_space_output, auxiliary_outputs,
+            float_tensor_training]
         # We have to define drop_path_masks outside the layer call and pass it
         # into the layer, because recompute_grad (gradient checkpointing) does
         # not allow any randomness within the function call. In addition,
@@ -413,6 +427,10 @@ class BlockGroup(tf.keras.layers.Layer):
           memory_space_attention_drop_path_mask = (
               drop_path.generate_drop_path_random_mask(
                   memory_space_output, current_drop_path_keep_prob))
+          # Drop path random mask for memory space kmeans cross-attention.
+          memory_kmeans_attention_drop_path_mask = (
+              drop_path.generate_drop_path_random_mask(
+                  memory_space_output, current_drop_path_keep_prob))
           # Drop path random mask for memory space feed-forward network.
           memory_space_feed_forward_network_drop_path_mask = (
               drop_path.generate_drop_path_random_mask(
@@ -420,6 +438,7 @@ class BlockGroup(tf.keras.layers.Layer):
           transformer_block_fn_input_list += [
               pixel_space_drop_path_mask,
               memory_space_attention_drop_path_mask,
+              memory_kmeans_attention_drop_path_mask,
               memory_space_feed_forward_network_drop_path_mask]
 
         # Build the sub-layers when the transformer_block_fn is called for the
@@ -429,15 +448,15 @@ class BlockGroup(tf.keras.layers.Layer):
           _ = transformer_block_fn_no_recompute(
               tuple(transformer_block_fn_input_list))
         # Apply a dual-path transformer.
-        features, activated_features, memory_space_output = (
+        features, activated_features, memory_space_output, auxiliary_outputs = (
             transformer_block_fn(tuple(transformer_block_fn_input_list)))
 
-        # Reshape pixel space features back to 4D.
-        features = tf.reshape(features, [-1, height, width, channels])
-        activated_features = tf.reshape(activated_features,
-                                        [-1, height, width, channels])
     # Now the first call has finished and the sub-layers have been built.
     self._first_building_call = False
     # We also return the non-activated output so that the function is compatible
     # with a decoder that takes a non-activated tensor as input.
-    return features, activated_features, memory_space_output
+    if return_auxiliary_outputs:
+      return (features, activated_features, memory_space_output,
+              auxiliary_outputs)
+    else:
+      return features, activated_features, memory_space_output

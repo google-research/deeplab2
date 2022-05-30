@@ -127,13 +127,16 @@ def create_resnet_encoder(
 
 def create_decoder(model_options: config_pb2.ModelOptions,
                    bn_layer: tf.keras.layers.Layer,
-                   ignore_label: int) -> tf.keras.Model:
+                   ignore_label: int,
+                   use_auxiliary_semantic_head: bool = True) -> tf.keras.Model:
   """Creates a DeepLab decoder.
 
   Args:
     model_options: A proto config of type config_pb2.ModelOptions.
     bn_layer: A tf.keras.layers.Layer that computes the normalization.
     ignore_label: An integer specifying the ignore label.
+    use_auxiliary_semantic_head: A boolean, whether to use an auxiliary semantic
+      head to generate semantic predictions.
 
   Returns:
     An instance of tf.keras.layers.Layer containing the decoder.
@@ -169,6 +172,7 @@ def create_decoder(model_options: config_pb2.ModelOptions,
         model_options.decoder,
         model_options.max_deeplab,
         ignore_label=ignore_label,
-        bn_layer=bn_layer)
+        bn_layer=bn_layer,
+        use_auxiliary_semantic_head=use_auxiliary_semantic_head)
   raise ValueError('The specified meta architecture %s is not implemented.' %
                    meta_architecture)
