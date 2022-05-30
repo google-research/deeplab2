@@ -439,8 +439,6 @@ class DualPathTransformerLayer(tf.keras.layers.Layer):
 
     Returns:
       pixel_space_output: A [batch, num_pixel, pixel_space_channels] tensor.
-      activated_pixel_space_output: A [batch, num_pixel, pixel_space_channels]
-        tensor, activated pixel_space_output.
       memory_space_output: A [batch, num_memory, memory_space_channels]
         tensor.
       auxiliary_outputs: A tuple containing auxiliary outputs, where each
@@ -623,12 +621,6 @@ class DualPathTransformerLayer(tf.keras.layers.Layer):
     pixel_space_output = tf.reshape(
         pixel_space_output,
         [-1, pixel_shape[1], pixel_shape[2], pixel_shape[3]])
-    activated_pixel_space_output = self._activation_fn(pixel_space_output)
 
-    # Return the pixel space output and memory space output. Note that we
-    # return pixel sapce output with and without the activation function,
-    # because our decoder might use non-activated features.
-    return (pixel_space_output,
-            activated_pixel_space_output,
-            memory_space_output,
-            auxiliary_outputs)
+    # Return the pixel space output, memory space output, and auxiliary outputs.
+    return pixel_space_output, memory_space_output, auxiliary_outputs

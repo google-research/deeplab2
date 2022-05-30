@@ -118,8 +118,6 @@ class KMaXPixelDecoder(tf.keras.Model):
                                         3: 'stage2',
                                         4: 'stage1',}
 
-    self._activation_fn = tf.keras.layers.Activation('gelu')
-
   def build(self, input_shape_dict):
     # Define skip-connections.
     self._skip_connections = []
@@ -139,11 +137,8 @@ class KMaXPixelDecoder(tf.keras.Model):
   def call(self, endpoints, training=False):
     x = self._backbone_norms[0](
         endpoints[self._stage_to_backbone_endpoint[0]], training=training)
-    # An activation function on x is needed as axial_block_groups expect an
-    # activated feature as input.
-    x = self._activation_fn(x)
     for i in range(self._num_stages - 1):
-      x, _, _ = self._stages[i]((x, None), training=training)
+      x, _ = self._stages[i]((x, None), training=training)
       endpoints['decoder_stage{}'.format(i + 1)] = x
       x = self._skip_connections[i]([
           x,
@@ -151,6 +146,6 @@ class KMaXPixelDecoder(tf.keras.Model):
               endpoints[self._stage_to_backbone_endpoint[i + 1]],
               training=training)], training=training)
 
-    x, _, _ = self._stages[-1]((x, None), training=training)
+    x, _ = self._stages[-1]((x, None), training=training)
     endpoints['decoder_output'] = x
     return endpoints

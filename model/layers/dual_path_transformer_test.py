@@ -46,8 +46,7 @@ class TransformerLayersTest(tf.test.TestCase):
                     (),
                     float_training_tensor))
     self.assertListEqual(output[0].get_shape().as_list(), [2, 25, 35, 126])
-    self.assertListEqual(output[1].get_shape().as_list(), [2, 25, 35, 126])
-    self.assertListEqual(output[2].get_shape().as_list(), [2, 127, 128])
+    self.assertListEqual(output[1].get_shape().as_list(), [2, 127, 128])
 
   def test_kmeans_transformer_layer_output_shape(self):
     config_path = 'deeplab2/configs/example'
@@ -77,8 +76,7 @@ class TransformerLayersTest(tf.test.TestCase):
                     (),
                     float_training_tensor))
     self.assertListEqual(output[0].get_shape().as_list(), [2, 25, 35, 126])
-    self.assertListEqual(output[1].get_shape().as_list(), [2, 25, 35, 126])
-    self.assertListEqual(output[2].get_shape().as_list(), [2, 127, 128])
+    self.assertListEqual(output[1].get_shape().as_list(), [2, 127, 128])
 
   def test_zero_feed_forward_network_output_shape(self):
     layer = dual_path_transformer.DualPathTransformerLayer(
@@ -89,8 +87,7 @@ class TransformerLayersTest(tf.test.TestCase):
                     (),
                     float_training_tensor))
     self.assertListEqual(output[0].get_shape().as_list(), [2, 25, 35, 128])
-    self.assertListEqual(output[1].get_shape().as_list(), [2, 25, 35, 128])
-    self.assertListEqual(output[2].get_shape().as_list(), [2, 128, 128])
+    self.assertListEqual(output[1].get_shape().as_list(), [2, 128, 128])
 
   def test_attention_types_output_shape(self):
     layer = dual_path_transformer.DualPathTransformerLayer(
@@ -102,8 +99,7 @@ class TransformerLayersTest(tf.test.TestCase):
                     (),
                     float_training_tensor))
     self.assertListEqual(output[0].get_shape().as_list(), [2, 25, 35, 128])
-    self.assertListEqual(output[1].get_shape().as_list(), [2, 25, 35, 128])
-    self.assertListEqual(output[2].get_shape().as_list(), [2, 128, 128])
+    self.assertListEqual(output[1].get_shape().as_list(), [2, 128, 128])
 
 if __name__ == '__main__':
   tf.test.main()

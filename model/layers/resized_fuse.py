@@ -162,4 +162,4 @@ class ResizedFuse(tf.keras.layers.Layer):
            self._width,
            self._num_channels])
     output = tf.add_n(output_features)
-    return self._activation_fn(output)
+    return output

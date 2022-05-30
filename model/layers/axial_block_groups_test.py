@@ -33,12 +33,10 @@ class AxialBlockGroupsTest(tf.test.TestCase):
         original_resnet_input_stride=16,
         use_axial_beyond_stride=32,
         output_stride=16)
-    _, pixel_output, memory_output = layer((tf.zeros([2, 65, 65, 1024]),
-                                            tf.zeros([2, 128, 147])))
-    self.assertListEqual(pixel_output.get_shape().as_list(),
-                         [2, 65, 65, 2048])
-    self.assertListEqual(memory_output.get_shape().as_list(),
-                         [2, 128, 147])
+    pixel_output, memory_output = layer(
+        (tf.zeros([2, 65, 65, 1024]), tf.zeros([2, 128, 147])))
+    self.assertListEqual(pixel_output.get_shape().as_list(), [2, 65, 65, 2048])
+    self.assertListEqual(memory_output.get_shape().as_list(), [2, 128, 147])
 
   def test_global_attention_follows_basic_block(self):
     layer = axial_block_groups.BlockGroup(
@@ -51,12 +49,10 @@ class AxialBlockGroupsTest(tf.test.TestCase):
         use_global_beyond_stride=16,
         positional_encoding_type='1D')
 
-    _, pixel_output, memory_output = layer((tf.zeros([2, 65, 65, 32]),
-                                            tf.zeros([2, 128, 147])))
-    self.assertListEqual(pixel_output.get_shape().as_list(),
-                         [2, 33, 33, 1024])
-    self.assertListEqual(memory_output.get_shape().as_list(),
-                         [2, 128, 147])
+    pixel_output, memory_output = layer(
+        (tf.zeros([2, 65, 65, 32]), tf.zeros([2, 128, 147])))
+    self.assertListEqual(pixel_output.get_shape().as_list(), [2, 33, 33, 1024])
+    self.assertListEqual(memory_output.get_shape().as_list(), [2, 128, 147])
 
   def test_atrous_consistency_basic_block(self):
     tf.random.set_seed(0)
@@ -82,7 +78,7 @@ class AxialBlockGroupsTest(tf.test.TestCase):
       if np.sum(weights[index]) == 0.0:
         weights[index] = weights[index] + 1
     layer1.set_weights(weights)
-    _, pixel_outputs, _ = layer1((pixel_inputs, None))
+    pixel_outputs, _ = layer1((pixel_inputs, None))
     output = pixel_outputs[:, ::2, ::2, :]
     # Feature extraction at the nominal network rate.
     layer2 = axial_block_groups.BlockGroup(
@@ -100,7 +96,7 @@ class AxialBlockGroupsTest(tf.test.TestCase):
     layer2((pixel_inputs, None))
     # Make the two networks use the same weights.
     layer2.set_weights(layer1.get_weights())
-    _, expected, _ = layer2((pixel_inputs, None))
+    expected, _ = layer2((pixel_inputs, None))
     self.assertAllClose(output, expected, atol=1e-4, rtol=1e-4)
 
   def test_atrous_consistency_bottleneck_block(self):
@@ -127,7 +123,7 @@ class AxialBlockGroupsTest(tf.test.TestCase):
       if np.sum(weights[index]) == 0.0:
         weights[index] = weights[index] + 1
     layer1.set_weights(weights)
-    _, pixel_outputs, _ = layer1((pixel_inputs, None))
+    pixel_outputs, _ = layer1((pixel_inputs, None))
     output = pixel_outputs[:, ::2, ::2, :]
     # Feature extraction at the nominal network rate.
     layer2 = axial_block_groups.BlockGroup(
@@ -145,7 +141,7 @@ class AxialBlockGroupsTest(tf.test.TestCase):
     layer2((pixel_inputs, None))
     # Make the two networks use the same weights.
     layer2.set_weights(layer1.get_weights())
-    _, expected, _ = layer2((pixel_inputs, None))
+    expected, _ = layer2((pixel_inputs, None))
     self.assertAllClose(output, expected, atol=1e-4, rtol=1e-4)
 
   def test_use_se_sac_recompute_drop_path_schedule(self):

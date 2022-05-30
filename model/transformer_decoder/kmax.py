@@ -138,7 +138,7 @@ class KMaXTransformerDecoder(tf.keras.Model):
     current_transformer_idx = 0
     for index, feature_output_stride in enumerate([32, 16, 8]):
       for _ in range(self._num_blocks[index]):
-        (_, _, cluster_centers, auxiliary_outputs) = (
+        (_, cluster_centers, auxiliary_outputs) = (
             self._kmax_decoder[current_transformer_idx](
                 (feature_dict[feature_output_stride], cluster_centers,
                  auxiliary_outputs), training=training))

@@ -345,13 +345,13 @@ class BlockGroup(tf.keras.layers.Layer):
     Raises:
       ValueError: If the length of inputs is not 2 or 3.
     """
-    # The pixel space inputs are activated features.
+    # The pixel space inputs are non-activated features.
     if len(inputs) == 2:
-      activated_features, memory_space_output = inputs
+      features, memory_space_output = inputs
       auxiliary_outputs = ()
       return_auxiliary_outputs = False
     elif len(inputs) == 3:
-      activated_features, memory_space_output, auxiliary_outputs = inputs
+      features, memory_space_output, auxiliary_outputs = inputs
       return_auxiliary_outputs = True
     else:
       raise ValueError('The length of inputs should be either 2 or 3!')
@@ -382,7 +382,7 @@ class BlockGroup(tf.keras.layers.Layer):
           block_fn = block_fn_no_recompute
 
         # The inputs to block_fn should be activated features.
-        block_fn_inputs = [activated_features, float_tensor_training]
+        block_fn_inputs = [features, float_tensor_training]
         # We have to define drop_path_masks outside the layer call and pass it
         # into the layer, because tf.recompute_grad (gradient checkpointing)
         # does not allow any randomness within the function call. In addition,
@@ -390,7 +390,7 @@ class BlockGroup(tf.keras.layers.Layer):
         # pass the drop_path_random_mask (when it is None) into block_fn.
         if current_drop_path_keep_prob < 1.0 and training:
           drop_path_random_mask = drop_path.generate_drop_path_random_mask(
-              activated_features, current_drop_path_keep_prob)
+              features, current_drop_path_keep_prob)
 
           block_fn_inputs.append(drop_path_random_mask)
 
@@ -399,16 +399,11 @@ class BlockGroup(tf.keras.layers.Layer):
         if self._first_building_call:
           _ = block_fn_no_recompute(tuple(block_fn_inputs))
         # Apply the residual block.
-        features, activated_features = block_fn(tuple(block_fn_inputs))
-      else:
-        # When we only would like to perform dual-path transformer, the input
-        # is expected to be un-activated features.
-        features = activated_features
+        features = block_fn(tuple(block_fn_inputs))
 
       if index == 0 and self._add_absolute_positional_encoding is not None:
         features = self._add_absolute_positional_encoding(features,
                                                           training=training)
-        activated_features = self._activation_fn(features)
 
       if transformer_block_fn_no_recompute is not None:
         # Wrap the layer if we want to recompute it in the backward pass.
@@ -460,7 +455,7 @@ class BlockGroup(tf.keras.layers.Layer):
           _ = transformer_block_fn_no_recompute(
               tuple(transformer_block_fn_input_list))
         # Apply a dual-path transformer.
-        features, activated_features, memory_space_output, auxiliary_outputs = (
+        features, memory_space_output, auxiliary_outputs = (
             transformer_block_fn(tuple(transformer_block_fn_input_list)))
 
     # Now the first call has finished and the sub-layers have been built.
@@ -468,7 +463,6 @@ class BlockGroup(tf.keras.layers.Layer):
     # We also return the non-activated output so that the function is compatible
     # with a decoder that takes a non-activated tensor as input.
     if return_auxiliary_outputs:
-      return (features, activated_features, memory_space_output,
-              auxiliary_outputs)
+      return features, memory_space_output, auxiliary_outputs
     else:
-      return features, activated_features, memory_space_output
+      return features, memory_space_output

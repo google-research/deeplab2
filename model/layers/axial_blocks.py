@@ -260,10 +260,7 @@ class AxialBlock(tf.keras.layers.Layer):
           tf.Tensor with shape [batch, 1, 1, 1].
 
     Returns:
-      outputs: two tensors. The first tensor does not use the last activation
-        function. The second tensor uses the activation. We return non-activated
-        output to support MaX-DeepLab which uses non-activated feature for the
-        stacked decoders.
+      outputs: A single tensor without activation function.
 
     Raises:
       ValueError: If the length of inputs is not 2 or 3.
@@ -274,6 +271,9 @@ class AxialBlock(tf.keras.layers.Layer):
     # Unpack the inputs.
     input_tensor, float_tensor_training, drop_path_random_mask = (
         utils.pad_sequence_with_none(inputs, target_length=3))
+
+    # AxialBlock expects an activated feature as input_tensor.
+    input_tensor = self._activate_fn(input_tensor)
 
     # Recompute_grad takes only float tensors as inputs. It does not allow
     # bools or boolean tensors. For this reason, we cast training to a float
@@ -305,4 +305,4 @@ class AxialBlock(tf.keras.layers.Layer):
     if drop_path_random_mask is not None:
       x = x * drop_path_random_mask
     x = x + shortcut
-    return x, self._activate_fn(x)
+    return x
