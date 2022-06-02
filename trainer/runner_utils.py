@@ -104,6 +104,10 @@ def create_dataset(dataset_config: config_pb2.DatasetOptions,
     }
 
   augmentation_options = dataset_config.augmentations
+  if augmentation_options.HasField('panoptic_copy_paste'):
+    panoptic_copy_paste_options = augmentation_options.panoptic_copy_paste
+  else:
+    panoptic_copy_paste_options = None
   generator = sample_generator.PanopticSampleGenerator(
       dataset_info=dataset_info._asdict(),
       is_training=is_training,
@@ -119,12 +123,15 @@ def create_dataset(dataset_config: config_pb2.DatasetOptions,
       thing_id_mask_annotations=dataset_config.thing_id_mask_annotations,
       max_thing_id=dataset_config.max_thing_id,
       sigma=dataset_config.sigma,
-      focus_small_instances=focus_small_instances)
+      focus_small_instances=focus_small_instances,
+      panoptic_copy_paste_options=panoptic_copy_paste_options)
 
   reader = input_reader.InputReader(
       file_pattern=dataset_config.file_pattern,
       decoder_fn=decoder,
       generator_fn=generator,
+      use_panoptic_copy_paste=dataset_config.augmentations.HasField(
+          'panoptic_copy_paste'),
       is_training=is_training)
 
   return reader(dataset_config.batch_size)

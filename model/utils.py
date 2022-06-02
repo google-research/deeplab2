@@ -424,6 +424,28 @@ def strided_downsample(input_tensor, target_size):
   return input_tensor
 
 
+def get_num_thing_stuff_classes(num_classes: int, void_label: int) -> int:
+  """Computes num_thing_stuff_classes.
+
+  The num_thing_stuff_classes are computed from the num_classes and the
+  void_label.
+
+  Args:
+    num_classes: An integer specifying the number of semantic classes, which
+      may or may not include `void` class.
+    void_label: An integer specifying the void label.
+
+  Returns:
+    num_thing_stuff_classes: An integer specifying the number of stuff and thing
+      classes, excluding `void` class.
+  """
+  if void_label < 0 or void_label > num_classes:
+    num_thing_stuff_classes = num_classes
+  else:
+    num_thing_stuff_classes = num_classes - 1
+  return num_thing_stuff_classes
+
+
 def get_stuff_class_ids(num_thing_stuff_classes: int,
                         thing_class_ids: List[int],
                         void_label: int) -> List[int]:
