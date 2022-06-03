@@ -128,10 +128,12 @@ def run_experiment(mode: Text, config: config_pb2.ExperimentOptions,
         config, dataset.MAP_NAME_TO_DATASET_INFO[dataset_name])
     losses = loss_builder.DeepLabFamilyLoss(
         loss_options=config.trainer_options.loss_options,
+        deeplab_options=config.model_options,
         num_classes=num_classes,
         ignore_label=ignore_label,
         ignore_depth=ignore_depth,
-        thing_class_ids=class_has_instances_list)
+        thing_class_ids=class_has_instances_list,
+        auxiliary_output_number=deeplab_model.auxiliary_output_number)
     global_step = orbit.utils.create_global_step()
     if 'train' in mode:
       trainer = trainer_lib.Trainer(config, deeplab_model, losses, global_step)

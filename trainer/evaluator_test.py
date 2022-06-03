@@ -69,6 +69,7 @@ def _create_panoptic_deeplab_loss(dataset_info):
 
   loss_layer = loss_builder.DeepLabFamilyLoss(
       loss_options,
+      deeplab_options=config_pb2.ModelOptions(),
       num_classes=dataset_info.num_classes,
       ignore_label=dataset_info.ignore_label,
       ignore_depth=dataset_info.ignore_depth,
@@ -91,6 +92,7 @@ def _create_max_deeplab_loss(dataset_info):
       instance_discrimination_loss=instance_discrimination_loss_options)
   loss_layer = loss_builder.DeepLabFamilyLoss(
       loss_options,
+      deeplab_options=config_pb2.ModelOptions(),
       num_classes=dataset_info.num_classes,
       ignore_label=dataset_info.ignore_label,
       ignore_depth=dataset_info.ignore_depth,
