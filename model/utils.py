@@ -51,6 +51,13 @@ _INPUT_WITH_BILINEAR_UPSAMPLING = (
 )
 
 
+def resolve_batch_size(tensor: tf.Tensor) -> int:
+  batch_size = tensor.get_shape().as_list()[0]
+  if batch_size is None:
+    batch_size = tf.shape(tensor)[0]
+  return batch_size
+
+
 def _scale_helper(value, scale):
   if isinstance(value, tf.Tensor):
     return tf.cast(
