@@ -14,6 +14,8 @@
 # limitations under the License.
 
 """This file contains functions to build encoder and decoder."""
+from typing import Callable, List, Optional
+
 import tensorflow as tf
 
 from deeplab2 import config_pb2
@@ -25,6 +27,10 @@ from deeplab2.model.decoder import panoptic_deeplab
 from deeplab2.model.decoder import vip_deeplab_decoder
 from deeplab2.model.encoder import axial_resnet_instances
 from deeplab2.model.encoder import mobilenet
+from deeplab2.model.pixel_decoder import kmax as kmax_pixel_decoder
+from deeplab2.model.pixel_encoder import axial_resnet
+from deeplab2.model.pixel_encoder import convnext
+from deeplab2.model.transformer_decoder import kmax as kmax_trasnformer_decoder
 
 
 def create_encoder(backbone_options: config_pb2.ModelOptions.BackboneOptions,
@@ -176,3 +182,114 @@ def create_decoder(model_options: config_pb2.ModelOptions,
         use_auxiliary_semantic_head=use_auxiliary_semantic_head)
   raise ValueError('The specified meta architecture %s is not implemented.' %
                    meta_architecture)
+
+
+def create_kmax_meta_pixel_encoder(
+    pixel_encoder_name: str,
+    drop_path_keep_prob: float,
+    input_shape: List[int],
+    norm_layer: Optional[Callable[[], tf.keras.layers.Layer]],
+    pretrained_weights_path: Optional[str] = None,
+) -> tf.keras.Model:
+  """Creates a pixel encoder in K-MaX meta architecture.
+
+  Args:
+    pixel_encoder_name: A string specifying the pixel encoder name.
+    drop_path_keep_prob: A float specifying the keep probability of drop path.
+    input_shape: A list of integer specifying the expected input shape.
+    norm_layer: A tf.keras.layers.Layer that computes the normalization.
+    pretrained_weights_path: A string specifying the path of pretrained weights
+      for the backbone (i.e., pixel encoder).
+
+  Returns:
+    An instance of tf.keras.Model containing the pixel encoder.
+
+  Raises:
+    ValueError: An error occurs when the pixel_encoder_name does not contain
+      'convnext' or 'resnet'.
+  """
+  if 'convnext' in pixel_encoder_name.lower():
+    return convnext.get_model(
+        pixel_encoder_name,
+        input_shape=input_shape,
+        pretrained_weights_path=pretrained_weights_path,
+        drop_path_keep_prob=drop_path_keep_prob,
+        zero_padding_for_downstream=True)
+  elif 'resnet' in pixel_encoder_name.lower():
+    return axial_resnet.get_model(
+        pixel_encoder_name,
+        input_shape=input_shape,
+        bn_layer=norm_layer,
+        drop_path_keep_prob=drop_path_keep_prob,
+    )
+  else:
+    raise ValueError('Unsupoorted pixel_encoder_name!')
+
+
+def create_kmax_meta_pixel_decoder(
+    norm_layer: Optional[Callable[[], tf.keras.layers.Layer]],
+    high_resolution_output_stride: int = 4
+) -> tf.keras.Model:
+  """Creates a pixel decoder in K-MaX meta architecture.
+
+  Args:
+    norm_layer: A tf.keras.layers.Layer that computes the normalization.
+    high_resolution_output_stride: An integer speicying the highest resolution
+      of pixel decoder output feature maps.
+
+  Returns:
+    An instance of tf.keras.Model containing the pixel decoder.
+
+  Raises:
+    ValueError: An error occurs when the high_resolution_output_stride is not
+      4 or 2.
+  """
+  # high_resolution_output_stride = 4 is used for COCO dataset.
+  if high_resolution_output_stride == 4:
+    dims = (512, 256, 128, 64)
+    num_blocks = (1, 5, 1, 1)
+    block_type = ('axial', 'axial', 'bottleneck', 'bottleneck')
+  # high_resolution_output_stride = 2 is used for Cityscapes dataset.
+  elif high_resolution_output_stride == 2:
+    dims = (512, 256, 128, 64, 32)
+    num_blocks = (1, 5, 1, 1, 1)
+    block_type = ('axial', 'axial', 'bottleneck', 'bottleneck', 'bottleneck')
+  else:
+    raise ValueError('Unsupported high_resolution_output_stride for building'
+                     ' kmax_meta_pixel_decoder!')
+
+  return kmax_pixel_decoder.KMaXPixelDecoder(
+      name='kmax_pixel_decoder',
+      norm_layer=norm_layer,
+      dims=dims,
+      num_blocks=num_blocks,
+      block_type=block_type)
+
+
+def create_kmax_meta_transformer_decoder(
+    norm_layer: Optional[Callable[[], tf.keras.layers.Layer]],
+    num_mask_slots: int,
+    auxiliary_predictor_func: Optional[Callable[[], tf.keras.Model]] = None,
+    drop_query_keep_number: int = 0
+) -> tf.keras.Model:
+  """Creates a transformer decoder in K-MaX meta architecture.
+
+  Args:
+    norm_layer: A tf.keras.layers.Layer that computes the normalization.
+    num_mask_slots: An integer, the number of mask slots that will be used.
+    auxiliary_predictor_func: A callable function that returns an initialization
+      of auxiliary decoder.
+    drop_query_keep_number: An integer, the number of queries to be kept
+        during training. If the number is smaller or equal to 0, then all
+        queries will be used.
+
+  Returns:
+    An instance of tf.keras.Model containing the transformer decoder.
+  """
+  return kmax_trasnformer_decoder.KMaXTransformerDecoder(
+      name='kmax_transformer_decoder',
+      auxiliary_predictor_func=auxiliary_predictor_func,
+      norm_layer=norm_layer,
+      num_mask_slots=num_mask_slots,
+      num_blocks=(2, 2, 2),
+      drop_query_keep_number=drop_query_keep_number)

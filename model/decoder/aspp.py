@@ -39,7 +39,8 @@ class ASPPConv(tf.keras.layers.Layer):
                output_channels,
                atrous_rate,
                name,
-               bn_layer=tf.keras.layers.BatchNormalization):
+               bn_layer=tf.keras.layers.BatchNormalization,
+               activation='relu'):
     """Creates a atrous convolution layer for the ASPP.
 
     This layer consists of an atrous convolution followed by a BatchNorm layer
@@ -53,6 +54,8 @@ class ASPPConv(tf.keras.layers.Layer):
       name: A string specifying the name of this layer.
       bn_layer: An optional tf.keras.layers.Layer that computes the
         normalization (default: tf.keras.layers.BatchNormalization).
+      activation: A string, type of activation function to apply. Support
+        'relu', 'swish' (or 'silu'), 'gelu', 'approximated_gelu', and 'elu'.
     """
     super(ASPPConv, self).__init__(name=name)
 
@@ -64,7 +67,7 @@ class ASPPConv(tf.keras.layers.Layer):
         use_bias=False,
         use_bn=True,
         bn_layer=bn_layer,
-        activation='relu')
+        activation=activation)
 
   def call(self, input_tensor, training=False):
     """Performs a forward pass.
@@ -87,7 +90,8 @@ class ASPPPool(tf.keras.layers.Layer):
   def __init__(self,
                output_channels,
                name,
-               bn_layer=tf.keras.layers.BatchNormalization):
+               bn_layer=tf.keras.layers.BatchNormalization,
+               activation='relu'):
     """Creates a pooling layer for the ASPP.
 
     This layer consists of a global average pooling, followed by a convolution,
@@ -99,6 +103,8 @@ class ASPPPool(tf.keras.layers.Layer):
       name: A string specifying the name of this layer.
       bn_layer: An optional tf.keras.layers.Layer that computes the
         normalization (default: tf.keras.layers.BatchNormalization).
+      activation: A string, type of activation function to apply. Support
+        'relu', 'swish' (or 'silu'), 'gelu', 'approximated_gelu', and 'elu'.
     """
     super(ASPPPool, self).__init__(name=name)
 
@@ -110,7 +116,7 @@ class ASPPPool(tf.keras.layers.Layer):
         use_bias=False,
         use_bn=True,
         bn_layer=bn_layer,
-        activation='relu')
+        activation=activation)
 
   def set_pool_size(self, pool_size):
     """Sets the pooling size of the pooling layer.
@@ -181,7 +187,8 @@ class ASPP(tf.keras.layers.Layer):
                atrous_rates,
                aspp_use_only_1x1_proj_conv=False,
                name='ASPP',
-               bn_layer=tf.keras.layers.BatchNormalization):
+               bn_layer=tf.keras.layers.BatchNormalization,
+               activation='relu'):
     """Creates an ASPP layer.
 
     Args:
@@ -195,9 +202,11 @@ class ASPP(tf.keras.layers.Layer):
       name: A string specifying the name of this layer (default: 'ASPP').
       bn_layer: An optional tf.keras.layers.Layer that computes the
         normalization (default: tf.keras.layers.BatchNormalization).
+      activation: A string, type of activation function to apply. Support
+        'relu', 'swish' (or 'silu'), 'gelu', 'approximated_gelu', and 'elu'.
 
     Raises:
-      ValueError: An error occurs when both atrous_rates does not contain 3
+      ValueError: An error occurs when atrous_rates does not contain 3
         elements and `aspp_use_only_1x1_proj_conv` is False.
     """
     super(ASPP, self).__init__(name=name)
@@ -216,7 +225,7 @@ class ASPP(tf.keras.layers.Layer):
         use_bias=False,
         use_bn=True,
         bn_layer=bn_layer,
-        activation='relu')
+        activation=activation)
 
     if not aspp_use_only_1x1_proj_conv:
       self._conv_bn_act = convolutions.Conv2DSame(
@@ -226,16 +235,16 @@ class ASPP(tf.keras.layers.Layer):
           use_bias=False,
           use_bn=True,
           bn_layer=bn_layer,
-          activation='relu')
+          activation=activation)
       rate1, rate2, rate3 = atrous_rates
       self._aspp_conv1 = ASPPConv(output_channels, rate1, name='aspp_conv1',
-                                  bn_layer=bn_layer)
+                                  bn_layer=bn_layer, activation=activation)
       self._aspp_conv2 = ASPPConv(output_channels, rate2, name='aspp_conv2',
-                                  bn_layer=bn_layer)
+                                  bn_layer=bn_layer, activation=activation)
       self._aspp_conv3 = ASPPConv(output_channels, rate3, name='aspp_conv3',
-                                  bn_layer=bn_layer)
+                                  bn_layer=bn_layer, activation=activation)
       self._aspp_pool = ASPPPool(output_channels, name='aspp_pool',
-                                 bn_layer=bn_layer)
+                                 bn_layer=bn_layer, activation=activation)
       # Dropout is needed only when ASPP five branches are used.
       self._proj_drop = layers.Dropout(rate=0.1)
 

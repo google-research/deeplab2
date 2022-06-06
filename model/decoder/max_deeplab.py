@@ -126,7 +126,8 @@ class MaXDeepLab(tf.keras.layers.Layer):
                max_deeplab_options,
                ignore_label,
                bn_layer=tf.keras.layers.BatchNormalization,
-               use_auxiliary_semantic_head=True):
+               use_auxiliary_semantic_head=True,
+               activation='relu'):
     """Initializes a MaX-DeepLab head.
 
     Args:
@@ -138,6 +139,8 @@ class MaXDeepLab(tf.keras.layers.Layer):
         normalization (default: tf.keras.layers.BatchNormalization).
       use_auxiliary_semantic_head: A boolean, whether to use an auxiliary
         semantic head to generate semantic predictions.
+      activation: A string, type of activation function to apply. Support
+        'relu', 'swish' (or 'silu'), 'gelu', 'approximated_gelu', and 'elu'.
     """
     super(MaXDeepLab, self).__init__(name='MaXDeepLab')
 
@@ -162,7 +165,8 @@ class MaXDeepLab(tf.keras.layers.Layer):
               aspp_use_only_1x1_proj_conv=decoder_options
               .aspp_use_only_1x1_proj_conv,
               decoder_conv_type=decoder_options.decoder_conv_type,
-              bn_layer=bn_layer))
+              bn_layer=bn_layer,
+              activation=activation))
       self._auxiliary_semantic_head = (
           panoptic_deeplab.PanopticDeepLabSingleHead(
               max_deeplab_options.auxiliary_semantic_head.head_channels,
@@ -171,14 +175,16 @@ class MaXDeepLab(tf.keras.layers.Layer):
               name='auxiliary_semantic_head',
               conv_type=max_deeplab_options.auxiliary_semantic_head
               .head_conv_type,
-              bn_layer=bn_layer))
+              bn_layer=bn_layer,
+              activation=activation))
     self._pixel_space_head = panoptic_deeplab.PanopticDeepLabSingleHead(
         max_deeplab_options.pixel_space_head.head_channels,
         max_deeplab_options.pixel_space_head.output_channels,
         _PIXEL_SPACE_FEATURE_KEY,
         name='pixel_space_head',
         conv_type=max_deeplab_options.pixel_space_head.head_conv_type,
-        bn_layer=bn_layer)
+        bn_layer=bn_layer,
+        activation=activation)
 
     self._transformer_mask_head = convolutions.Conv1D(
         output_channels=max_deeplab_options.pixel_space_head.output_channels,

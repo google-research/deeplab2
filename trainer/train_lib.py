@@ -26,6 +26,7 @@ from deeplab2 import common
 from deeplab2 import config_pb2
 from deeplab2.data import dataset
 from deeplab2.model import deeplab
+from deeplab2.model import kmax_deeplab
 from deeplab2.model.loss import loss_builder
 from deeplab2.trainer import distribution_utils
 from deeplab2.trainer import evaluator as evaluator_lib
@@ -53,6 +54,9 @@ def create_deeplab_model(
     return motion_deeplab.MotionDeepLab(config, dataset_descriptor)
   elif config.model_options.WhichOneof('meta_architecture') == 'vip_deeplab':
     return vip_deeplab.ViPDeepLab(config, dataset_descriptor)
+  elif ('kmax_' in config.model_options.backbone.name and
+        config.model_options.WhichOneof('meta_architecture') == 'max_deeplab'):
+    return kmax_deeplab.KMaXDeepLab(config, dataset_descriptor)
   else:
     return deeplab.DeepLab(config, dataset_descriptor)
 
@@ -134,11 +138,19 @@ def run_experiment(mode: Text, config: config_pb2.ExperimentOptions,
         ignore_depth=ignore_depth,
         thing_class_ids=class_has_instances_list,
         auxiliary_output_number=deeplab_model.auxiliary_output_number)
+    losses_eval = loss_builder.DeepLabFamilyLoss(
+        loss_options=config.trainer_options.loss_options,
+        deeplab_options=config.model_options,
+        num_classes=num_classes,
+        ignore_label=ignore_label,
+        ignore_depth=ignore_depth,
+        thing_class_ids=class_has_instances_list,
+        auxiliary_output_number=0)
     global_step = orbit.utils.create_global_step()
     if 'train' in mode:
       trainer = trainer_lib.Trainer(config, deeplab_model, losses, global_step)
     if 'eval' in mode:
-      evaluator = evaluator_lib.Evaluator(config, deeplab_model, losses,
+      evaluator = evaluator_lib.Evaluator(config, deeplab_model, losses_eval,
                                           global_step, model_dir)
 
   checkpoint_dict = dict(global_step=global_step)

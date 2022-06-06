@@ -50,7 +50,8 @@ class PanopticDeepLabSingleDecoder(layers.Layer):
                name,
                aspp_use_only_1x1_proj_conv=False,
                decoder_conv_type='depthwise_separable_conv',
-               bn_layer=tf.keras.layers.BatchNormalization):
+               bn_layer=tf.keras.layers.BatchNormalization,
+               activation='relu'):
     """Initializes a single Panoptic-DeepLab decoder of layers.Layer.
 
     Args:
@@ -75,6 +76,8 @@ class PanopticDeepLabSingleDecoder(layers.Layer):
         'depthwise_separable_conv' and 'standard_conv'.
       bn_layer: An optional tf.keras.layers.Layer that computes the
         normalization (default: tf.keras.layers.BatchNormalization).
+      activation: A string, type of activation function to apply. Support
+        'relu', 'swish' (or 'silu'), 'gelu', 'approximated_gelu', and 'elu'.
 
     Raises:
       ValueError: An error occurs when the length of low_level_feature_names
@@ -88,7 +91,8 @@ class PanopticDeepLabSingleDecoder(layers.Layer):
         atrous_rates,
         aspp_use_only_1x1_proj_conv=aspp_use_only_1x1_proj_conv,
         name='aspp',
-        bn_layer=bn_layer)
+        bn_layer=bn_layer,
+        activation=activation)
     self._high_level_feature_name = high_level_feature_name
 
     if len(low_level_feature_names) != len(low_level_channels_project):
@@ -117,7 +121,7 @@ class PanopticDeepLabSingleDecoder(layers.Layer):
               use_bias=False,
               use_bn=True,
               bn_layer=bn_layer,
-              activation='relu'))
+              activation=activation))
 
       utils.safe_setattr(
           self, current_fusion_conv_name, convolutions.StackedConv2DSame(
@@ -129,7 +133,7 @@ class PanopticDeepLabSingleDecoder(layers.Layer):
               use_bias=False,
               use_bn=True,
               bn_layer=bn_layer,
-              activation='relu'))
+              activation=activation))
 
   def call(self, features, training=False):
     """Performs a forward pass.
@@ -211,7 +215,8 @@ class PanopticDeepLabSingleHead(layers.Layer):
                pred_key,
                name,
                conv_type='depthwise_separable_conv',
-               bn_layer=tf.keras.layers.BatchNormalization):
+               bn_layer=tf.keras.layers.BatchNormalization,
+               activation='relu'):
     """Initializes a single PanopticDeepLab head.
 
     Args:
@@ -225,6 +230,8 @@ class PanopticDeepLabSingleHead(layers.Layer):
         'depthwise_separable_conv' and 'standard_conv'.
       bn_layer: An optional tf.keras.layers.Layer that computes the
         normalization (default: tf.keras.layers.BatchNormalization).
+      activation: A string, type of activation function to apply. Support
+        'relu', 'swish' (or 'silu'), 'gelu', 'approximated_gelu', and 'elu'.
     """
     super(PanopticDeepLabSingleHead, self).__init__(name=name)
     self._pred_key = pred_key
@@ -238,7 +245,7 @@ class PanopticDeepLabSingleHead(layers.Layer):
         use_bias=False,
         use_bn=True,
         bn_layer=bn_layer,
-        activation='relu')
+        activation=activation)
     self.final_conv = layers.Conv2D(
         output_channels,
         kernel_size=1,
@@ -273,7 +280,8 @@ class PanopticDeepLab(layers.Layer):
   def __init__(self,
                decoder_options,
                panoptic_deeplab_options,
-               bn_layer=tf.keras.layers.BatchNormalization):
+               bn_layer=tf.keras.layers.BatchNormalization,
+               activation='relu'):
     """Initializes a Panoptic-DeepLab decoder.
 
     Args:
@@ -282,6 +290,8 @@ class PanopticDeepLab(layers.Layer):
         config_pb2.ModelOptions.PanopticDeeplabOptions.
       bn_layer: An optional tf.keras.layers.Layer that computes the
         normalization (default: tf.keras.layers.BatchNormalization).
+      activation: A string, type of activation function to apply. Support
+        'relu', 'swish' (or 'silu'), 'gelu', 'approximated_gelu', and 'elu'.
     """
     super(PanopticDeepLab, self).__init__(name='PanopticDeepLab')
 
@@ -302,14 +312,16 @@ class PanopticDeepLab(layers.Layer):
         name='semantic_decoder',
         aspp_use_only_1x1_proj_conv=decoder_options.aspp_use_only_1x1_proj_conv,
         decoder_conv_type=decoder_options.decoder_conv_type,
-        bn_layer=bn_layer)
+        bn_layer=bn_layer,
+        activation=activation)
     self._semantic_head = PanopticDeepLabSingleHead(
         panoptic_deeplab_options.semantic_head.head_channels,
         panoptic_deeplab_options.semantic_head.output_channels,
         common.PRED_SEMANTIC_LOGITS_KEY,
         name='semantic_head',
         conv_type=panoptic_deeplab_options.semantic_head.head_conv_type,
-        bn_layer=bn_layer)
+        bn_layer=bn_layer,
+        activation=activation)
 
     self._instance_decoder = None
     self._instance_center_head = None
@@ -344,7 +356,8 @@ class PanopticDeepLab(layers.Layer):
           aspp_use_only_1x1_proj_conv=(
               decoder_options.aspp_use_only_1x1_proj_conv),
           decoder_conv_type=decoder_options.decoder_conv_type,
-          bn_layer=bn_layer)
+          bn_layer=bn_layer,
+          activation=activation)
       self._instance_center_head = PanopticDeepLabSingleHead(
           panoptic_deeplab_options.instance.center_head.head_channels,
           panoptic_deeplab_options.instance.center_head.output_channels,
@@ -352,7 +365,8 @@ class PanopticDeepLab(layers.Layer):
           name='instance_center_head',
           conv_type=(
               panoptic_deeplab_options.instance.center_head.head_conv_type),
-          bn_layer=bn_layer)
+          bn_layer=bn_layer,
+          activation=activation)
       self._instance_regression_head = PanopticDeepLabSingleHead(
           panoptic_deeplab_options.instance.regression_head.head_channels,
           panoptic_deeplab_options.instance.regression_head.output_channels,
@@ -360,7 +374,8 @@ class PanopticDeepLab(layers.Layer):
           name='instance_regression_head',
           conv_type=(
               panoptic_deeplab_options.instance.regression_head.head_conv_type),
-          bn_layer=bn_layer)
+          bn_layer=bn_layer,
+          activation=activation)
 
   def reset_pooling_layer(self):
     """Resets the ASPP pooling layers to global average pooling."""
