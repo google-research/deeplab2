@@ -153,6 +153,10 @@ class KMaXTransformerDecoder(tf.keras.Model):
     return cluster_centers
 
   def call(self, endpoints, training=False):
+    # Make a copy so that input argument will not be modified, per requirements
+    # from exporting a saved model.
+    endpoints = dict(endpoints)
+
     # Apply K-MaX decoder on pixel features at output stride 32, 16, and 8
     # respectively to update the cluster centers.
     feature_dict = {

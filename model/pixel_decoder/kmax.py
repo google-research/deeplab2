@@ -165,6 +165,10 @@ class KMaXPixelDecoder(tf.keras.Model):
       self._skip_connections.append(skip_connection_fn)
 
   def call(self, endpoints, training=False):
+    # Make a copy so that input argument will not be modified, per requirements
+    # from exporting a saved model.
+    endpoints = dict(endpoints)
+
     x = self._backbone_norms[0](
         endpoints[self._stage_to_backbone_endpoint[0]], training=training)
     for i in range(self._num_stages - 1):
