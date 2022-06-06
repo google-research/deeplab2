@@ -13,7 +13,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Pixel Decoder used in K-Means Mask Transformer."""
+"""Pixel Decoder used in K-Means Mask Transformer.
+
+The pixel decoder in the k-means Mask Transformer (k-MaX) [1] employs a simple
+decoder structure, similar to MaX-DeepLab-S model [2].
+
+We support using axial-block [3] and bottleneck-block [4] in the decoder, along
+with skip connections from the pixel encoder (i.e., backbone).
+
+[1] TODO(qihangyu): Add k-max reference.
+
+[2] MaX-DeepLab: End-to-End Panoptic Segmentation with Mask Transformers,
+    CVPR 2021.
+      Huiyu Wang, Yukun Zhu, Hartwig Adam, Alan Yuille, Liang-Chieh Chen.
+
+[3] Axial-Deeplab: Stand-Alone Axial-Attention for Panoptic Segmentation,
+    ECCV 2020.
+      Huiyu Wang, Yukun Zhu, Bradley Green, Hartwig Adam, Alan Yuille,
+      Liang-Chieh Chen.
+
+[4] Deep residual learning for image recognition.
+    CVPR 2016.
+      Kaiming He, Xiangyu Zhang, Shaoqing Ren, Jian Sun.
+"""
 
 import functools
 
@@ -43,7 +65,15 @@ bottleneck_block = functools.partial(
 
 
 class KMaXPixelDecoder(tf.keras.Model):
-  """Pixel Decoder for K-MaX."""
+  """Pixel Decoder for K-MaX.
+
+  The pixel decoder in the k-means Mask Transformer (k-MaX) employs a simple
+  decoder structure, similar to MaX-DeepLab-S model. We support using
+  axial-block and bottleneck-block in the decoder, along with skip connections
+  from the pixel encoder (i.e., backbone).
+
+  TODO(qihangyu): Add k-max reference.
+  """
 
   def __init__(self,
                name,
