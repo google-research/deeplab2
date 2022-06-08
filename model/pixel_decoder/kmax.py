@@ -19,7 +19,9 @@ The pixel decoder in the k-means Mask Transformer (k-MaX) [1] employs a simple
 decoder structure, similar to MaX-DeepLab-S model [2].
 
 We support using axial-block [3] and bottleneck-block [4] in the decoder, along
-with skip connections from the pixel encoder (i.e., backbone).
+with skip connections from the pixel encoder (i.e., backbone). When
+self-attention operations are used (e.g., axial-blocks), it is equivalent to
+incorporating the transformer encoder to the pixel decoder.
 
 [1] TODO(qihangyu): Add k-max reference.
 
@@ -70,7 +72,9 @@ class KMaXPixelDecoder(tf.keras.Model):
   The pixel decoder in the k-means Mask Transformer (k-MaX) employs a simple
   decoder structure, similar to MaX-DeepLab-S model. We support using
   axial-block and bottleneck-block in the decoder, along with skip connections
-  from the pixel encoder (i.e., backbone).
+  from the pixel encoder (i.e., backbone). When self-attention operations are
+  used (e.g., axial-blocks), it is equivalent to incorporating the transformer
+  encoder to the pixel decoder.
 
   TODO(qihangyu): Add k-max reference.
   """
