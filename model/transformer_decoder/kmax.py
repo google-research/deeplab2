@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Transformer Decoder used in K-Means Mask Transformer.
+"""Transformer Decoder used in k-means Mask Transformer.
 
-The transformer decoder in the k-means Mask Transformer (k-MaX) [1] employs the
+The transformer decoder in the k-means Mask Transformer (kMaX) [1] employs the
 k-means cross attention, where an argmax is operated along the cluster center
 dimension (instead of a softmax along the spatial dimension as in the first
 original Mask Transformer [2]). The argmax operation is similar to the k-means
@@ -24,7 +24,7 @@ then updated by aggregating the pixel features based on the pixel-cluster
 assignment (computed by their feature affinity), similar to the k-means
 center-update step.
 
-[1] TODO(qihangyu): Add k-max reference.
+[1] TODO(qihangyu): Add kMaX reference.
 
 [2] MaX-DeepLab: End-to-End Panoptic Segmentation with Mask Transformers,
     CVPR 2021.
@@ -64,9 +64,9 @@ transformer_decoder_block = functools.partial(
 
 
 class KMaXTransformerDecoder(tf.keras.Model):
-  """K-MaX Transformer Decoder.
+  """kMaX Transformer Decoder.
 
-  The transformer decoder in the k-means Mask Transformer (k-MaX) employs the
+  The transformer decoder in the k-means Mask Transformer (kMaX) employs the
   k-means cross attention, where an argmax is operated along the cluster center
   dimension (instead of a softmax along the spatial dimension). The argmax
   operation is similar to the k-means pixel-cluster assignment step (with a hard
@@ -74,7 +74,7 @@ class KMaXTransformerDecoder(tf.keras.Model):
   features based on the pixel-cluster assignment (computed by their feature
   affinity), similar to the k-means center-update step.
 
-  TODO(qihangyu): Add k-max reference.
+  TODO(qihangyu): Add kMaX reference.
   """
 
   def __init__(self,
@@ -157,7 +157,7 @@ class KMaXTransformerDecoder(tf.keras.Model):
     # from exporting a saved model.
     endpoints = dict(endpoints)
 
-    # Apply K-MaX decoder on pixel features at output stride 32, 16, and 8
+    # Apply kMaX decoder on pixel features at output stride 32, 16, and 8
     # respectively to update the cluster centers.
     feature_dict = {
         32: endpoints['decoder_stage1'],

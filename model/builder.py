@@ -191,7 +191,7 @@ def create_kmax_meta_pixel_encoder(
     norm_layer: Optional[Callable[[], tf.keras.layers.Layer]],
     pretrained_weights_path: Optional[str] = None,
 ) -> tf.keras.Model:
-  """Creates a pixel encoder in K-MaX meta architecture.
+  """Creates a pixel encoder in kMaX meta architecture.
 
   Args:
     pixel_encoder_name: A string specifying the pixel encoder name.
@@ -230,7 +230,7 @@ def create_kmax_meta_pixel_decoder(
     norm_layer: Optional[Callable[[], tf.keras.layers.Layer]],
     high_resolution_output_stride: int = 4
 ) -> tf.keras.Model:
-  """Creates a pixel decoder in K-MaX meta architecture.
+  """Creates a pixel decoder in kMaX meta architecture.
 
   Args:
     norm_layer: A tf.keras.layers.Layer that computes the normalization.
@@ -272,7 +272,7 @@ def create_kmax_meta_transformer_decoder(
     auxiliary_predictor_func: Optional[Callable[[], tf.keras.Model]] = None,
     drop_query_keep_number: int = 0
 ) -> tf.keras.Model:
-  """Creates a transformer decoder in K-MaX meta architecture.
+  """Creates a transformer decoder in kMaX meta architecture.
 
   Args:
     norm_layer: A tf.keras.layers.Layer that computes the normalization.

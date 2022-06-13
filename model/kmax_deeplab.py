@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This file contains the DeepLab meta architecture."""
+"""This file contains the kMaX-DeepLab meta architecture."""
 import functools
 from typing import Any, Dict, Text
 
@@ -30,12 +30,12 @@ from deeplab2.model.post_processor import post_processor_builder
 
 
 class KMaXDeepLab(tf.keras.Model):
-  """This class represents the K-MaX DeepLab meta architecture."""
+  """This class represents the kMaX-DeepLab meta architecture."""
 
   def __init__(self,
                config: config_pb2.ExperimentOptions,
                dataset_descriptor: dataset.DatasetDescriptor):
-    """Initializes a DeepLab architecture.
+    """Initializes a kMaX-DeepLab architecture.
 
     Args:
       config: A config_pb2.ExperimentOptions configuration.
@@ -45,7 +45,7 @@ class KMaXDeepLab(tf.keras.Model):
       ValueError: If normalization type is not one of ['sync_batchnorm',
         'batchnorm', 'layernorm'].
     """
-    super(KMaXDeepLab, self).__init__(name='KMaXDeepLab')
+    super(KMaXDeepLab, self).__init__(name='kMaXDeepLab')
 
     # We hard code these properties for now.
     self._auxiliary_output_number = 6
@@ -84,7 +84,7 @@ class KMaXDeepLab(tf.keras.Model):
         pretrained_weights_path=pretrained_weights_path)
 
     # Currently, some properties (e.g., high_resolution_output_stride,
-    # num_mask_slots, drop_query_keep_number) of K-MaX are hard-coded for
+    # num_mask_slots, drop_query_keep_number) of kMaX are hard-coded for
     # simplicity.
     self._pixel_decoder = builder.create_kmax_meta_pixel_decoder(
         norm_layer=norm_layer,

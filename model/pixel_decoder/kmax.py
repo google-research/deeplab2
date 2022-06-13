@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Pixel Decoder used in K-Means Mask Transformer.
+"""Pixel Decoder used in k-means Mask Transformer.
 
-The pixel decoder in the k-means Mask Transformer (k-MaX) [1] employs a simple
+The pixel decoder in the k-means Mask Transformer (kMaX) [1] employs a simple
 decoder structure, similar to MaX-DeepLab-S model [2].
 
 We support using axial-block [3] and bottleneck-block [4] in the decoder, along
@@ -23,7 +23,7 @@ with skip connections from the pixel encoder (i.e., backbone). When
 self-attention operations are used (e.g., axial-blocks), it is equivalent to
 incorporating the transformer encoder to the pixel decoder.
 
-[1] TODO(qihangyu): Add k-max reference.
+[1] TODO(qihangyu): Add kMaX reference.
 
 [2] MaX-DeepLab: End-to-End Panoptic Segmentation with Mask Transformers,
     CVPR 2021.
@@ -67,16 +67,16 @@ bottleneck_block = functools.partial(
 
 
 class KMaXPixelDecoder(tf.keras.Model):
-  """Pixel Decoder for K-MaX.
+  """Pixel Decoder for kMaX.
 
-  The pixel decoder in the k-means Mask Transformer (k-MaX) employs a simple
+  The pixel decoder in the k-means Mask Transformer (kMaX) employs a simple
   decoder structure, similar to MaX-DeepLab-S model. We support using
   axial-block and bottleneck-block in the decoder, along with skip connections
   from the pixel encoder (i.e., backbone). When self-attention operations are
   used (e.g., axial-blocks), it is equivalent to incorporating the transformer
   encoder to the pixel decoder.
 
-  TODO(qihangyu): Add k-max reference.
+  TODO(qihangyu): Add kMaX reference.
   """
 
   def __init__(self,
@@ -85,7 +85,7 @@ class KMaXPixelDecoder(tf.keras.Model):
                dims=(512, 256, 128, 64),
                num_blocks=(1, 5, 1, 1),
                block_type=('axial', 'axial', 'bottleneck', 'bottleneck')):
-    """Initializes a PixelDecoder for K-MaX.
+    """Initializes a PixelDecoder for kMaX.
 
     Args:
       name: A string, the name of the model.
