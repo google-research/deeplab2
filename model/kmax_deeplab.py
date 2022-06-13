@@ -70,6 +70,7 @@ class KMaXDeepLab(tf.keras.Model):
           config.model_options.max_deeplab,
           ignore_label=dataset_descriptor.ignore_label,
           bn_layer=norm_layer,
+          use_auxiliary_semantic_decoder=False,
           use_auxiliary_semantic_head=False,
           activation='gelu')
 
@@ -86,13 +87,27 @@ class KMaXDeepLab(tf.keras.Model):
     # Currently, some properties (e.g., high_resolution_output_stride,
     # num_mask_slots, drop_query_keep_number) of kMaX are hard-coded for
     # simplicity.
+    if 'cityscapes' in dataset_descriptor.dataset_name:
+      high_resolution_output_stride = 2
+      num_mask_slots = 256
+      use_auxiliary_semantic_decoder = False
+    elif 'coco' in dataset_descriptor.dataset_name:
+      high_resolution_output_stride = 4
+      num_mask_slots = 128
+      use_auxiliary_semantic_decoder = True
+    else:
+      logging.info('kMaX configs for COCO is used for untested datasets.')
+      high_resolution_output_stride = 4
+      num_mask_slots = 128
+      use_auxiliary_semantic_decoder = True
+
     self._pixel_decoder = builder.create_kmax_meta_pixel_decoder(
         norm_layer=norm_layer,
-        high_resolution_output_stride=4)
+        high_resolution_output_stride=high_resolution_output_stride)
 
     self._transformer_decoder = builder.create_kmax_meta_transformer_decoder(
         norm_layer=norm_layer,
-        num_mask_slots=128,
+        num_mask_slots=num_mask_slots,
         auxiliary_predictor_func=auxiliary_predictor_func,
         drop_query_keep_number=0)
 
@@ -103,6 +118,7 @@ class KMaXDeepLab(tf.keras.Model):
         config.model_options.max_deeplab,
         ignore_label=dataset_descriptor.ignore_label,
         bn_layer=norm_layer,
+        use_auxiliary_semantic_decoder=use_auxiliary_semantic_decoder,
         use_auxiliary_semantic_head=True,
         activation='gelu')
 
