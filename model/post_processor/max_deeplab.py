@@ -88,7 +88,7 @@ def _get_transformer_class_prediction_thing_stuff(
 def _get_transformer_class_prediction(
     transformer_class_probs: tf.Tensor,
     transformer_class_confidence_threshold: float
-) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
   """Computes the transformer class prediction and confidence score.
 
   Args:
@@ -108,6 +108,8 @@ def _get_transformer_class_prediction(
       [num_mask_slots].
     - the binary indicator of detected mask as tf.Tensor of shape
       [num_mask_slots].
+    - the class prediction confidence as float32 tf.Tensor of shape
+      [num_mask_slots].
     - the number of detections as tf.Tensor of shape [1].
   """
   transformer_class_pred = tf.cast(
@@ -124,7 +126,8 @@ def _get_transformer_class_prediction(
   # Instead of gathering detected mask slots and return, we simply return all
   # class prediction with a binary mask for keep/drop to ensure static shape for
   # TPU running.
-  return transformer_class_pred, thresholded_mask, num_detections
+  return (transformer_class_pred, thresholded_mask,
+          transformer_class_confidence, num_detections)
 
 
 def _get_mask_id_and_semantic_maps(
@@ -138,7 +141,7 @@ def _get_mask_id_and_semantic_maps(
     transformer_post_processing='pixelwise',
     maskwise_postprocessing_config=None,
     pieces=1
-) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
+) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
   """Computes the pixel-level mask ID map and semantic map per image or video.
 
    Some input and output tensors may contain num_frames in the shape, which is
@@ -184,6 +187,8 @@ def _get_mask_id_and_semantic_maps(
     - the semantic prediction as tf.Tensor of shape [num_frames, height, width].
     - the thing region mask as tf.Tensor of shape [num_frames, height, width].
     - the stuff region mask as tf.Tensor of shape [num_frames, height, width].
+    - the instance score map as tf.Tensor of shape [num_frames, height, width].
+    - the semantic score map as tf.Tensor of shape [num_frames, height, width].
 
   Raises:
     ValueError: When input image's `width - 1` is not divisible by `pieces`.
@@ -197,7 +202,7 @@ def _get_mask_id_and_semantic_maps(
 
   if transformer_post_processing == 'pixelwise':
     (transformer_class_pred, transformer_class_thresholded_mask,
-     num_detections) = (
+     transformer_class_confidence, num_detections) = (
          _get_transformer_class_prediction(
              transformer_class_probs, transformer_class_confidence_threshold))
   elif transformer_post_processing == 'maskwise':
@@ -255,12 +260,18 @@ def _get_mask_id_and_semantic_maps(
             tf.zeros([num_frames, image_shape[0], image_shape[1]],
                      dtype=tf.float32),
             tf.zeros([num_frames, image_shape[0], image_shape[1]],
+                     dtype=tf.float32),
+            tf.zeros([num_frames, image_shape[0], image_shape[1]],
+                     dtype=tf.float32),
+            tf.zeros([num_frames, image_shape[0], image_shape[1]],
                      dtype=tf.float32))
 
   # If num_detections > 0 and transformer_post_processing == 'pixelwise':
   def _pixelwise_generate_mask_id_and_confident_maps():
     output_mask_id_map = []
     output_confident_region = []
+    output_instance_score = []
+    output_semantic_score = []
     logits_width = pixel_space_mask_logits.get_shape().as_list()[-2]
     output_width = image_shape[1]
 
@@ -301,18 +312,28 @@ def _get_mask_id_and_semantic_maps(
       piece_confident_region = piece_confident_region * piece_detected_mask
       piece_mask_id_map = tf.cast(
           tf.argmax(piece_detected_pixel_mask_logits, axis=-1), tf.int32)
+      piece_semantic_score = tf.gather(transformer_class_confidence,
+                                       piece_mask_id_map)
+
       if piece_id == pieces - 1:
         output_mask_id_map.append(piece_mask_id_map)
         output_confident_region.append(piece_confident_region)
+        output_instance_score.append(piece_pixel_confidence_map)
+        output_semantic_score.append(piece_semantic_score)
       else:
         output_mask_id_map.append(piece_mask_id_map[..., :-1])
         output_confident_region.append(piece_confident_region[..., :-1])
-    return output_mask_id_map, output_confident_region
+        output_instance_score.append(piece_pixel_confidence_map[..., :-1])
+        output_semantic_score.append(piece_semantic_score[..., :-1])
+    return (output_mask_id_map, output_confident_region,
+            output_instance_score, output_semantic_score)
 
   # If num_detections > 0 and transformer_post_processing == 'maskwise':
   def _maskwise_generate_mask_id_and_confident_maps():
     output_mask_id_map = []
     output_confident_region = []
+    output_instance_score = []
+    output_semantic_score = []
     logits_width = pixel_space_mask_logits.get_shape().as_list()[-2]
     output_width = image_shape[1]
 
@@ -347,6 +368,9 @@ def _get_mask_id_and_semantic_maps(
       piece_mask_id_map = tf.zeros(
           [num_frames, image_shape[0], piece_output_width], dtype=tf.float32)
       piece_confident_region = tf.zeros(
+          [num_frames, image_shape[0], piece_output_width], dtype=tf.float32)
+      piece_instance_score = tf.reduce_max(piece_pixel_mask_probs, axis=-1)
+      piece_semantic_score = tf.zeros(
           [num_frames, image_shape[0], piece_output_width], dtype=tf.float32)
 
       for mask_slots_idx in range(num_mask_slots):
@@ -389,6 +413,8 @@ def _get_mask_id_and_semantic_maps(
             piece_mask_id_map +
             new_binary_mask * tf.cast(mask_slots_idx + 1, tf.float32))
         piece_confident_region = (piece_confident_region + new_binary_mask)
+        piece_semantic_score = ((1.0 - new_binary_mask) * piece_semantic_score
+                                + new_binary_mask * current_class_confidence)
 
       # At final, we minus one so the mask_id will correctly start from 0. Note
       # that the unconfident pixels may be wrongly classified to mask slot 0,
@@ -408,18 +434,26 @@ def _get_mask_id_and_semantic_maps(
       if piece_id == pieces - 1:
         output_mask_id_map.append(piece_mask_id_map)
         output_confident_region.append(piece_confident_region)
+        output_instance_score.append(piece_instance_score)
+        output_semantic_score.append(piece_semantic_score)
       else:
         output_mask_id_map.append(piece_mask_id_map[..., :-1])
         output_confident_region.append(piece_confident_region[..., :-1])
-    return output_mask_id_map, output_confident_region
+        output_instance_score.append(piece_instance_score[..., :-1])
+        output_semantic_score.append(piece_semantic_score[..., :-1])
+    return (output_mask_id_map, output_confident_region,
+            output_instance_score, output_semantic_score)
 
   def _generate_mask_id_and_semantic_maps():
-    output_mask_id_map, output_confident_region = (
-        _pixelwise_generate_mask_id_and_confident_maps()
-        if transformer_post_processing == 'pixelwise' else
-        _maskwise_generate_mask_id_and_confident_maps())
+    (output_mask_id_map, output_confident_region, output_instance_score,
+     output_semantic_score) = (
+         _pixelwise_generate_mask_id_and_confident_maps()
+         if transformer_post_processing == 'pixelwise' else
+         _maskwise_generate_mask_id_and_confident_maps())
     mask_id_map = tf.concat(output_mask_id_map, axis=-1)
     confident_region = tf.concat(output_confident_region, axis=-1)
+    instance_score_map = tf.concat(output_instance_score, axis=-1)
+    semantic_score_map = tf.concat(output_semantic_score, axis=-1)
     mask_id_map_flat = tf.reshape(mask_id_map, [-1])
     mask_id_semantic_map_flat = tf.gather(transformer_class_pred,
                                           mask_id_map_flat)
@@ -441,14 +475,17 @@ def _get_mask_id_and_semantic_maps(
     # Add 1 because mask ID 0 is reserved for unconfident region.
     mask_id_map_plus_one = mask_id_map + 1
     semantic_map = tf.cast(tf.round(semantic_map), tf.int32)
-    return (mask_id_map_plus_one, semantic_map, thing_mask, stuff_mask)
+    return (mask_id_map_plus_one, semantic_map, thing_mask, stuff_mask,
+            instance_score_map, semantic_score_map)
 
-  mask_id_map_plus_one, semantic_map, thing_mask, stuff_mask = tf.cond(
-      tf.cast(num_detections, tf.float32) < tf.cast(0.5, tf.float32),
-      _return_empty_mask_id_and_semantic_maps,
-      _generate_mask_id_and_semantic_maps)
+  (mask_id_map_plus_one, semantic_map, thing_mask, stuff_mask,
+   instance_score_map, semantic_score_map) = tf.cond(
+       tf.cast(num_detections, tf.float32) < tf.cast(0.5, tf.float32),
+       _return_empty_mask_id_and_semantic_maps,
+       _generate_mask_id_and_semantic_maps)
 
-  return (mask_id_map_plus_one, semantic_map, thing_mask, stuff_mask)
+  return (mask_id_map_plus_one, semantic_map, thing_mask, stuff_mask,
+          instance_score_map, semantic_score_map)
 
 
 def _filter_by_count(input_index_map: tf.Tensor,
@@ -579,7 +616,7 @@ def _get_panoptic_predictions(
     transformer_post_processing='pixelwise',
     maskwise_postprocessing_config=None,
     pieces=1
-) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
   """Computes the pixel-level panoptic, mask ID, and semantic maps.
 
   Args:
@@ -633,6 +670,10 @@ def _get_panoptic_predictions(
         width].
     - the semantic prediction as tf.Tensor with shape [batch, num_frames,
         height, width].
+    - the instance score map as tf.Tensor with shape [batch, num_frames,
+        height, width].
+    - the semantic score map as tf.Tensor with shape [batch, num_frames,
+        height, width].
   """
   transformer_class_probs = tf.nn.softmax(transformer_class_logits, axis=-1)
   batch_size = utils.resolve_batch_size(transformer_class_logits)
@@ -651,29 +692,42 @@ def _get_panoptic_predictions(
       tf.float32, size=batch_size, dynamic_size=False)
   stuff_mask_lists = tf.TensorArray(
       tf.float32, size=batch_size, dynamic_size=False)
+  instance_score_map_lists = tf.TensorArray(
+      tf.float32, size=batch_size, dynamic_size=False)
+  semantic_score_map_lists = tf.TensorArray(
+      tf.float32, size=batch_size, dynamic_size=False)
   for i in tf.range(batch_size):
-    mask_id_map_plus_one, semantic_map, thing_mask, stuff_mask = (
-        _get_mask_id_and_semantic_maps(
-            thing_class_ids, stuff_class_ids, pixel_space_mask_logits[i, ...],
-            transformer_class_probs[i, ...], image_shape,
-            pixel_confidence_threshold, transformer_class_confidence_threshold,
-            transformer_post_processing,
-            maskwise_postprocessing_config, pieces))
+    (mask_id_map_plus_one, semantic_map, thing_mask, stuff_mask,
+     instance_score_map, semantic_score_map) = (
+         _get_mask_id_and_semantic_maps(thing_class_ids, stuff_class_ids,
+                                        pixel_space_mask_logits[i, ...],
+                                        transformer_class_probs[i, ...],
+                                        image_shape, pixel_confidence_threshold,
+                                        transformer_class_confidence_threshold,
+                                        transformer_post_processing,
+                                        maskwise_postprocessing_config, pieces))
     mask_id_map_plus_one_lists = mask_id_map_plus_one_lists.write(
         i, mask_id_map_plus_one)
     semantic_map_lists = semantic_map_lists.write(i, semantic_map)
     thing_mask_lists = thing_mask_lists.write(i, thing_mask)
     stuff_mask_lists = stuff_mask_lists.write(i, stuff_mask)
+    instance_score_map_lists = (
+        instance_score_map_lists.write(i, instance_score_map))
+    semantic_score_map_lists = (
+        semantic_score_map_lists.write(i, semantic_score_map))
   # This does not work with unknown shapes.
   mask_id_maps_plus_one = mask_id_map_plus_one_lists.stack()
   semantic_maps = semantic_map_lists.stack()
   thing_masks = thing_mask_lists.stack()
   stuff_masks = stuff_mask_lists.stack()
+  instance_score_maps = instance_score_map_lists.stack()
+  semantic_score_maps = semantic_score_map_lists.stack()
 
   panoptic_maps = _merge_mask_id_and_semantic_maps(
       mask_id_maps_plus_one, semantic_maps, thing_masks, stuff_masks,
       void_label, label_divisor, thing_area_limit, stuff_area_limit)
-  return panoptic_maps, mask_id_maps_plus_one, semantic_maps
+  return (panoptic_maps, mask_id_maps_plus_one, semantic_maps,
+          instance_score_maps, semantic_score_maps)
 
 
 class PostProcessor(tf.keras.layers.Layer):
@@ -834,7 +888,9 @@ class PostProcessor(tf.keras.layers.Layer):
     processed_dict = {}
     (processed_dict[common.PRED_PANOPTIC_KEY],
      processed_dict[common.PRED_INSTANCE_KEY],
-     processed_dict[common.PRED_SEMANTIC_KEY]) = self._post_processor(
+     _,
+     processed_dict[common.PRED_INSTANCE_SCORES_KEY],
+     processed_dict[common.PRED_SEMANTIC_SCORES_KEY]) = self._post_processor(
          result_dict[common.PRED_PIXEL_SPACE_MASK_LOGITS_KEY],
          result_dict[common.PRED_TRANSFORMER_CLASS_LOGITS_KEY])
 
@@ -842,7 +898,9 @@ class PostProcessor(tf.keras.layers.Layer):
     # thresholding is not applied.
     (_,
      _,
-     processed_dict[common.PRED_SEMANTIC_KEY]) = self._post_processor_semantic(
+     processed_dict[common.PRED_SEMANTIC_KEY],
+     _,
+     _) = self._post_processor_semantic(
          result_dict[common.PRED_PIXEL_SPACE_MASK_LOGITS_KEY],
          result_dict[common.PRED_TRANSFORMER_CLASS_LOGITS_KEY])
 

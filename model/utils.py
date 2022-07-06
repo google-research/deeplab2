@@ -28,6 +28,7 @@ _PREDICTION_WITH_NEAREST_UPSAMPLING = (
     common.PRED_INSTANCE_KEY,
     common.PRED_INSTANCE_CENTER_KEY,
     common.PRED_INSTANCE_SCORES_KEY,
+    common.PRED_SEMANTIC_SCORES_KEY,
     common.PRED_PANOPTIC_KEY,
     common.PRED_SEMANTIC_KEY,
     common.PRED_CENTER_HEATMAP_KEY,
@@ -505,9 +506,7 @@ def get_supported_tasks(
       is_motion_deeplab or is_max_deeplab or is_vip_deeplab)
   if is_panoptic:
     supported_tasks.add(common.TASK_PANOPTIC_SEGMENTATION)
-    # MaX-DeepLab does not support evaluating instance segmentation mask AP yet.
-    if not is_max_deeplab:
-      supported_tasks.add(common.TASK_INSTANCE_SEGMENTATION)
+    supported_tasks.add(common.TASK_INSTANCE_SEGMENTATION)
   if is_motion_deeplab or is_vip_deeplab:
     supported_tasks.add(common.TASK_VIDEO_PANOPTIC_SEGMENTATION)
   if is_vip_deeplab:

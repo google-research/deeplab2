@@ -210,6 +210,7 @@ class RealDataEvaluatorTest(tf.test.TestCase):
         'evaluation/pq/TP',
         'evaluation/pq/FN',
         'evaluation/pq/FP',
+        'evaluation/ap/AP_Mask',
     }
     self.assertCountEqual(result.keys(), expected_metric_keys)
     self.assertSequenceEqual(result['losses/eval_total_loss'].shape, ())

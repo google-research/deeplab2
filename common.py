@@ -24,6 +24,7 @@ PRED_INSTANCE_CENTER_KEY = 'instance_center_pred'
 
 PRED_SEMANTIC_LOGITS_KEY = 'semantic_logits'
 PRED_SEMANTIC_PROBS_KEY = 'semantic_probs'
+PRED_SEMANTIC_SCORES_KEY = 'semantic_scores'
 PRED_INSTANCE_SCORES_KEY = 'instance_scores'
 PRED_CENTER_HEATMAP_KEY = 'center_heatmap'
 PRED_OFFSET_MAP_KEY = 'offset_map'

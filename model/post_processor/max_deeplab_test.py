@@ -87,18 +87,23 @@ class PostProcessingTest(tf.test.TestCase, parameterized.TestCase):
 
     transformer_post_processing = 'pixelwise'
     maskwise_postprocessing_config = None
-    mask_id_map, semantic_map, thing_mask, stuff_mask = (
-        max_deeplab._get_mask_id_and_semantic_maps(
-            thing_class_ids, stuff_class_ids, pixel_space_mask_logits,
-            transformer_class_probs, input_shape, pixel_confidence_threshold,
-            transformer_class_confidence_threshold, transformer_post_processing,
-            maskwise_postprocessing_config, pieces)
-        )
+    (mask_id_map, semantic_map, thing_mask, stuff_mask, instance_score_map,
+     semantic_score_map) = (
+         max_deeplab._get_mask_id_and_semantic_maps(
+             thing_class_ids, stuff_class_ids, pixel_space_mask_logits,
+             transformer_class_probs, input_shape, pixel_confidence_threshold,
+             transformer_class_confidence_threshold,
+             transformer_post_processing, maskwise_postprocessing_config,
+             pieces))
     expected_shape = [num_frames] + input_shape
     self.assertListEqual(mask_id_map.get_shape().as_list(), expected_shape)
     self.assertListEqual(semantic_map.get_shape().as_list(), expected_shape)
     self.assertListEqual(thing_mask.get_shape().as_list(), expected_shape)
     self.assertListEqual(stuff_mask.get_shape().as_list(), expected_shape)
+    self.assertListEqual(instance_score_map.get_shape().as_list(),
+                         expected_shape)
+    self.assertListEqual(semantic_score_map.get_shape().as_list(),
+                         expected_shape)
 
     transformer_post_processing = 'maskwise'
     maskwise_postprocessing_config = {
@@ -108,18 +113,23 @@ class PostProcessingTest(tf.test.TestCase, parameterized.TestCase):
         'reorder_class_weight': 1.0,
         'reorder_mask_weight': 0.0,
     }
-    mask_id_map, semantic_map, thing_mask, stuff_mask = (
-        max_deeplab._get_mask_id_and_semantic_maps(
-            thing_class_ids, stuff_class_ids, pixel_space_mask_logits,
-            transformer_class_probs, input_shape, pixel_confidence_threshold,
-            transformer_class_confidence_threshold, transformer_post_processing,
-            maskwise_postprocessing_config, pieces)
-        )
+    (mask_id_map, semantic_map, thing_mask, stuff_mask, instance_score_map,
+     semantic_score_map) = (
+         max_deeplab._get_mask_id_and_semantic_maps(
+             thing_class_ids, stuff_class_ids, pixel_space_mask_logits,
+             transformer_class_probs, input_shape, pixel_confidence_threshold,
+             transformer_class_confidence_threshold,
+             transformer_post_processing, maskwise_postprocessing_config,
+             pieces))
     expected_shape = [num_frames] + input_shape
     self.assertListEqual(mask_id_map.get_shape().as_list(), expected_shape)
     self.assertListEqual(semantic_map.get_shape().as_list(), expected_shape)
     self.assertListEqual(thing_mask.get_shape().as_list(), expected_shape)
     self.assertListEqual(stuff_mask.get_shape().as_list(), expected_shape)
+    self.assertListEqual(instance_score_map.get_shape().as_list(),
+                         expected_shape)
+    self.assertListEqual(semantic_score_map.get_shape().as_list(),
+                         expected_shape)
 
   @parameterized.parameters(
       (1), (4),)
@@ -241,18 +251,21 @@ class PostProcessingTest(tf.test.TestCase, parameterized.TestCase):
     pieces = 1  # No piece-wise operation used.
     transformer_post_processing = 'pixelwise'
     maskwise_postprocessing_config = None
-    panoptic_maps, mask_id_maps, semantic_maps = (
-        max_deeplab._get_panoptic_predictions(
-            pixel_space_mask_logits, transformer_class_logits, thing_class_ids,
-            void_label, label_divisor, thing_area_limit, stuff_area_limit,
-            input_shape, pixel_confidence_threshold,
-            transformer_class_confidence_threshold, transformer_post_processing,
-            maskwise_postprocessing_config, pieces)
-        )
+    (panoptic_maps, mask_id_maps, semantic_maps, instance_score_maps,
+     semantic_score_maps) = (
+         max_deeplab._get_panoptic_predictions(
+             pixel_space_mask_logits, transformer_class_logits, thing_class_ids,
+             void_label, label_divisor, thing_area_limit, stuff_area_limit,
+             input_shape, pixel_confidence_threshold,
+             transformer_class_confidence_threshold,
+             transformer_post_processing, maskwise_postprocessing_config,
+             pieces))
     expected_shape = (batch, num_frames, height, width)
     self.assertSequenceEqual(panoptic_maps.shape, expected_shape)
     self.assertSequenceEqual(semantic_maps.shape, expected_shape)
     self.assertSequenceEqual(mask_id_maps.shape, expected_shape)
+    self.assertSequenceEqual(instance_score_maps.shape, expected_shape)
+    self.assertSequenceEqual(semantic_score_maps.shape, expected_shape)
 
     expected_panoptic_maps = [[  # label_divisor = 10
         [11, 11, 11, 11, 11],  # 11: semantic_id=1, instance_id=1
@@ -293,18 +306,21 @@ class PostProcessingTest(tf.test.TestCase, parameterized.TestCase):
         'reorder_class_weight': 1.0,
         'reorder_mask_weight': 0.0,
     }
-    panoptic_maps, mask_id_maps, semantic_maps = (
-        max_deeplab._get_panoptic_predictions(
-            pixel_space_mask_logits, transformer_class_logits, thing_class_ids,
-            void_label, label_divisor, thing_area_limit, stuff_area_limit,
-            input_shape, pixel_confidence_threshold,
-            transformer_class_confidence_threshold, transformer_post_processing,
-            maskwise_postprocessing_config, pieces)
-        )
+    (panoptic_maps, mask_id_maps, semantic_maps, instance_score_maps,
+     semantic_score_maps) = (
+         max_deeplab._get_panoptic_predictions(
+             pixel_space_mask_logits, transformer_class_logits, thing_class_ids,
+             void_label, label_divisor, thing_area_limit, stuff_area_limit,
+             input_shape, pixel_confidence_threshold,
+             transformer_class_confidence_threshold,
+             transformer_post_processing, maskwise_postprocessing_config,
+             pieces))
     expected_shape = (batch, num_frames, height, width)
     self.assertSequenceEqual(panoptic_maps.shape, expected_shape)
     self.assertSequenceEqual(semantic_maps.shape, expected_shape)
     self.assertSequenceEqual(mask_id_maps.shape, expected_shape)
+    self.assertSequenceEqual(instance_score_maps.shape, expected_shape)
+    self.assertSequenceEqual(semantic_score_maps.shape, expected_shape)
 
     expected_panoptic_maps = [[  # label_divisor = 10
         [11, 11, 11, 11, 11],  # 11: semantic_id=1, instance_id=1

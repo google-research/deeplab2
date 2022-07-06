@@ -18,8 +18,10 @@ import os.path
 from typing import Any, Dict, List, Text
 
 import numpy as np
+from PIL import Image
 import tensorflow as tf
 
+# OSS: removed unused atomic file imports.
 from deeplab2 import common
 from deeplab2.data import coco_constants
 from deeplab2.data import dataset
@@ -92,6 +94,69 @@ def _get_fg_mask(label_map: np.ndarray, thing_list: List[int]) -> np.ndarray:
   return fg_mask.astype(np.int)
 
 
+def store_raw_instance_predictions_cityscapes(
+    predictions: Dict[str, Any],
+    image_filename: tf.Tensor,
+    dataset_info: dataset.DatasetDescriptor,
+    save_dir: Text,
+    convert_to_eval: bool = True):
+  """Stores raw instance predictions to the specified path for Cityscapes."""
+  predicted_semantic_labels = predictions[common.PRED_SEMANTIC_KEY]
+  ignore_label = dataset_info.ignore_label
+
+  thing_id_list = dataset_info.class_has_instances_list
+  if convert_to_eval:
+    predicted_semantic_labels = _convert_train_id_to_eval_id(
+        predicted_semantic_labels, dataset_info.dataset_name)
+
+    train_id_to_eval_id = _CITYSCAPES_TRAIN_ID_TO_EVAL_ID
+    thing_id_list = [
+        train_id_to_eval_id[train_id]
+        for train_id in dataset_info.class_has_instances_list
+    ]
+    # In Cityscapes dataset, ignore label is mapped to class_id 0. This may
+    # not be true for other datasets and needs to be changed accordingly.
+    ignore_label = 0
+  predicted_instance_labels = predictions[common.PRED_INSTANCE_KEY]
+  predicted_instance_score_maps = predictions[common.PRED_INSTANCE_SCORES_KEY]
+  predicted_semantic_score_maps = predictions[common.PRED_SEMANTIC_SCORES_KEY]
+  output_folder = os.path.join(save_dir, 'raw_instance')
+  instance_info_array = []
+  for class_id in np.unique(predicted_semantic_labels):
+    if class_id == ignore_label:
+      continue
+    if class_id not in thing_id_list:
+      continue
+    class_mask = predicted_semantic_labels == class_id
+    instance_ids = np.unique(predicted_instance_labels[class_mask])
+    class_scores = predicted_semantic_score_maps
+    for instance_id in instance_ids:
+      binary_mask = (class_mask &
+                     (predicted_instance_labels == instance_id))
+      instance_score = predicted_instance_score_maps[binary_mask]
+      class_score = np.mean(class_scores[binary_mask])
+      instance_score = instance_score.mean() * class_score
+      # Write a line in the text file.
+      png_output_name = (
+          'instance_masks/{}_class_{}_instance_{}'.format(
+              image_filename, class_id, instance_id) +
+          '.png')
+      line = png_output_name + ' %d %f\n' % (class_id, instance_score)
+      instance_info_array.append(line)
+      # Save the binary mask.
+      pil_image = Image.fromarray(binary_mask.astype(np.uint8))
+      png_output_name = os.path.join(
+          output_folder, 'instance', png_output_name)
+      with open(png_output_name, 'w') as f:  # OSS: removed atomic file writing.
+        pil_image.save(f, 'PNG')
+  # Save prediction for this image.
+  instance_output_fname = os.path.join(
+      output_folder, 'instance',
+      image_filename + '.txt')
+  with open(instance_output_fname, 'w') as txt_file:  # OSS: removed atomic file writing.
+    txt_file.writelines(instance_info_array)
+
+
 def store_raw_predictions(predictions: Dict[str, Any],
                           image_filename: tf.Tensor,
                           dataset_info: dataset.DatasetDescriptor,
@@ -162,6 +227,18 @@ def store_raw_predictions(predictions: Dict[str, Any],
       output_folder,
       image_filename,
       add_colormap=False)
+
+  # Store raw instance prediction. Currently, only support MaX-DeepLab related
+  # models, we use key common.PRED_SEMANTIC_SCORES_KEY to filter such models.
+  if (common.PRED_INSTANCE_KEY in predictions and
+      common.PRED_SEMANTIC_SCORES_KEY in predictions):
+    if 'cityscapes' in dataset_info.dataset_name:
+      store_raw_instance_predictions_cityscapes(
+          predictions,
+          image_filename,
+          dataset_info,
+          save_dir,
+          convert_to_eval)
 
   pred_panoptic_keys = [common.PRED_PANOPTIC_KEY, common.PRED_NEXT_PANOPTIC_KEY]
   pred_panoptic_keys = filter(lambda k: k in predictions, pred_panoptic_keys)
