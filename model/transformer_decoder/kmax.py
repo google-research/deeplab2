@@ -82,8 +82,7 @@ class KMaXTransformerDecoder(tf.keras.Model):
                auxiliary_predictor_func,
                norm_layer=tf.keras.layers.BatchNormalization,
                num_blocks=(2, 2, 2),
-               num_mask_slots=128,
-               drop_query_keep_number=0):
+               num_mask_slots=128):
     """Initializes a KMaXTransformerDecoder.
 
     Args:
@@ -96,9 +95,6 @@ class KMaXTransformerDecoder(tf.keras.Model):
         each stage. The stage is counted backwards, i.e., from output stride
         32, 16, and 8.
       num_mask_slots: An integer, the number of mask slots that will be used.
-      drop_query_keep_number: An integer, the number of queries to be kept
-        during training. If the number is smaller or equal to 0, then all
-        queries will be used.
     Raises:
       ValueError: If the length of num_blocks is not 3.
     """
@@ -140,16 +136,10 @@ class KMaXTransformerDecoder(tf.keras.Model):
 
     self._num_blocks = num_blocks
     self._num_mask_slots = num_mask_slots
-    self._drop_query_keep_number = drop_query_keep_number
 
   def _prepare_cluster_centers(self, input_tensor, training=False):
     batch_size = tf.shape(input_tensor)[0]
     cluster_centers = tf.tile(self._cluster_centers, [batch_size, 1, 1])
-    if training and self._drop_query_keep_number > 0:
-      random_tensor = tf.random.uniform((batch_size, self._num_mask_slots))
-      rand_indices = tf.argsort(random_tensor)
-      kept_indices = rand_indices[:, :self._drop_query_keep_number]
-      cluster_centers = tf.gather(cluster_centers, kept_indices, batch_dims=1)
     return cluster_centers
 
   def call(self, endpoints, training=False):

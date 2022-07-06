@@ -269,8 +269,7 @@ def create_kmax_meta_pixel_decoder(
 def create_kmax_meta_transformer_decoder(
     norm_layer: Optional[Callable[[], tf.keras.layers.Layer]],
     num_mask_slots: int,
-    auxiliary_predictor_func: Optional[Callable[[], tf.keras.Model]] = None,
-    drop_query_keep_number: int = 0
+    auxiliary_predictor_func: Optional[Callable[[], tf.keras.Model]] = None
 ) -> tf.keras.Model:
   """Creates a transformer decoder in kMaX meta architecture.
 
@@ -279,9 +278,6 @@ def create_kmax_meta_transformer_decoder(
     num_mask_slots: An integer, the number of mask slots that will be used.
     auxiliary_predictor_func: A callable function that returns an initialization
       of auxiliary decoder.
-    drop_query_keep_number: An integer, the number of queries to be kept
-        during training. If the number is smaller or equal to 0, then all
-        queries will be used.
 
   Returns:
     An instance of tf.keras.Model containing the transformer decoder.
@@ -291,5 +287,4 @@ def create_kmax_meta_transformer_decoder(
       auxiliary_predictor_func=auxiliary_predictor_func,
       norm_layer=norm_layer,
       num_mask_slots=num_mask_slots,
-      num_blocks=(2, 2, 2),
-      drop_query_keep_number=drop_query_keep_number)
+      num_blocks=(2, 2, 2))

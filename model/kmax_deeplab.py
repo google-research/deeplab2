@@ -85,8 +85,7 @@ class KMaXDeepLab(tf.keras.Model):
         pretrained_weights_path=pretrained_weights_path)
 
     # Currently, some properties (e.g., high_resolution_output_stride,
-    # num_mask_slots, drop_query_keep_number) of kMaX are hard-coded for
-    # simplicity.
+    # num_mask_slots) of kMaX are hard-coded for simplicity.
     if 'cityscapes' in dataset_descriptor.dataset_name:
       high_resolution_output_stride = 2
       num_mask_slots = 256
@@ -108,8 +107,7 @@ class KMaXDeepLab(tf.keras.Model):
     self._transformer_decoder = builder.create_kmax_meta_transformer_decoder(
         norm_layer=norm_layer,
         num_mask_slots=num_mask_slots,
-        auxiliary_predictor_func=auxiliary_predictor_func,
-        drop_query_keep_number=0)
+        auxiliary_predictor_func=auxiliary_predictor_func)
 
     # Notably, decoder/max_deeplab.MaXDeepLab is in fact the MaX-DeepLab
     # prediction head instead of its decoder.
