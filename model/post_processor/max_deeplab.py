@@ -760,6 +760,27 @@ class PostProcessor(tf.keras.layers.Layer):
         .transformer_post_processing,
         maskwise_postprocessing_config=maskwise_postprocessing_config,
         pieces=1)
+
+    # We use another post-processor for semantic prediction and evaluation,
+    # where we do not apply any thresholding. When run panoptic model for
+    # semantic segmentation, we set the threshold to 0 for a better results
+    # (as semantic label does not prefer 'void'). With another post-processor
+    # where no thresholding is applied, we do not need to run the model twice,
+    # and we may have more accurate evaluation of mIoU on the fly.
+    self._post_processor_semantic = functools.partial(
+        _get_panoptic_predictions,
+        thing_class_ids=list(dataset_descriptor.class_has_instances_list),
+        void_label=dataset_descriptor.ignore_label,
+        label_divisor=dataset_descriptor.panoptic_label_divisor,
+        thing_area_limit=0,
+        stuff_area_limit=0,
+        image_shape=list(config.eval_dataset_options.crop_size),
+        pixel_confidence_threshold=0,
+        transformer_class_confidence_threshold=0,
+        transformer_post_processing='pixelwise',
+        maskwise_postprocessing_config=None,
+        pieces=1)
+
     # Post-processing for video data is not fully supported yet, so we fix the
     # num_frames to 1.
     self._num_frames = 1
@@ -814,6 +835,14 @@ class PostProcessor(tf.keras.layers.Layer):
     (processed_dict[common.PRED_PANOPTIC_KEY],
      processed_dict[common.PRED_INSTANCE_KEY],
      processed_dict[common.PRED_SEMANTIC_KEY]) = self._post_processor(
+         result_dict[common.PRED_PIXEL_SPACE_MASK_LOGITS_KEY],
+         result_dict[common.PRED_TRANSFORMER_CLASS_LOGITS_KEY])
+
+    # We obtain semantic predictions with another post-processor, where
+    # thresholding is not applied.
+    (_,
+     _,
+     processed_dict[common.PRED_SEMANTIC_KEY]) = self._post_processor_semantic(
          result_dict[common.PRED_PIXEL_SPACE_MASK_LOGITS_KEY],
          result_dict[common.PRED_TRANSFORMER_CLASS_LOGITS_KEY])
 
