@@ -749,16 +749,20 @@ class PanopticSampleGenerator:
     sample should not exceed label_divisor // 2, otherwise the total number of
     instance can exceed label_divisor and cause errors.
 
-    The panoptic copy-paste is an extension of thing-specific copy-paste
-    augmentation [1,2] to panoptic segmentation task.
+    The panoptic copy-paste [1] is an extension of thing-specific copy-paste
+    augmentation [2,3] to panoptic segmentation task.
 
     References:
-      [1] Instaboost: Boosting instance segmentation via probability map
+      [1] k-means Mask Transformer, ECCV 2022.
+            Qihang Yu, Huiyu Wang, Siyuan Qiao, Maxwell Collins, Yukun Zhu,
+            Hartwig Adam, Alan Yuille, Liang-Chieh Chen.
+
+      [2] Instaboost: Boosting instance segmentation via probability map
           guided copy-pasting, ICCV 2019
             Hao-Shu Fang, Jianhua Sun, Runzhong Wang, Minghao Gou, Yong-Lu Li,
             Cewu Lu.
 
-      [2] Simple copy-paste is a strong data augmentation method for
+      [3] Simple copy-paste is a strong data augmentation method for
           instance segmentation, CVPR 2021.
             Golnaz Ghiasi, Yin Cui, Aravind Srinivas, Rui Qian, Tsung-Yi Lin,
             Ekin D. Cubuk, Quoc V. Le, Barret Zoph.

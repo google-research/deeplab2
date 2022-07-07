@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for convnext."""
+"""Tests for kMaX transformer decoder."""
 
 import functools
 import os

@@ -15,16 +15,18 @@
 
 """Transformer Decoder used in k-means Mask Transformer.
 
-The transformer decoder in the k-means Mask Transformer (kMaX) [1] employs the
-k-means cross attention, where an argmax is operated along the cluster center
-dimension (instead of a softmax along the spatial dimension as in the first
-original Mask Transformer [2]). The argmax operation is similar to the k-means
-pixel-cluster assignment step (with a hard assignment). The cluster centers are
-then updated by aggregating the pixel features based on the pixel-cluster
-assignment (computed by their feature affinity), similar to the k-means
-center-update step.
+The transformer decoder in the k-means Mask Transformer (kMaX-DeepLab) [1]
+employs the k-means cross attention, where an argmax is operated along the
+cluster center dimension (instead of a softmax along the spatial dimension as
+in the first original Mask Transformer [2]). The argmax operation is similar to
+the k-means pixel-cluster assignment step (with a hard assignment). The cluster
+centers are then updated by aggregating the pixel features based on the
+pixel-cluster assignment (computed by their feature affinity), similar to the
+k-means center-update step.
 
-[1] TODO(qihangyu): Add kMaX reference.
+[1] k-means Mask Transformer, ECCV 2022.
+      Qihang Yu, Huiyu Wang, Siyuan Qiao, Maxwell Collins, Yukun Zhu,
+      Hartwig Adam, Alan Yuille, Liang-Chieh Chen.
 
 [2] MaX-DeepLab: End-to-End Panoptic Segmentation with Mask Transformers,
     CVPR 2021.
@@ -74,7 +76,10 @@ class KMaXTransformerDecoder(tf.keras.Model):
   features based on the pixel-cluster assignment (computed by their feature
   affinity), similar to the k-means center-update step.
 
-  TODO(qihangyu): Add kMaX reference.
+  References:
+    [1] k-means Mask Transformer, ECCV 2022.
+          Qihang Yu, Huiyu Wang, Siyuan Qiao, Maxwell Collins, Yukun Zhu,
+          Hartwig Adam, Alan Yuille, Liang-Chieh Chen.
   """
 
   def __init__(self,

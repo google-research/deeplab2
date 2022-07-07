@@ -19,6 +19,11 @@ Reference:
   MaX-DeepLab: "End-to-End Panoptic Segmentation with Mask Transformers",
     CVPR 2021. https://arxiv.org/abs/2012.00759
       Huiyu Wang, Yukun Zhu, Hartwig Adam, Alan Yuille, Liang-Chieh Chen.
+
+  CMT-DeepLab: "Clustering Mask Transformers for Panoptic Segmentation",
+    CVPR 2022. https://arxiv.org/abs/2206.08948
+      Qihang Yu, Huiyu Wang, Dahun Kim, Siyuan Qiao, Maxwell Collins, Yukun Zhu,
+      Hartwig Adam, Alan Yuille, Liang-Chieh Chen.
 """
 from typing import Text, Dict, Tuple, List
 

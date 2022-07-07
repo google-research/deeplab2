@@ -13,14 +13,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Implements dual path transformer layers proposed in MaX-DeepLab [1].
+"""Implements transformer layers for MaX-DeepLab [1] and kMaX-DeepLab [2].
 
 Dual-path transformer introduces a global memory path in addition to a CNN path,
 allowing bi-directional communication with any CNN layers.
 
+k-means cross-attention adopts a cluster-wise argmax instead of spatial-wise
+softmax, which aligns to k-means clustering algorithm.
+
 [1] MaX-DeepLab: End-to-End Panoptic Segmentation with Mask Transformers,
     CVPR 2021.
       Huiyu Wang, Yukun Zhu, Hartwig Adam, Alan Yuille, Liang-Chieh Chen.
+
+[2] k-means Mask Transformer, ECCV 2022.
+      Qihang Yu, Huiyu Wang, Siyuan Qiao, Maxwell Collins, Yukun Zhu,
+      Hartwig Adam, Alan Yuille, Liang-Chieh Chen.
 """
 
 import tensorflow as tf
@@ -98,7 +105,7 @@ class AttentionOperation(tf.keras.layers.Layer):
 
 
 class DualPathTransformerLayer(tf.keras.layers.Layer):
-  """Applies a dual path transformer layer, as proposed in MaX-DeepLab [1].
+  """Applies a transformer layer, as proposed in MaX-DeepLab models [1,2].
 
   Dual-path transformer layer takes a pixel space input and a memory space
   input, and performs memory2pixel attention, pixel2memory attention, and
@@ -109,9 +116,17 @@ class DualPathTransformerLayer(tf.keras.layers.Layer):
   a residual block with axial-attention, global-attention, or convolution in
   order to construct the full dual path transformer in the paper.
 
+  The flag "use_kmeans_cross_attention" enables k-means cross-attention, which
+  regards the memory (object query) as cluster center, and update them in a
+  k-means clustering manner.
+
   [1] MaX-DeepLab: End-to-End Panoptic Segmentation with Mask Transformers,
       CVPR 2021.
         Huiyu Wang, Yukun Zhu, Hartwig Adam, Alan Yuille, Liang-Chieh Chen.
+
+  [2] k-means Mask Transformer, ECCV 2022.
+      Qihang Yu, Huiyu Wang, Siyuan Qiao, Maxwell Collins, Yukun Zhu,
+      Hartwig Adam, Alan Yuille, Liang-Chieh Chen.
   """
 
   def __init__(self,

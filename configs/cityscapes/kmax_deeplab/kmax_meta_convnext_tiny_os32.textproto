@@ -1,7 +1,7 @@
 # proto-file: deeplab2/config.proto
 # proto-message: ExperimentOptions
 #
-# kMaX with ConvNeXt-large backbone with output stride 32.
+# kMaX-DeepLab with ConvNeXt-tiny backbone with output stride 32.
 #
 ############### PLEASE READ THIS BEFORE USING THIS CONFIG ###############
 # Before using this config, you need to update the following fields:
@@ -13,15 +13,19 @@
 #   validation set, e.g., your_dataset/eval*.tfrecord
 #########################################################################
 #
-# TODO(qihangyu): Add paper information once on arxiv.
+# References:
+# For ConvNeXt, see
+# - Zhuang Liu, et al. "A ConvNet for the 2020s." In CVPR, 2022.
+# For kMaX-DeepLab, see
+# - Qihang Yu, et al. "k-means Mask Transformer." In ECCV, 2022.
 
 # Use a unique experiment_name for each experiment.
 experiment_name: "${EXPERIMENT_NAME}"
 model_options {
   backbone {
     # kMaX meta is used with the prefix "kmax_".
-    name: "kmax_convnext_large"
-    drop_path_keep_prob: 0.4
+    name: "kmax_convnext_tiny"
+    drop_path_keep_prob: 0.8
     # We use pretrained_weights instead of initial_checkpoint for loading
     # specifical weights for backbone (e.g., converted pytorch weights).
     pretrained_weights: "${INIT_CHECKPOINT}"

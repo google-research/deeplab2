@@ -15,26 +15,33 @@
 
 """Pixel Decoder used in k-means Mask Transformer.
 
-The pixel decoder in the k-means Mask Transformer (kMaX) [1] employs a simple
-decoder structure, similar to MaX-DeepLab-S model [2].
+The pixel decoder in the k-means Mask Transformer (kMaX-DeepLab) [1] employs a
+simple decoder structure, similar to CMT-DeepLab [2] and MaX-DeepLab-S [3].
 
-We support using axial-block [3] and bottleneck-block [4] in the decoder, along
+We support using axial-block [4] and bottleneck-block [5] in the decoder, along
 with skip connections from the pixel encoder (i.e., backbone). When
 self-attention operations are used (e.g., axial-blocks), it is equivalent to
 incorporating the transformer encoder to the pixel decoder.
 
-[1] TODO(qihangyu): Add kMaX reference.
+[1] k-means Mask Transformer, ECCV 2022.
+      Qihang Yu, Huiyu Wang, Siyuan Qiao, Maxwell Collins, Yukun Zhu,
+      Hartwig Adam, Alan Yuille, Liang-Chieh Chen.
 
-[2] MaX-DeepLab: End-to-End Panoptic Segmentation with Mask Transformers,
+[2] CMT-DeepLab: Clustering Mask Transformers for Panoptic Segmentation,
+    CVPR 2022.
+      Qihang Yu, Huiyu Wang, Dahun Kim, Siyuan Qiao, Maxwell Collins, Yukun Zhu,
+      Hartwig Adam, Alan Yuille, Liang-Chieh Chen.
+
+[3] MaX-DeepLab: End-to-End Panoptic Segmentation with Mask Transformers,
     CVPR 2021.
       Huiyu Wang, Yukun Zhu, Hartwig Adam, Alan Yuille, Liang-Chieh Chen.
 
-[3] Axial-Deeplab: Stand-Alone Axial-Attention for Panoptic Segmentation,
+[4] Axial-Deeplab: Stand-Alone Axial-Attention for Panoptic Segmentation,
     ECCV 2020.
       Huiyu Wang, Yukun Zhu, Bradley Green, Hartwig Adam, Alan Yuille,
       Liang-Chieh Chen.
 
-[4] Deep residual learning for image recognition.
+[5] Deep residual learning for image recognition.
     CVPR 2016.
       Kaiming He, Xiangyu Zhang, Shaoqing Ren, Jian Sun.
 """
@@ -76,7 +83,10 @@ class KMaXPixelDecoder(tf.keras.Model):
   used (e.g., axial-blocks), it is equivalent to incorporating the transformer
   encoder to the pixel decoder.
 
-  TODO(qihangyu): Add kMaX reference.
+  References:
+    [1] k-means Mask Transformer, ECCV 2022.
+          Qihang Yu, Huiyu Wang, Siyuan Qiao, Maxwell Collins, Yukun Zhu,
+          Hartwig Adam, Alan Yuille, Liang-Chieh Chen.
   """
 
   def __init__(self,

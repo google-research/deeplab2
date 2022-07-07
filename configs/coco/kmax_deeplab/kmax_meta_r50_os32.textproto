@@ -1,7 +1,7 @@
 # proto-file: deeplab2/config.proto
 # proto-message: ExperimentOptions
 #
-# kMaX with Axial-ResNet50 (aka. MaX-S) backbone with output stride 32.
+# kMaX-DeepLab with ResNet-50 backbone with output stride 32.
 #
 ############### PLEASE READ THIS BEFORE USING THIS CONFIG ###############
 # Before using this config, you need to update the following fields:
@@ -13,7 +13,12 @@
 #   validation set, e.g., your_dataset/eval*.tfrecord
 #########################################################################
 #
-# TODO(qihangyu): Add paper information once on arxiv.
+# References:
+# For ResNet, see
+# - Kaiming He, et al. "Deep Residual Learning for Image Recognition."
+#   In CVPR, 2016.
+# For kMaX-DeepLab, see
+# - Qihang Yu, et al. "k-means Mask Transformer." In ECCV, 2022.
 
 # Use a unique experiment_name for each experiment.
 experiment_name: "${EXPERIMENT_NAME}"
@@ -21,8 +26,8 @@ model_options {
   initial_checkpoint: "${INIT_CHECKPOINT}"
   backbone {
     # kMaX meta is used with the prefix "kmax_".
-    name: "kmax_axial_resnet50"
-    drop_path_keep_prob: 0.8
+    name: "kmax_resnet50"
+    drop_path_keep_prob: 1.0
   }
   decoder {
     feature_key: "feature_semantic"
