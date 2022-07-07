@@ -120,8 +120,6 @@ class KMaXPixelDecoder(tf.keras.Model):
     # Define layer norm appended to encoder features at each output stride.
     self._backbone_norms = []
     for i in range(num_stages):
-      # TODO(qihangyu): Experiment whether it matters of using layer norm or
-      # batch norm.
       self._backbone_norms.append(
           tf.keras.layers.LayerNormalization(epsilon=1e-6))
 

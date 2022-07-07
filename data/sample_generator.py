@@ -787,7 +787,6 @@ class PanopticSampleGenerator:
       tf.errors.InvalidArgumentError: An error occurs if maximum instance id
         exceeds label_divisor // 2.
     """
-    # TODO(qihangyu): Add K-MaX to the reference for panoptic copy-paste.
     label_divisor = self._dataset_info['panoptic_label_divisor']
     semantic_ignore_label = self._ignore_label
     panoptic_ignore_label = semantic_ignore_label * label_divisor

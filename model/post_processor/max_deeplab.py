@@ -506,11 +506,8 @@ def _filter_by_count(input_index_map: tf.Tensor,
       pixel-level mask with 1. indicating the regions over the area limit, and
       0. otherwise.
   """
-  # TODO(qihangyu): Replace bincount with tpu-compatible function, as in
-  # TODO(qihangyu): cl/291266307. So we can also use filter_by_count on TPU.
   input_h, input_w = input_index_map.get_shape().as_list()[-2:]
   index_map = tf.cast(tf.round(input_index_map), tf.int32)
-  # TODO(mcahny) This is per frame. Explore per-clip or per-video filtering.
   index_map_flat = tf.reshape(index_map, [-1, input_h * input_w])
   counts = tf.math.bincount(index_map_flat, axis=-1)
   counts_map = tf.gather(counts, index_map_flat, batch_dims=1)
