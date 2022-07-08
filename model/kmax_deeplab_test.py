@@ -88,7 +88,7 @@ class DeeplabTest(tf.test.TestCase):
       # Exclude the auxiliary semantic head.
       if 'auxiliary_semantic' not in v.name:
         num_params += params
-    self.assertEqual(num_params, 121513304)  # 124.2M in the paper.
+    self.assertEqual(num_params, 121513304)
 
 
 if __name__ == '__main__':

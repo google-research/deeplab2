@@ -277,7 +277,7 @@ def create_kmax_meta_transformer_decoder(
     norm_layer: A tf.keras.layers.Layer that computes the normalization.
     num_mask_slots: An integer, the number of mask slots that will be used.
     auxiliary_predictor_func: A callable function that returns an initialization
-      of auxiliary decoder.
+      of auxiliary predictor.
 
   Returns:
     An instance of tf.keras.Model containing the transformer decoder.

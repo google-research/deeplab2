@@ -47,7 +47,7 @@ class KMaXDeepLab(tf.keras.Model):
     """
     super(KMaXDeepLab, self).__init__(name='kMaXDeepLab')
 
-    # We hard code these properties for now.
+    # We hard code self._auxiliary_output_number for now.
     self._auxiliary_output_number = 6
 
     if config.trainer_options.solver_options.use_sync_batchnorm:
@@ -141,7 +141,6 @@ class KMaXDeepLab(tf.keras.Model):
                  training: bool = False,
                  post_processing: bool = True) -> Dict[Text, Any]:
     """Performs an (optionally multi-scale) inference pass."""
-    # Get the static spatial shape of the input tensor.
     pred_dict = self._forward_step(input_tensor, training=training)
     result_dict = {}
     for output_type, output_value in pred_dict.items():

@@ -117,7 +117,7 @@ class DualPathTransformerLayer(tf.keras.layers.Layer):
   order to construct the full dual path transformer in the paper.
 
   The flag "use_kmeans_cross_attention" enables k-means cross-attention, which
-  regards the memory (object query) as cluster center, and update them in a
+  regards the memory (object query) as cluster center, and updates them in a
   k-means clustering manner.
 
   [1] MaX-DeepLab: End-to-End Panoptic Segmentation with Mask Transformers,
@@ -153,10 +153,18 @@ class DualPathTransformerLayer(tf.keras.layers.Layer):
     transformer, the memory2pixel cross attention and the memory self-attention
     share a single activation, e.g. softmax.
 
+    The flag "use_kmeans_cross_attention" enables k-means cross-attention
+    proposed in the kMaX-DeepLab paper, which regards the memory (object query)
+    as cluster center, and updates them in a k-means clustering manner.
+
     Reference:
       MaX-DeepLab: "End-to-End Panoptic Segmentation with Mask Transformers",
         CVPR 2021. https://arxiv.org/abs/2012.00759
           Huiyu Wang, Yukun Zhu, Hartwig Adam, Alan Yuille, Liang-Chieh Chen.
+
+      k-means Mask Transformer, ECCV 2022.
+        Qihang Yu, Huiyu Wang, Siyuan Qiao, Maxwell Collins, Yukun Zhu,
+        Hartwig Adam, Alan Yuille, Liang-Chieh Chen.
 
     Args:
       name: A string, the name of this dual path transformer layer.
@@ -404,6 +412,8 @@ class DualPathTransformerLayer(tf.keras.layers.Layer):
             'transformer_mask_feature': cluster_centers
         },
         training=training)
+    # A cluster-wise argmax is applied to convert the attention logits to
+    # clustering results, which serve as attention weights.
     clustering_result = tf.argmax(
         auxiliary_result_dict[common.PRED_PIXEL_SPACE_MASK_LOGITS_KEY], axis=-1)
     clustering_result = tf.cast(

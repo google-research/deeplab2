@@ -41,12 +41,14 @@ from deeplab2 import common
 from deeplab2.model.layers import axial_block_groups
 from deeplab2.model.layers import convolutions
 
-# A dual-path transformer block without pixel2pixel attention.
+# A transformer decoder block with multi-head self-attention and single-head
+# k-means cross-attention, as proposed in kMaX-DeepLab.
 transformer_decoder_block = functools.partial(
     axial_block_groups.BlockGroup,
     num_blocks=1,
-    # Note that the variable 'filters' is required, and thus we set filters =
-    # 128 (a random value), which does not affect the dual-path transformer.
+    # Note that the variable 'filters' is required by BlockGroup, and thus we
+    # set filters = 128 (a random value), which does not affect the dual-path
+    # transformer (i.e., changing this value will have no effect here).
     filters=128,
     original_resnet_stride=1,
     original_resnet_input_stride=32,
@@ -59,6 +61,7 @@ transformer_decoder_block = functools.partial(
     # Disable the pixel2pixel attention.
     use_axial_block=False,
     dual_path_transformer_layer_config={
+        'use_memory_self_attention': True,
         'use_memory2pixel_feedback_attention': False,
         'use_pixel2memory_feedback_attention': False,
         'use_kmeans_cross_attention': True,
