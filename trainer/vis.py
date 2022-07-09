@@ -146,12 +146,12 @@ def store_raw_instance_predictions_cityscapes(
       # Save the binary mask.
       pil_image = Image.fromarray(binary_mask.astype(np.uint8))
       png_output_name = os.path.join(
-          output_folder, 'instance', png_output_name)
+          output_folder, png_output_name)
       with open(png_output_name, 'w') as f:  # OSS: removed atomic file writing.
         pil_image.save(f, 'PNG')
   # Save prediction for this image.
   instance_output_fname = os.path.join(
-      output_folder, 'instance',
+      output_folder,
       image_filename + '.txt')
   with open(instance_output_fname, 'w') as txt_file:  # OSS: removed atomic file writing.
     txt_file.writelines(instance_info_array)

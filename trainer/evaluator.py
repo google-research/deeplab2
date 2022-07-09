@@ -155,8 +155,6 @@ class Evaluator(orbit.StandardEvaluator):
         tf.io.gfile.makedirs(
             os.path.join(self._vis_dir, 'raw_instance'))
         tf.io.gfile.makedirs(
-            os.path.join(self._vis_dir, 'raw_instance', 'instance'))
-        tf.io.gfile.makedirs(
             os.path.join(self._vis_dir, 'raw_instance', 'instance_masks'))
       if (common.TASK_DEPTH_AWARE_VIDEO_PANOPTIC_SEGMENTATION
           in self._supported_tasks):
