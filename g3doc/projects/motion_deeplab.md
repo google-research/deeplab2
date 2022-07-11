@@ -114,12 +114,11 @@ results, please use the following BibTeX entry.
 
 ```
 @article{step_2021,
-  author={Mark Weber and Jun Xie and Maxwell Collins and Yukun Zhu and Paul Voigtlaender and Hartwig Adam and Bradley Green and Andreas Geiger and Bastian Leibe and Daniel Cremers and Aljosa Osep and Laura Leal-Taixe and Liang-Chieh Chen},
-  title={{STEP}: Segmenting and Tracking Every Pixel},
-  journal={arXiv:2102.11859},
-  year={2021}
+ author = {Weber, Mark and Xie, Jun and Collins, Maxwell and Zhu, Yukun and Voigtlaender, Paul and Adam, Hartwig and Green, Bradley and Geiger, Andreas and Leibe, Bastian and Cremers, Daniel and O\v{s}ep, Aljo\v{s}a and Leal-Taix\'{e}, Laura and Chen, Liang-Chieh},
+ journal = {Proceedings of the Neural Information Processing Systems Track on Datasets and Benchmarks},
+ title = {{STEP}: Segmenting and Tracking Every Pixel},
+ year = {2021}
 }
-
 ```
 
 ### References

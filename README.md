@@ -14,6 +14,8 @@ useful for your projects.
 
 ## Change logs
 
+* 07/11/2022: Drop support of Tensorflow 2.5. Please update to 2.6.
+
 * 04/27/2022: Add ViP-DeepLab [demo](ViP_DeepLab_Demo.ipynb) and update
 ViP-DeepLab [model zoo](g3doc/projects/vip_deeplab.md).
 
