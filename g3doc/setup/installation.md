@@ -8,7 +8,8 @@ DeepLab2 depends on the following libraries:
 *   Numpy
 *   Pillow
 *   Matplotlib
-*   Tensorflow 2.5 (Tensorflow 2.6 for Axial-DeepLab and MaX-DeepLab)
+*   Tensorflow 2.6
+*   Keras 2.6
 *   Cython
 *   [Google Protobuf](https://developers.google.com/protocol-buffers)
 *   [Orbit](https://github.com/tensorflow/models/tree/master/orbit)
@@ -32,9 +33,9 @@ git clone https://github.com/google-research/deeplab2.git
 ### Install TensorFlow via PIP
 
 ```bash
-# Install tensorflow 2.5 as an example.
+# Install tensorflow 2.6 as an example.
 # This should come with compatible numpy package.
-pip install tensorflow==2.5
+pip install tensorflow==2.6 keras==2.6
 ```
 
 **NOTE:** You should find the right Tensorflow version according to your own
