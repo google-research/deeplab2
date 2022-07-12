@@ -18,8 +18,6 @@ useful for your projects.
     [k-means Mask Transformer](https://arxiv.org/pdf/2207.04044.pdf)
     (kMaX-DeepLab) code and [model zoo](g3doc/projects/kmax_deeplab.md).
 
-*   07/11/2022: Drop support of Tensorflow 2.5. Please update to 2.6.
-
 *   04/27/2022: Add ViP-DeepLab [demo](ViP_DeepLab_Demo.ipynb) and update
     ViP-DeepLab [model zoo](g3doc/projects/vip_deeplab.md).
 

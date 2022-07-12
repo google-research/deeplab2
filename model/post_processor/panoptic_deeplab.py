@@ -70,11 +70,9 @@ def _get_instance_centers_from_heatmap(
       strides=(1, 1),
       padding='valid',
       pool_mode='max')
-  pooled_center_heatmap = tf.squeeze(pooled_center_heatmap, axis=0)
-
   center_heatmap = tf.where(
       tf.equal(pooled_center_heatmap, center_heatmap), center_heatmap, 0.0)
-  center_heatmap = tf.squeeze(center_heatmap, axis=2)
+  center_heatmap = tf.squeeze(center_heatmap, axis=[0, 3])
 
   # `centers` is of shape (N, 2) with (y, x) order of the second dimension.
   centers = tf.where(tf.greater(center_heatmap, 0.0))
