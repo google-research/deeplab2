@@ -14,26 +14,30 @@ useful for your projects.
 
 ## Change logs
 
-* 04/27/2022: Add ViP-DeepLab [demo](ViP_DeepLab_Demo.ipynb) and update
-ViP-DeepLab [model zoo](g3doc/projects/vip_deeplab.md).
+*   07/12/2022: Open-source
+    [k-means Mask Transformer](https://arxiv.org/pdf/2207.04044.pdf)
+    (kMaX-DeepLab) code and [model zoo](g3doc/projects/kmax_deeplab.md).
 
-* 09/07/2021: Add numpy implementation of Segmentation and Tracking Quality.
-Find it [here](evaluation/numpy/segmentation_and_tracking_quality.py).
+*   04/27/2022: Add ViP-DeepLab [demo](ViP_DeepLab_Demo.ipynb) and update
+    ViP-DeepLab [model zoo](g3doc/projects/vip_deeplab.md).
 
-* 09/06/2021: Update Panoptic-DeepLab w/ MobileNetv3 backbone results on
-  Cityscapes.
+*   09/07/2021: Add numpy implementation of Segmentation and Tracking Quality.
+    Find it [here](evaluation/numpy/segmentation_and_tracking_quality.py).
 
-* 08/13/2021: Open-source MaX-DeepLab-L COCO checkpoints (51.3% PQ on COCO
-  val set).
+*   09/06/2021: Update Panoptic-DeepLab w/ MobileNetv3 backbone results on
+    Cityscapes.
 
-* 07/26/2021: Add ViP-DeepLab support for SemKITTI-DVPS.
+*   08/13/2021: Open-source MaX-DeepLab-L COCO checkpoints (51.3% PQ on COCO val
+    set).
 
-* 07/07/2021: KITTI-STEP and MOTChallenge-STEP are ready to use.
+*   07/26/2021: Add ViP-DeepLab support for SemKITTI-DVPS.
 
-* 06/07/2021: Add hungarian matching support on TPU for MaX-DeepLab, thanks
-  to the help from Jiquan Ngiam and Amil Merchant.
+*   07/07/2021: KITTI-STEP and MOTChallenge-STEP are ready to use.
 
-* 06/01/2021: "Hello, World!", DeepLab2 made publicly available.
+*   06/07/2021: Add hungarian matching support on TPU for MaX-DeepLab, thanks to
+    the help from Jiquan Ngiam and Amil Merchant.
+
+*   06/01/2021: "Hello, World!", DeepLab2 made publicly available.
 
 ## Installation
 
@@ -61,6 +65,7 @@ We list a few projects that use DeepLab2.
 * <a href='g3doc/projects/max_deeplab.md'>MaX-DeepLab</a><br>
 * <a href='g3doc/projects/motion_deeplab.md'>STEP (Motion-DeepLab)</a><br>
 * <a href='g3doc/projects/vip_deeplab.md'>ViP-DeepLab</a><br>
+* <a href='g3doc/projects/kmax_deeplab.md'>kMaX-DeepLab</a><br>
 
 ## Colab Demo
 
