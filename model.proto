@@ -183,6 +183,34 @@ message ModelOptions {
     repeated LowLevelOptions auxiliary_low_level = 2;
     // Set the head options of the semantic head.
     optional HeadOptions auxiliary_semantic_head = 3;
+    // Set the number of points or features that we will sample to perform the
+    // pixel contrastive instance discrimination loss. This is only valid for
+    // MaX-DeepLab. If this is set to 0, then we use the original MaX-DeepLab
+    // instance discrimination loss. Otherwise, we replace the original instance
+    // discrimination loss with a pixel contrastive instance discrimination
+    // loss. Default to 0 as in the original MaX-DeepLab. It is recommended to
+    // use 16384 for Cityscapes.
+    optional int32 instance_discrimination_sample_k = 4 [default = 0];
+    // Set an optional float temperature specifying the sample temperature of
+    // the points or features for the pixel contrastive instance discrimination
+    // loss. The sampling is based on object scale. When temperature > 1,
+    // the sampling will bias to smaller object, while a value < 1 will lead to
+    // a sampling bias to larger object. This is only used when
+    // instance_discrimination_sample_k > 0. It is recommended to use 0.6 on
+    // Cityscapes.
+    optional float instance_discrimination_sample_temperature = 5
+        [default = 0.6];
+    // Set the number of points or features that we will sample to perform the
+    // semantic loss. This is only valid for MaX-DeepLab. If this is set to 0,
+    // then we use the original semantic loss with all pixels. Otherwise, we
+    // sample a subset of pixels for semantic loss. Default to 0.
+    optional int32 semantic_sample_k = 6 [default = 0];
+    // Set an optional float temperature specifying the sample temperature of
+    // the points or features for the semantic loss. The sampling is based on
+    // object scale. When temperature > 1, the sampling will bias to smaller
+    // object, while a value < 1 will lead to a sampling bias to larger object.
+    // This is only used when semantic_sample_k > 0. Default to 1.0.
+    optional float semantic_sample_temperature = 7 [default = 1.0];
   }
 
   oneof meta_architecture {

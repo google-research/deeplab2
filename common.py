@@ -24,6 +24,7 @@ PRED_INSTANCE_CENTER_KEY = 'instance_center_pred'
 
 PRED_SEMANTIC_LOGITS_KEY = 'semantic_logits'
 PRED_SEMANTIC_PROBS_KEY = 'semantic_probs'
+PRED_SEMANTIC_SCORES_KEY = 'semantic_scores'
 PRED_INSTANCE_SCORES_KEY = 'instance_scores'
 PRED_CENTER_HEATMAP_KEY = 'center_heatmap'
 PRED_OFFSET_MAP_KEY = 'offset_map'
@@ -36,6 +37,8 @@ PRED_DEPTH_KEY = 'depth_pred'
 PRED_PIXEL_SPACE_NORMALIZED_FEATURE_KEY = 'pixel_space_normalized_feature'
 PRED_PIXEL_SPACE_MASK_LOGITS_KEY = 'pixel_space_mask_logits'
 PRED_TRANSFORMER_CLASS_LOGITS_KEY = 'transformer_class_logits'
+
+PRED_AUXILIARY_OUTPUTS = 'auxiliary_outputs_pred'
 
 # Ground-truth keys used by the model.
 GT_PANOPTIC_KEY = 'panoptic_gt'

@@ -42,6 +42,8 @@ saved at
 
 *semantic segmentation*: ${BASE_MODEL_DIRECTORY}/vis/raw_semantic/\*.png
 
+*instance segmentation*: ${BASE_MODEL_DIRECTORY}/vis/raw_instance/\*
+
 *panoptic segmentation*: ${BASE_MODEL_DIRECTORY}/vis/raw_panoptic/\*.png
 
 ## Create Images JSON
@@ -85,6 +87,14 @@ CITYSCAPES_EXPORT_DIR=${PATH_TO_SAVE} \
 python cityscapesscripts/evaluation/evalPixelLevelSemanticLabeling.py
 ```
 
+For *instance segmentation*:
+
+```bash
+CITYSCAPES_RESULTS=${BASE_MODEL_DIRECTORY}/vis/raw_instance/ \
+CITYSCAPES_DATASET=${DATA_ROOT} \
+python cityscapesscripts/evaluation/evalInstanceLevelSemanticLabeling.py
+```
+
 For *panoptic segmentation*:
 
 ```bash
@@ -105,5 +115,6 @@ evaluation.
 
 ```bash
 zip -r cityscapes_test_submission_semantic.zip ${BASE_MODEL_DIRECTORY}/vis/raw_semantic
+zip -r cityscapes_test_submission_instance.zip ${BASE_MODEL_DIRECTORY}/vis/raw_instance
 zip -r cityscapes_test_submission_panoptic.zip ${PATH_TO_SAVE}/panoptic_cocoformat ${PATH_TO_SAVE}/panoptic_cocoformat.json
 ```

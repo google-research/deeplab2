@@ -1,0 +1,150 @@
+# proto-file: deeplab2/config.proto
+# proto-message: ExperimentOptions
+#
+# kMaX-DeepLab with ConvNeXt-large backbone with output stride 32.
+#
+############### PLEASE READ THIS BEFORE USING THIS CONFIG ###############
+# Before using this config, you need to update the following fields:
+# - experiment_name: Use a unique experiment name for each experiment.
+# - initial_checkpoint: Update the path to the initial checkpoint.
+# - train_dataset_options.file_pattern: Update the path to the
+#   training set. e.g., your_dataset/train*.tfrecord
+# - eval_dataset_options.file_pattern: Update the path to the
+#   validation set, e.g., your_dataset/eval*.tfrecord
+#########################################################################
+#
+# References:
+# For ConvNeXt, see
+# - Zhuang Liu, et al. "A ConvNet for the 2020s." In CVPR, 2022.
+# For kMaX-DeepLab, see
+# - Qihang Yu, et al. "k-means Mask Transformer." In ECCV, 2022.
+
+# Use a unique experiment_name for each experiment.
+experiment_name: "${EXPERIMENT_NAME}"
+model_options {
+  backbone {
+    # kMaX meta is used with the prefix "kmax_".
+    name: "kmax_convnext_large"
+    drop_path_keep_prob: 0.4
+    # We use pretrained_weights instead of initial_checkpoint for loading
+    # specifical weights for backbone (e.g., converted pytorch weights).
+    pretrained_weights: "${INIT_CHECKPOINT}"
+  }
+  decoder {
+    feature_key: "feature_semantic"
+    decoder_channels: 256
+    aspp_channels: 256
+    atrous_rates: 6
+    atrous_rates: 12
+    atrous_rates: 18
+  }
+  max_deeplab {
+    pixel_space_head {
+      output_channels: 128
+      head_channels: 256
+    }
+    auxiliary_low_level {
+      feature_key: "res3"
+      channels_project: 64
+    }
+    auxiliary_low_level {
+      feature_key: "res2"
+      channels_project: 32
+    }
+    auxiliary_semantic_head {
+      output_channels: 19
+      head_channels: 256
+    }
+    instance_discrimination_sample_k: 4096
+  }
+}
+trainer_options {
+  save_checkpoints_steps: 1000
+  save_summaries_steps: 100
+  steps_per_loop: 100
+  loss_options {
+    semantic_loss {
+      name: "softmax_cross_entropy"
+      weight: 1.0
+      top_k_percent: 0.2
+    }
+    pq_style_loss {
+      weight: 3.0
+    }
+    mask_id_cross_entropy_loss {
+      weight: 0.3
+    }
+    instance_discrimination_loss {
+      weight: 1.0
+    }
+  }
+  solver_options {
+    base_learning_rate: 0.0003
+    training_number_of_steps: 60000
+    warmup_steps: 5000
+    backbone_learning_rate_multiplier: 0.1
+    optimizer: "adamw"
+    adamw_weight_decay: 0.05
+  }
+}
+train_dataset_options {
+  dataset: "cityscapes_panoptic"
+  # Update the path to training set.
+  file_pattern: "${TRAIN_SET}"
+  # Adjust the batch_size accordingly to better fit your GPU/TPU memory.
+  # Also see Q1 in g3doc/faq.md.
+  batch_size: 32
+  crop_size: 1025
+  crop_size: 2049
+  # Skip resizing.
+  min_resize_value: 0
+  max_resize_value: 0
+  augmentations {
+    min_scale_factor: 0.5
+    max_scale_factor: 2.0
+    scale_factor_step_size: 0.1
+    autoaugment_policy_name: "simple_classification_policy_magnitude_scale_0.2"
+    panoptic_copy_paste {
+      panoptic_copy_paste_scale: 0.5
+      panoptic_copy_paste_thing_option: "all"
+      panoptic_copy_paste_stuff_option: "random"
+      panoptic_copy_paste_void_option: "none"
+    }
+  }
+  increase_small_instance_weights: true
+  small_instance_weight: 3.0
+  thing_id_mask_annotations: true
+  max_thing_id: 256
+}
+eval_dataset_options {
+  dataset: "cityscapes_panoptic"
+  # Update the path to validation set.
+  file_pattern: "${VAL_SET}"
+  batch_size: 1
+  crop_size: 1025
+  crop_size: 2049
+  # Skip resizing.
+  min_resize_value: 0
+  max_resize_value: 0
+  # Add options to make the evaluation loss comparable to the training loss.
+  increase_small_instance_weights: true
+  small_instance_weight: 3.0
+  thing_id_mask_annotations: true
+  max_thing_id: 256
+}
+evaluator_options {
+  continuous_eval_timeout: -1
+  thing_area_limit: 256
+  stuff_area_limit: 2048
+  transformer_post_processing: "maskwise"
+  pixel_confidence_threshold: 0.4
+  maskwise_postprocessing {
+    transformer_class_confidence_threshold_thing: 0.5
+    transformer_class_confidence_threshold_stuff: 0.3
+    overlapping_threshold: 0.9
+    reorder_class_weight: 1.0
+    reorder_mask_weight: 0.0
+  }
+  save_predictions: true
+  save_raw_predictions: false
+}

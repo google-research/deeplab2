@@ -151,6 +151,11 @@ class Evaluator(orbit.StandardEvaluator):
       tf.io.gfile.makedirs(os.path.join(self._vis_dir, 'raw_semantic'))
       if common.TASK_PANOPTIC_SEGMENTATION in self._supported_tasks:
         tf.io.gfile.makedirs(os.path.join(self._vis_dir, 'raw_panoptic'))
+      if common.TASK_INSTANCE_SEGMENTATION in self._supported_tasks:
+        tf.io.gfile.makedirs(
+            os.path.join(self._vis_dir, 'raw_instance'))
+        tf.io.gfile.makedirs(
+            os.path.join(self._vis_dir, 'raw_instance', 'instance_masks'))
       if (common.TASK_DEPTH_AWARE_VIDEO_PANOPTIC_SEGMENTATION
           in self._supported_tasks):
         tf.io.gfile.makedirs(os.path.join(self._vis_dir, 'raw_depth'))
@@ -223,9 +228,13 @@ class Evaluator(orbit.StandardEvaluator):
         step_outputs[self._eval_pq_metric.name] = (
             inputs[common.GT_PANOPTIC_RAW], outputs[common.PRED_PANOPTIC_KEY])
       if common.TASK_INSTANCE_SEGMENTATION in self._supported_tasks:
+        if common.PRED_SEMANTIC_SCORES_KEY in outputs:
+          semantic_output_for_ap_eval = outputs[common.PRED_SEMANTIC_SCORES_KEY]
+        else:
+          semantic_output_for_ap_eval = outputs[common.PRED_SEMANTIC_PROBS_KEY]
         step_outputs[self._eval_ap_metric.name] = (
             inputs[common.GT_PANOPTIC_RAW], outputs[common.PRED_PANOPTIC_KEY],
-            outputs[common.PRED_SEMANTIC_PROBS_KEY],
+            semantic_output_for_ap_eval,
             outputs[common.PRED_INSTANCE_SCORES_KEY],
             inputs[common.GT_IS_CROWD_RAW])
       if (common.TASK_DEPTH_AWARE_VIDEO_PANOPTIC_SEGMENTATION

@@ -206,8 +206,17 @@ def per_instance_semantic_probabilities(
   ],
                                axis=1)
 
-  pixel_semantic_probability = tf.reshape(
-      tf.gather_nd(semantic_probability, probability_index), [height, width])
+  # When len(semantic_probability.shape) == 3 (e.g., for Panoptic-DeepLab), it
+  # is a semantic probability map with shape [H, W, num_classes], so we need to
+  # gather the class confidence for corresponding semantic class prediction.
+  # When len(semantic_probability.shape) == 2 (e.g., for MaX-DeepLab), it is a
+  # semantic confidence map with shape [H, W], so we can directly use it as
+  # pixel_semantic_probability.
+  if len(semantic_probability.shape) == 3:
+    pixel_semantic_probability = tf.reshape(
+        tf.gather_nd(semantic_probability, probability_index), [height, width])
+  elif len(semantic_probability.shape) == 2:
+    pixel_semantic_probability = semantic_probability
   # Set the probability for the "ignore" pixels to 0.
   pixel_semantic_probability = tf.where(semantic_label_map == ignore_label, 0.0,
                                         pixel_semantic_probability)

@@ -23,6 +23,7 @@ import tensorflow as tf
 from deeplab2 import common
 from deeplab2.data import dataset_utils
 from deeplab2.data.preprocessing import input_preprocessing as preprocessing
+from deeplab2.model import utils
 
 
 def _compute_gaussian_from_std(sigma):
@@ -52,7 +53,8 @@ class PanopticSampleGenerator:
                thing_id_mask_annotations=False,
                max_thing_id=128,
                sigma=8,
-               focus_small_instances=None):
+               focus_small_instances=None,
+               panoptic_copy_paste_options=None):
     """Initializes the panoptic segmentation generator.
 
     Args:
@@ -101,6 +103,8 @@ class PanopticSampleGenerator:
         -`threshold`: An integer defining the threshold pixel number for an
           instance to be considered small.
         -`weight`: A number that defines the loss weight for small instances.
+      panoptic_copy_paste_options: An optional dict that defines how to perform
+        panoptic copy-paste augmentations.
     """
     self._dataset_info = dataset_info
     self._ignore_label = self._dataset_info['ignore_label']
@@ -112,21 +116,43 @@ class PanopticSampleGenerator:
     self._thing_id_mask_annotations = thing_id_mask_annotations
     self._max_thing_id = max_thing_id
     self._is_training = is_training
+    self._panoptic_copy_paste_options = panoptic_copy_paste_options
+
+    preprocess_kwargs = {
+        'crop_height': crop_size[0],
+        'crop_width': crop_size[1],
+        'min_resize_value': min_resize_value,
+        'max_resize_value': max_resize_value,
+        'resize_factor': resize_factor,
+        'scale_factor_step_size': scale_factor_step_size,
+        'autoaugment_policy_name': autoaugment_policy_name,
+        'ignore_depth': self._ignore_depth,
+        'is_training': self._is_training
+    }
+
     self._preprocessing_fn = functools.partial(
         preprocessing.preprocess_image_and_label,
-        crop_height=crop_size[0],
-        crop_width=crop_size[1],
-        min_resize_value=min_resize_value,
-        max_resize_value=max_resize_value,
-        resize_factor=resize_factor,
         min_scale_factor=min_scale_factor,
         max_scale_factor=max_scale_factor,
-        scale_factor_step_size=scale_factor_step_size,
-        autoaugment_policy_name=autoaugment_policy_name,
         ignore_label=self._ignore_label *
         self._dataset_info['panoptic_label_divisor'],
-        ignore_depth=self._ignore_depth,
-        is_training=self._is_training)
+        **preprocess_kwargs)
+
+    if panoptic_copy_paste_options:
+      # For panoptic copy-paste, the ignore_label is set to
+      # ignore_label * label_divisor + 1 instead of
+      # ignore_label * label_divisor, so that padded pixels and void pixels can
+      # be distinguished.
+      self._panoptic_copy_paste_padding_value = (
+          self._ignore_label * self._dataset_info['panoptic_label_divisor'] + 1)
+      self._panoptic_copy_paste_preprocessing_fn = functools.partial(
+          preprocessing.preprocess_image_and_label,
+          min_scale_factor=min_scale_factor *
+          panoptic_copy_paste_options.panoptic_copy_paste_scale,
+          max_scale_factor=max_scale_factor *
+          panoptic_copy_paste_options.panoptic_copy_paste_scale,
+          ignore_label=self._panoptic_copy_paste_padding_value,
+          **preprocess_kwargs)
 
     if focus_small_instances is not None:
       self._instance_area_threshold = focus_small_instances['threshold']
@@ -136,8 +162,11 @@ class PanopticSampleGenerator:
         self._sigma)
     self._gaussian = tf.cast(tf.reshape(self._gaussian, [-1]), tf.float32)
 
-  def __call__(self, sample_dict):
+  def __call__(self, sample_dict, panoptic_copy_psate_sample_dict=None):
     """Gets a sample.
+
+    When panoptic copy-paste augmentation is enabled, a tuple of sample_dict
+    will be passed to this method, and this method will unzip the tuple.
 
     Args:
       sample_dict: A dictionary with the following keys and values:
@@ -152,10 +181,19 @@ class PanopticSampleGenerator:
       - `next_image`: An optional next-frame tensor of the shape of `image`.
       - `next_label`: An optional next-frame tensor of the shape of `label`.
       - `depth`: An optional tensor of the same shape as `label`.
+      panoptic_copy_psate_sample_dict: Additional sample_dict for panoptic
+        copy-paste augmentation, it is None at default. It is a dictionary
+        containing 'image' and 'label' if panoptic copy-paste is enabled.
 
     Returns:
       sample: A dictionary storing required data for panoptic segmentation.
     """
+    if panoptic_copy_psate_sample_dict is not None:
+      sample_dict['panoptic_copy_paste_image'] = (
+          panoptic_copy_psate_sample_dict['image'])
+      sample_dict['panoptic_copy_paste_label'] = (
+          panoptic_copy_psate_sample_dict['label'])
+
     return self.call(**sample_dict)
 
   def call(self,
@@ -169,7 +207,9 @@ class PanopticSampleGenerator:
            prev_label=None,
            next_image=None,
            next_label=None,
-           depth=None):
+           depth=None,
+           panoptic_copy_paste_image=None,
+           panoptic_copy_paste_label=None):
     """Gets a sample.
 
     Args:
@@ -184,12 +224,20 @@ class PanopticSampleGenerator:
       next_image: An optional tensor of shape [image_height, image_width, 3].
       next_label: An optional tensor of shape [label_height, label_width, 1].
       depth: An optional tensor of shape [label_height, label_width, 1].
+      panoptic_copy_paste_image: A tensor of shape
+        [panoptic_copy_paste_image_height, panoptic_copy_paste_image_width, 3]
+        or None. It is used when panoptic copy-paste is enabled.
+      panoptic_copy_paste_label: A tensor of shape
+        [panoptic_copy_paste_label_height, panoptic_copy_paste_label_width, 1]
+        or None. It is used when panoptic copy-paste is enabled.
 
     Returns:
       sample: A dictionary storing required data for panoptic segmentation.
 
     Raises:
       ValueError: An error occurs when the label shape is invalid.
+      NotImplementedError: An error occurs when panoptic copy-paste comes
+        together with prev_image or prev_label, not currently implemented.
       NotImplementedError: An error occurs when thing_id_mask_annotations comes
         together with prev_image or prev_label, not currently implemented.
     """
@@ -216,6 +264,25 @@ class PanopticSampleGenerator:
           self._preprocessing_fn(
               image, label, prev_image=prev_image, prev_label=prev_label,
               depth=depth))
+
+    if self._panoptic_copy_paste_options:
+      if self._panoptic_copy_paste_options.panoptic_copy_paste_scale > 0.0:
+        if any([
+            prev_image is not None, prev_label is not None, next_image
+            is not None, next_label is not None
+        ]):
+          raise NotImplementedError(
+              'Current implementation of panoptic copy-paste does not ' +
+              'support prev_image, prev_label, next_image, or next_label.')
+        _, panoptic_copy_paste_image, panoptic_copy_paste_label, _, _, _ = (
+            self._panoptic_copy_paste_preprocessing_fn(
+                panoptic_copy_paste_image, panoptic_copy_paste_label))
+        image, label = self._get_panoptic_copy_paste(
+            image, label, panoptic_copy_paste_image, panoptic_copy_paste_label,
+            self._panoptic_copy_paste_options.panoptic_copy_paste_thing_option,
+            self._panoptic_copy_paste_options.panoptic_copy_paste_stuff_option,
+            self._panoptic_copy_paste_options.panoptic_copy_paste_void_option)
+
     sample = {
         common.IMAGE: image
     }
@@ -669,3 +736,209 @@ class PanopticSampleGenerator:
       next_offset = tf.concat([next_offset_y, next_offset_x], axis=2)
     return (center, offset, semantic_weights, prev_center, frame_offsets,
             next_offset)
+
+  def _get_panoptic_copy_paste(self, image, label, panoptic_copy_paste_image,
+                               panoptic_copy_paste_label,
+                               panoptic_copy_paste_thing_option,
+                               panoptic_copy_paste_stuff_option,
+                               panoptic_copy_paste_void_option):
+    """Applies Panoptic Copy-Paste augmentation given two images and labels.
+
+    The panoptic copy-paste augmentation will randomly copy-and-paste an image
+    onto another one. A prerequest is that maximum of instance number of any
+    sample should not exceed label_divisor // 2, otherwise the total number of
+    instance can exceed label_divisor and cause errors.
+
+    The panoptic copy-paste [1] is an extension of thing-specific copy-paste
+    augmentation [2,3] to panoptic segmentation task.
+
+    References:
+      [1] k-means Mask Transformer, ECCV 2022.
+            Qihang Yu, Huiyu Wang, Siyuan Qiao, Maxwell Collins, Yukun Zhu,
+            Hartwig Adam, Alan Yuille, Liang-Chieh Chen.
+
+      [2] Instaboost: Boosting instance segmentation via probability map
+          guided copy-pasting, ICCV 2019
+            Hao-Shu Fang, Jianhua Sun, Runzhong Wang, Minghao Gou, Yong-Lu Li,
+            Cewu Lu.
+
+      [3] Simple copy-paste is a strong data augmentation method for
+          instance segmentation, CVPR 2021.
+            Golnaz Ghiasi, Yin Cui, Aravind Srinivas, Rui Qian, Tsung-Yi Lin,
+            Ekin D. Cubuk, Quoc V. Le, Barret Zoph.
+
+    Args:
+      image: A tf.Tensor of shape [image_height, image_width, 3],
+        the image as canvas.
+      label: A tf.Tensor of shape [label_height, label_width, 1].
+      panoptic_copy_paste_image: A tf.Tensor of shape
+        [panoptic_copy_paste_image_height, panoptic_copy_paste_image_width, 3],
+        the image to be copyed and pasted.
+      panoptic_copy_paste_label: A tensor of shape
+        [panoptic_copy_paste_label_height, panoptic_copy_paste_label_width, 1].
+      panoptic_copy_paste_thing_option: A str indicating how to deal with thing
+        class.
+      panoptic_copy_paste_stuff_option: A str indicating how to deal with stuff
+        class.
+      panoptic_copy_paste_void_option: A str indicating how to deal with void
+        class.
+
+    Returns:
+      A tf.Tensor of the image that has been panoptic copy-paste augmented, and
+        a tf.Tensor of the updated label.
+
+    Raises:
+      tf.errors.InvalidArgumentError: An error occurs if maximum instance id
+        exceeds label_divisor // 2.
+    """
+    label_divisor = self._dataset_info['panoptic_label_divisor']
+    semantic_ignore_label = self._ignore_label
+    panoptic_ignore_label = semantic_ignore_label * label_divisor
+
+    # The values indicating pixels that are padded, void, thing, and stuff,
+    # respectively.
+    padding_list = tf.constant([self._panoptic_copy_paste_padding_value],
+                               tf.int32)
+    void_list = tf.constant([panoptic_ignore_label], tf.int32)
+    thing_list = list(self._dataset_info['class_has_instances_list'])
+    num_thing_stuff_classes = utils.get_num_thing_stuff_classes(
+        self._dataset_info['num_classes'], semantic_ignore_label)
+    stuff_list = utils.get_stuff_class_ids(num_thing_stuff_classes, thing_list,
+                                           semantic_ignore_label)
+
+    # Flatten and get unique label id in panoptic_copy_paste_label.
+    unique_label_id, unique_label_idx_per_pixel = tf.unique(
+        tf.reshape(panoptic_copy_paste_label, [-1]))
+    # Pick a random number of unique labels that should be kept.
+    number_of_unique_label_id_to_keep = tf.random.uniform(
+        shape=[], maxval=tf.shape(unique_label_id)[0] + 1, dtype=tf.int32)
+    unique_label_id_mask = tf.concat([
+        tf.ones([number_of_unique_label_id_to_keep], tf.int32),
+        tf.zeros(
+            [tf.shape(unique_label_id)[0] - number_of_unique_label_id_to_keep],
+            tf.int32)], axis=0)
+    # shuffled_unique_x_mask is one for pixels that should be kept, and 0
+    # otherwise.
+    shuffled_unique_label_id_mask = tf.random.shuffle(unique_label_id_mask)
+
+    def whether_in_list(tensor, value_list):
+      """Whether each value in tensor exists in value_list.
+
+      For each value in tensor, whether it exists in value_list, if so,
+      return 1, otherwise return 0.
+
+      Args:
+        tensor: A tf.Tensor with shape [N].
+        value_list: A python list with length M or tf.Tensor with shape [M].
+
+      Returns:
+        A tf.Tensor of shape [N] with value 1 of the element exists in
+          value_list, otherwise 0.
+      """
+      expand_tensor = tf.expand_dims(tensor, -1)
+      expand_value_list = tf.expand_dims(value_list, 0)
+      broadcast_equal = tf.equal(expand_tensor, expand_value_list)
+      broadcast_equal_int = tf.cast(broadcast_equal, tf.int32)
+      return tf.reduce_max(broadcast_equal_int, axis=-1)
+
+    padding_list_mask = whether_in_list(unique_label_id, padding_list)
+    void_list_mask = whether_in_list(unique_label_id, void_list)
+    thing_list_mask = whether_in_list(unique_label_id // label_divisor,
+                                      thing_list)
+    stuff_list_mask = whether_in_list(unique_label_id // label_divisor,
+                                      stuff_list)
+
+    def update_label_id_mask(label_id_mask, class_list_mask, option):
+      """Updates the label_id to be kept based on semantic class and option.
+
+      Args:
+        label_id_mask: A tf.Tensor of shape [N], with value 0 for discarded
+          semantic class and 1 otherwise.
+        class_list_mask: A tf.Tensor of shape [N], with value 0 for semantic
+          class that does not belong to some specific class_list (e.g.,
+          thing_class_list), and 1 otherwise.
+        option: A str, one of ['none', 'random', 'all']:
+          'none': All semantic classes in the class_list will be discarded based
+            on class_list_mask.
+          'random': No further change on label_id_mask, thus the kept semantic
+            class is randomly choosed.
+          'all': All semantic class in the class_list will be kept based on
+            class_list_mask.
+
+      Returns:
+        An updated tf.Tensor of shape [N], with value 0 for discarded
+          semantic class and 1 otherwise.
+      """
+      # Drop all pixels with class in class_list.
+      if option == 'none':
+        return label_id_mask * (1 - class_list_mask)
+      elif option == 'random':
+        return label_id_mask
+      # Keep all pixels with class in class_list.
+      elif option == 'all':
+        return tf.maximum(label_id_mask, class_list_mask)
+
+    # Drop padded pixels.
+    shuffled_unique_label_id_mask = update_label_id_mask(
+        shuffled_unique_label_id_mask, padding_list_mask, option='none')
+
+    shuffled_unique_label_id_mask = update_label_id_mask(
+        shuffled_unique_label_id_mask, thing_list_mask,
+        panoptic_copy_paste_thing_option)
+    shuffled_unique_label_id_mask = update_label_id_mask(
+        shuffled_unique_label_id_mask, stuff_list_mask,
+        panoptic_copy_paste_stuff_option)
+    shuffled_unique_label_id_mask = update_label_id_mask(
+        shuffled_unique_label_id_mask, void_list_mask,
+        panoptic_copy_paste_void_option)
+
+    # Gather from unique labels to per pixel mask.
+    per_pixel_mask = tf.gather(shuffled_unique_label_id_mask,
+                               unique_label_idx_per_pixel)
+    panoptic_copy_paste_ignore_pixel = 1 - tf.reshape(
+        per_pixel_mask, tf.shape(panoptic_copy_paste_label))
+
+    panoptic_copy_paste_ignore_pixel_int = tf.cast(
+        panoptic_copy_paste_ignore_pixel, tf.int32)
+    panoptic_copy_paste_ignore_pixel_float = tf.cast(
+        panoptic_copy_paste_ignore_pixel, tf.float32)
+    # Copy-paste panoptic_copy_paste_image onto image based on
+    # panoptic_copy_paste_ignore_pixel_float.
+    image = (
+        image * panoptic_copy_paste_ignore_pixel_float +
+        panoptic_copy_paste_image *
+        (1.0 - panoptic_copy_paste_ignore_pixel_float))
+
+    semantic_label = label // label_divisor
+    instance_label = label % label_divisor
+    panoptic_label = semantic_label * label_divisor + instance_label
+
+    panoptic_copy_paste_semantic_label = (
+        panoptic_copy_paste_label // label_divisor)
+    panoptic_copy_paste_instance_label = (
+        panoptic_copy_paste_label % label_divisor)
+    max_instance_assert = tf.Assert(
+        tf.logical_and(
+            tf.less(tf.reduce_max(instance_label), label_divisor // 2),
+            tf.less(
+                tf.reduce_max(panoptic_copy_paste_instance_label),
+                label_divisor // 2)),
+        ['Max instance number shall not exceeds half of label_divisor when' +
+         ' panoptic copy-paste augmentation is enabled!'])
+    with tf.control_dependencies([max_instance_assert]):
+      # Invert the instance id from increasing from 1 to decreasing from
+      # label_divisor, but keep instance_id = 0 for stuff/void regions.
+      panoptic_copy_paste_instance_label = tf.where(
+          panoptic_copy_paste_instance_label == 0,
+          panoptic_copy_paste_instance_label,
+          label_divisor - 1 - panoptic_copy_paste_instance_label)
+      panoptic_copy_paste_panoptic_label = (
+          panoptic_copy_paste_semantic_label * label_divisor +
+          panoptic_copy_paste_instance_label)
+
+      label = (
+          panoptic_label * panoptic_copy_paste_ignore_pixel_int +
+          panoptic_copy_paste_panoptic_label *
+          (1 - panoptic_copy_paste_ignore_pixel_int))
+
+      return image, label

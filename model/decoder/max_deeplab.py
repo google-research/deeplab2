@@ -125,7 +125,10 @@ class MaXDeepLab(tf.keras.layers.Layer):
                decoder_options,
                max_deeplab_options,
                ignore_label,
-               bn_layer=tf.keras.layers.BatchNormalization):
+               bn_layer=tf.keras.layers.BatchNormalization,
+               use_auxiliary_semantic_decoder=True,
+               use_auxiliary_semantic_head=True,
+               activation='relu'):
     """Initializes a MaX-DeepLab head.
 
     Args:
@@ -135,44 +138,60 @@ class MaXDeepLab(tf.keras.layers.Layer):
       ignore_label: An integer specifying the ignore label.
       bn_layer: An optional tf.keras.layers.Layer that computes the
         normalization (default: tf.keras.layers.BatchNormalization).
+      use_auxiliary_semantic_decoder: A boolean, whether to use an axuliary
+        semantic decoder to upsample the semantic features.
+      use_auxiliary_semantic_head: A boolean, whether to use an auxiliary
+        semantic head to generate semantic predictions.
+      activation: A string, type of activation function to apply. Support
+        'relu', 'swish' (or 'silu'), 'gelu', 'approximated_gelu', and 'elu'.
     """
     super(MaXDeepLab, self).__init__(name='MaXDeepLab')
 
-    low_level_feature_keys = [
-        item.feature_key for item in max_deeplab_options.auxiliary_low_level
-    ]
-    low_level_channels_project = [
-        item.channels_project
-        for item in max_deeplab_options.auxiliary_low_level
-    ]
+    use_auxiliary_semantic_decoder = (
+        use_auxiliary_semantic_decoder and use_auxiliary_semantic_head)
+    if use_auxiliary_semantic_decoder:
+      low_level_feature_keys = [
+          item.feature_key for item in max_deeplab_options.auxiliary_low_level
+      ]
+      low_level_channels_project = [
+          item.channels_project
+          for item in max_deeplab_options.auxiliary_low_level
+      ]
 
-    self._auxiliary_semantic_decoder = (
-        panoptic_deeplab.PanopticDeepLabSingleDecoder(
-            high_level_feature_name=decoder_options.feature_key,
-            low_level_feature_names=low_level_feature_keys,
-            low_level_channels_project=low_level_channels_project,
-            aspp_output_channels=decoder_options.aspp_channels,
-            decoder_output_channels=decoder_options.decoder_channels,
-            atrous_rates=decoder_options.atrous_rates,
-            name='auxiliary_semantic_decoder',
-            aspp_use_only_1x1_proj_conv=decoder_options
-            .aspp_use_only_1x1_proj_conv,
-            decoder_conv_type=decoder_options.decoder_conv_type,
-            bn_layer=bn_layer))
-    self._auxiliary_semantic_head = panoptic_deeplab.PanopticDeepLabSingleHead(
-        max_deeplab_options.auxiliary_semantic_head.head_channels,
-        max_deeplab_options.auxiliary_semantic_head.output_channels,
-        common.PRED_SEMANTIC_LOGITS_KEY,
-        name='auxiliary_semantic_head',
-        conv_type=max_deeplab_options.auxiliary_semantic_head.head_conv_type,
-        bn_layer=bn_layer)
+      self._auxiliary_semantic_decoder = (
+          panoptic_deeplab.PanopticDeepLabSingleDecoder(
+              high_level_feature_name=decoder_options.feature_key,
+              low_level_feature_names=low_level_feature_keys,
+              low_level_channels_project=low_level_channels_project,
+              aspp_output_channels=decoder_options.aspp_channels,
+              decoder_output_channels=decoder_options.decoder_channels,
+              atrous_rates=decoder_options.atrous_rates,
+              name='auxiliary_semantic_decoder',
+              aspp_use_only_1x1_proj_conv=decoder_options
+              .aspp_use_only_1x1_proj_conv,
+              decoder_conv_type=decoder_options.decoder_conv_type,
+              bn_layer=bn_layer,
+              activation=activation))
+    if use_auxiliary_semantic_head:
+      self._auxiliary_semantic_head = (
+          panoptic_deeplab.PanopticDeepLabSingleHead(
+              max_deeplab_options.auxiliary_semantic_head.head_channels,
+              max_deeplab_options.auxiliary_semantic_head.output_channels,
+              common.PRED_SEMANTIC_LOGITS_KEY,
+              name='auxiliary_semantic_head',
+              conv_type=max_deeplab_options.auxiliary_semantic_head
+              .head_conv_type,
+              bn_layer=bn_layer,
+              activation=activation))
+
     self._pixel_space_head = panoptic_deeplab.PanopticDeepLabSingleHead(
         max_deeplab_options.pixel_space_head.head_channels,
         max_deeplab_options.pixel_space_head.output_channels,
         _PIXEL_SPACE_FEATURE_KEY,
         name='pixel_space_head',
         conv_type=max_deeplab_options.pixel_space_head.head_conv_type,
-        bn_layer=bn_layer)
+        bn_layer=bn_layer,
+        activation=activation)
 
     self._transformer_mask_head = convolutions.Conv1D(
         output_channels=max_deeplab_options.pixel_space_head.output_channels,
@@ -212,9 +231,15 @@ class MaXDeepLab(tf.keras.layers.Layer):
         # Initialize the pixel space mask with a low temperature.
         gamma_initializer=tf.keras.initializers.Constant(0.1))
 
+    self._use_auxiliary_semantic_decoder = use_auxiliary_semantic_decoder
+    self._use_auxiliary_semantic_head = use_auxiliary_semantic_head
+
   def reset_pooling_layer(self):
     """Resets the ASPP pooling layers to global average pooling."""
-    self._auxiliary_semantic_decoder.reset_pooling_layer()
+    if self._use_auxiliary_semantic_decoder:
+      self._auxiliary_semantic_decoder.reset_pooling_layer()
+    else:
+      self._pool_size = (None, None)
 
   def set_pool_size(self, pool_size):
     """Sets the pooling size of the ASPP pooling layers.
@@ -222,20 +247,20 @@ class MaXDeepLab(tf.keras.layers.Layer):
     Args:
       pool_size: A tuple specifying the pooling size of the ASPP pooling layers.
     """
-    self._auxiliary_semantic_decoder.set_pool_size(pool_size)
+    if self._use_auxiliary_semantic_decoder:
+      self._auxiliary_semantic_decoder.set_pool_size(pool_size)
+    else:
+      self._pool_size = pool_size
 
   def get_pool_size(self):
-    return self._auxiliary_semantic_decoder.get_pool_size()
+    if self._use_auxiliary_semantic_decoder:
+      return self._auxiliary_semantic_decoder.get_pool_size()
+    else:
+      return self._pool_size
 
   @property
   def checkpoint_items(self):
     items = {
-        common.CKPT_SEMANTIC_DECODER:
-            self._auxiliary_semantic_decoder,
-        common.CKPT_SEMANTIC_HEAD_WITHOUT_LAST_LAYER:
-            self._auxiliary_semantic_head.conv_block,
-        common.CKPT_SEMANTIC_LAST_LAYER:
-            self._auxiliary_semantic_head.final_conv,
         common.CKPT_PIXEL_SPACE_HEAD:
             self._pixel_space_head,
         common.CKPT_TRANSFORMER_MASK_HEAD:
@@ -247,6 +272,18 @@ class MaXDeepLab(tf.keras.layers.Layer):
         common.CKPT_PIXEL_SPACE_MASK_BATCH_NORM:
             self._pixel_space_mask_batch_norm,
     }
+    if self._use_auxiliary_semantic_decoder:
+      items.update({
+          common.CKPT_SEMANTIC_DECODER:
+              self._auxiliary_semantic_decoder,
+      })
+    if self._use_auxiliary_semantic_head:
+      items.update({
+          common.CKPT_SEMANTIC_HEAD_WITHOUT_LAST_LAYER:
+              self._auxiliary_semantic_head.conv_block,
+          common.CKPT_SEMANTIC_LAST_LAYER:
+              self._auxiliary_semantic_head.final_conv,
+      })
     return items
 
   def call(self, features, training=False):
@@ -271,20 +308,23 @@ class MaXDeepLab(tf.keras.layers.Layer):
     transformer_class_feature = features['transformer_class_feature']
     transformer_mask_feature = features['transformer_mask_feature']
 
-    # Auxiliary semantic head.
-    semantic_shape = semantic_features.get_shape().as_list()
-    panoptic_shape = panoptic_features.get_shape().as_list()
-    # MaX-DeepLab always predicts panoptic feature at high resolution (e.g.,
-    # stride 4 or stride 2), but the auxiliary semantic feature could be at low
-    # resolution (e.g., stride 16 or stride 32), in the absence of the stacked
-    # decoder (L == 0). In this case, we use an auxiliary semantic decoder on
-    # top of the semantic feature, in order to add the auxiliary semantic loss.
-    if semantic_shape[1:3] != panoptic_shape[1:3]:
-      semantic_features = self._auxiliary_semantic_decoder(
-          features, training=training)
-    auxiliary_semantic_results = self._auxiliary_semantic_head(
-        semantic_features, training=training)
-    results.update(auxiliary_semantic_results)
+    if self._use_auxiliary_semantic_head:
+      # Auxiliary semantic head.
+      semantic_shape = semantic_features.get_shape().as_list()
+      panoptic_shape = panoptic_features.get_shape().as_list()
+      # MaX-DeepLab always predicts panoptic feature at high resolution (e.g.,
+      # stride 4 or stride 2), but the auxiliary semantic feature could be at
+      # low resolution (e.g., stride 16 or stride 32), in the absence of the
+      # stacked decoder (L == 0). In this case, we use an auxiliary semantic
+      # decoder on top of the semantic feature, in order to add the auxiliary
+      # semantic loss.
+      if (semantic_shape[1:3] != panoptic_shape[1:3] and
+          self._use_auxiliary_semantic_decoder):
+        semantic_features = self._auxiliary_semantic_decoder(
+            features, training=training)
+      auxiliary_semantic_results = self._auxiliary_semantic_head(
+          semantic_features, training=training)
+      results.update(auxiliary_semantic_results)
 
     # Pixel space head.
     pixel_space_feature = self._pixel_space_head(
@@ -324,5 +364,9 @@ class MaXDeepLab(tf.keras.layers.Layer):
         pixel_space_mask_logits, self._pixel_space_mask_batch_norm)
     results[common.PRED_PIXEL_SPACE_MASK_LOGITS_KEY] = (
         pixel_space_mask_logits)
+
+    if common.PRED_AUXILIARY_OUTPUTS in features:
+      results[common.PRED_AUXILIARY_OUTPUTS] = (
+          features[common.PRED_AUXILIARY_OUTPUTS])
 
     return results

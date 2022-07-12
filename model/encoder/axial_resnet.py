@@ -548,18 +548,19 @@ class AxialResNet(tf.keras.Model):
                                [tf.shape(inputs)[0], 1, 1])
 
     endpoints = {}
-    output = self._stem(inputs)
-    activated_output = self._activation_fn(output)
-    endpoints['stage1'] = output
+    current_output = self._stem(inputs)
+    activated_output = self._activation_fn(current_output)
+    endpoints['stage1'] = current_output
     endpoints['res1'] = activated_output
 
     # Apply standard ResNet block groups. We use first_block_index to
     # distinguish models with 4 stages and those with 5 stages.
     for index in range(self._first_block_index, 5):
       current_name = '_stage{}'.format(index + 1)
-      current_output, activated_output, memory_feature = (
+      current_output, memory_feature = (
           getattr(self, current_name)(
-              (activated_output, memory_feature), training=training))
+              (current_output, memory_feature), training=training))
+      activated_output = self._activation_fn(current_output)
       endpoints[utils.get_layer_name(current_name)] = current_output
       activated_output_name = 'res{}'.format(index + 1)
       endpoints[activated_output_name] = activated_output
@@ -614,9 +615,9 @@ class AxialResNet(tf.keras.Model):
     if not current_is_backbone:
       # Build extra layers if we have finished building the backbone.
       current_name = '_stage5_' + EXTRA
-      current_output, activated_output, memory_feature = (
+      current_output, memory_feature = (
           getattr(self, current_name)(
-              (activated_output, memory_feature), training=training))
+              (current_output, memory_feature), training=training))
 
     # Compute parameter lists for stacked decoder.
     total_decoder_num_stacks = (
@@ -662,20 +663,21 @@ class AxialResNet(tf.keras.Model):
       else:
         current_name = '_decoder_stage{}_{}_resized_fuse'.format(
             decoder_stage, EXTRA)
-      activated_output = getattr(self, current_name)(
+      current_output = getattr(self, current_name)(
           decoder_features_list, training=training)
 
       # Apply a decoder block group for building the backbone.
       if current_is_backbone:
         current_name = '_decoder_stage{}'.format(decoder_stage)
-        current_output, activated_output, memory_feature = (
+        current_output, memory_feature = (
             getattr(self, current_name)(
-                (activated_output, memory_feature), training=training))
+                (current_output, memory_feature), training=training))
 
       if (current_decoder_stride == self._output_stride and
           current_stack == self._backbone_decoder_num_stacks):
         # Keep track of the backbone output, since it might be used as the
         # semantic feature output.
+        activated_output = self._activation_fn(current_output)
         backbone_output = activated_output
         # Now that we have finished building the backbone, we either return the
         # classification logits, or continue building a non-backbone decoder for
@@ -689,14 +691,15 @@ class AxialResNet(tf.keras.Model):
       # Apply a decoder block group for building the extra layers.
       if not current_is_backbone:
         current_name = '_decoder_stage{}_{}'.format(decoder_stage, EXTRA)
-        current_output, activated_output, memory_feature = (
+        current_output, memory_feature = (
             getattr(self, current_name)(
-                (activated_output, memory_feature), training=training))
+                (current_output, memory_feature), training=training))
 
       # Append the current feature into the feature dict for possible later
       # usage.
       stride_to_features[current_decoder_stride].append(current_output)
       if current_decoder_stride == self._high_resolution_output_stride:
+        activated_output = self._activation_fn(current_output)
         high_resolution_outputs.append(activated_output)
         next_stride_fn = lambda x: x * 2
     return memory_feature, high_resolution_outputs, backbone_output, endpoints

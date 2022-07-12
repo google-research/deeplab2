@@ -42,6 +42,27 @@ message DatasetOptions {
   // Set the resizing factor.
   optional int32 resize_factor = 7;
 
+  /* Augmentation options for panoptic copy-paste.*/
+  message PanopticCopyPasteOptions {
+    // The scale of the pasted image in panoptic copy-paste.
+    optional float panoptic_copy_paste_scale = 1 [default = 0.0];
+    // The option of selecting copy-paste targets in panoptic copy-paste. The
+    // option is one of ['random', 'none', 'all']. 'random' means the classes of
+    // this type will be randomly selected, 'none' means all classes in this
+    // type will be discraded, 'all' means all of them will be kept.
+    optional string panoptic_copy_paste_thing_option = 2 [default = 'random'];
+    // The option of selecting copy-paste targets in panoptic copy-paste. The
+    // option is one of ['random', 'none', 'all']. 'random' means the classes of
+    // this type will be randomly selected, 'none' means all classes in this
+    // type will be discraded, 'all' means all of them will be kept.
+    optional string panoptic_copy_paste_stuff_option = 3 [default = 'random'];
+    // The option of selecting copy-paste targets in panoptic copy-paste. The
+    // option is one of ['random', 'none', 'all']. 'random' means the classes of
+    // this type will be randomly selected, 'none' means all classes in this
+    // type will be discraded, 'all' means all of them will be kept.
+    optional string panoptic_copy_paste_void_option = 4 [default = 'none'];
+  }
+
   /* Augmentation options.*/
   message AugmentationOptions {
     // Set the minimum scale factor for augmentation. Default not to use.
@@ -52,6 +73,8 @@ message DatasetOptions {
     optional float scale_factor_step_size = 3 [default = 0.25];
     // The name of the AutoAugment policy to use.
     optional string autoaugment_policy_name = 4;
+    // Set the panoptic copy-paste augmentations.
+    optional PanopticCopyPasteOptions panoptic_copy_paste = 5;
   }
   optional AugmentationOptions augmentations = 8;
   // Set the standard deviation used to generate Gaussian center ground-truth.

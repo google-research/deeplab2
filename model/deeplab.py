@@ -218,6 +218,12 @@ class DeepLab(tf.keras.Model):
     items.update(self._decoder.checkpoint_items)
     return items
 
+  @property
+  def auxiliary_output_number(self) -> int:
+    # auxiliary_output_number is only supported in K-MaX meta, thus we hard
+    # code it to 0 here.
+    return 0
+
   def _resize_predictions(self, result_dict, target_h, target_w, reverse=False):
     """Resizes predictions to the target height and width.
 

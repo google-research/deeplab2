@@ -84,18 +84,23 @@ class DeepLabFamilyLoss(tf.keras.layers.Layer):
   def __init__(
       self,
       loss_options: config_pb2.LossOptions,
+      deeplab_options: config_pb2.ModelOptions,
       num_classes: Optional[int],
       ignore_label: Optional[int],
       ignore_depth: Optional[float],
-      thing_class_ids: Tuple[int]):
-    """Initializes the losses for Panoptic-DeepLab.
+      thing_class_ids: Tuple[int],
+      auxiliary_output_number: int = 0):
+    """Initializes the losses for the DeepLab family.
 
     Args:
       loss_options: Loss options as defined by config_pb2.LossOptions.
+      deeplab_options: Model options as defined in config_pb2.ModelOptions.
       num_classes: An integer specifying the number of classes in the dataset.
       ignore_label: An optional integer specifying the ignore label or None.
       ignore_depth: An optional float specifying the ignore depth or None.
       thing_class_ids: A tuple of length [N] containing N thing indices.
+      auxiliary_output_number: An integer specifying the number of auxiliary
+        outputs. Only applicable to MaX-DeepLab.
     """
     super(DeepLabFamilyLoss, self).__init__(name='DeepLabFamilyLoss')
 
@@ -105,16 +110,6 @@ class DeepLabFamilyLoss(tf.keras.layers.Layer):
     # dictionary of loss values.
     self._single_term_loss_func_and_weight_dict = collections.OrderedDict()
     self._extra_loss_names = [common.TOTAL_LOSS]
-
-    if loss_options.HasField(common.SEMANTIC_LOSS):
-      self._single_term_loss_func_and_weight_dict[
-          common.SEMANTIC_LOSS] = _create_loss_and_weight(
-              loss_options.semantic_loss,
-              common.GT_SEMANTIC_KEY,
-              common.PRED_SEMANTIC_LOGITS_KEY,
-              common.SEMANTIC_LOSS_WEIGHT_KEY,
-              num_classes=num_classes,
-              ignore_label=ignore_label)
 
     if loss_options.HasField(common.CENTER_LOSS):
       self._single_term_loss_func_and_weight_dict[
@@ -158,16 +153,42 @@ class DeepLabFamilyLoss(tf.keras.layers.Layer):
     # Multi-term losses that return dictionaries of loss terms.
     self._multi_term_losses = []
 
-    # MaXDeepLabLoss optionally returns four loss terms in total:
+    # MaXDeepLabLoss optionally returns five loss terms in total:
     # - common.PQ_STYLE_LOSS_CLASS_TERM
     # - common.PQ_STYLE_LOSS_MASK_DICE_TERM
     # - common.MASK_ID_CROSS_ENTROPY_LOSS
     # - common.INSTANCE_DISCRIMINATION_LOSS
+    # - common.SEMANTIC_LOSS
     if any([loss_options.HasField('pq_style_loss'),
             loss_options.HasField('mask_id_cross_entropy_loss'),
             loss_options.HasField('instance_discrimination_loss')]):
-      self._multi_term_losses.append(max_deeplab_loss.MaXDeepLabLoss(
-          loss_options, ignore_label, thing_class_ids))
+      instance_discrimination_sample_k = (
+          deeplab_options.max_deeplab.instance_discrimination_sample_k)
+      instance_discrimination_sample_temperature = (
+          deeplab_options.max_deeplab.instance_discrimination_sample_temperature
+      )
+      self._multi_term_losses.append(
+          max_deeplab_loss.MaXDeepLabLoss(
+              loss_options,
+              num_classes,
+              ignore_label,
+              thing_class_ids,
+              instance_discrimination_sample_k=instance_discrimination_sample_k,
+              instance_discrimination_sample_temperature=(
+                  instance_discrimination_sample_temperature),
+              auxiliary_output_number=auxiliary_output_number))
+    elif loss_options.HasField(common.SEMANTIC_LOSS):
+      # The semantic loss will only be used when we do not use MaXDeepLabLoss,
+      # which ensures the same behavior for other models (e.g.,
+      # Panoptic-DeepLab).
+      self._single_term_loss_func_and_weight_dict[
+          common.SEMANTIC_LOSS] = _create_loss_and_weight(
+              loss_options.semantic_loss,
+              common.GT_SEMANTIC_KEY,
+              common.PRED_SEMANTIC_LOGITS_KEY,
+              common.SEMANTIC_LOSS_WEIGHT_KEY,
+              num_classes=num_classes,
+              ignore_label=ignore_label)
 
     for multi_term_loss in self._multi_term_losses:
       self._extra_loss_names += multi_term_loss.loss_terms
@@ -203,6 +224,10 @@ class DeepLabFamilyLoss(tf.keras.layers.Layer):
       - common.REGRESSION_LOSS: [batch].
       - common.MOTION_LOSS: [batch], the frame offset regression loss.
       - common.NEXT_REGRESSION_LOSS: [batch], the next regression loss.
+      - common.PQ_STYLE_LOSS_CLASS_TERM: [batch].
+      - common.PQ_STYLE_LOSS_MASK_DICE_TERM: [batch].
+      - common.MASK_ID_CROSS_ENTROPY_LOSS: [batch].
+      - common.INSTANCE_DISCRIMINATION_LOSS: [batch].
 
     Raises:
       AssertionError: If the keys of the resulting_dict do not match

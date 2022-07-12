@@ -16,7 +16,7 @@ syntax = "proto2";
 
 package deeplab2;
 
-// Next ID: 22
+// Next ID: 24
 message EvaluatorOptions {
   // Set the number of steps to run evaluation. -1 corresponds to a run over the
   // full dataset.
@@ -29,7 +29,7 @@ message EvaluatorOptions {
   optional int32 continuous_eval_timeout = 3 [default = -1];
   // Set whether to run evaluation as a tf function.
   optional bool use_tf_function = 4 [default = true];
-  // Set the area size of stuff segments to discard.
+  // Set the area size of stuff segments to discard (set to ignore_label).
   optional int32 stuff_area_limit = 6 [default = 0];
   // Set the area size of thing segments to discard (set to ignore_label). Note
   // that this option is currently only supported in MaX-DeepLab.
@@ -39,6 +39,42 @@ message EvaluatorOptions {
   // Set the threshold for the per-pixel mask confidence. Note that this option
   // is currently only supported in MaX-DeepLab.
   optional float pixel_confidence_threshold = 21 [default = 0.4];
+  // A string specifying types of post-processing for transformer models,
+  // currently we support two types:
+  // "pixelwise": Two simple argmax operations for pixel and transformer class
+  //   are used, respectively, to obtain the panoptic prediction.
+  // "maskwise": Firstly a thresholding is applied to obtain the binary mask for
+  //   each mask slot, which are re-ordered based on its confidence score.
+  //   Afterwards, we paste these binary masks onto an empty canvas one by one
+  //   from high-confidence to low-confidence. Besides, different thresholding
+  //   values for thing and stuff classes are supported. The hyper parameters
+  //   are set in MaskwisePostProcessingOptions.
+  optional string transformer_post_processing = 22 [default = 'pixelwise'];
+  message MaskwisePostProcessingOptions {
+    // Set the threshold for the transformer thing class confidence in mask-wise
+    // post-processing.
+    optional float transformer_class_confidence_threshold_thing = 1
+        [default = 0.7];
+    // Set the threshold for the transformer thing stuff confidence in mask-wise
+    // post-processing.
+    optional float transformer_class_confidence_threshold_stuff = 2
+        [default = 0.7];
+    // Set the threshold for overlapping ratio among binary masks in mask-wise
+    // post-processing.
+    optional float overlapping_threshold = 3 [default = 0.5];
+    // Set the weight of class term when ranking mask slots in mask-wise
+    // post-processing. The ranking is based on the confidence score, which is
+    // computed as: (class_confidence ** maskwise_reorder_class_weight) * (
+    // pixel_confidence ** maskwise_reorder_mask_weight).
+    optional float reorder_class_weight = 4 [default = 1.0];
+    // Set the weight of mask term when ranking mask slots in mask-wise
+    // post-processing. The ranking is based on the confidence score, which is
+    // computed as: (class_confidence ** maskwise_reorder_class_weight) * (
+    // pixel_confidence ** maskwise_reorder_mask_weight).
+    optional float reorder_mask_weight = 5 [default = 0.0];
+  }
+  // Set the option for the maskwise post-processing.
+  optional MaskwisePostProcessingOptions maskwise_postprocessing = 23;
   // Set the threshold of the center heatmap for post-processing.
   optional float center_score_threshold = 7 [default = 0.1];
   // Set the kernel size of the nms kernel for the center heatmap.

@@ -13,18 +13,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Implements dual path transformer layers proposed in MaX-DeepLab [1].
+"""Implements transformer layers for MaX-DeepLab [1] and kMaX-DeepLab [2].
 
 Dual-path transformer introduces a global memory path in addition to a CNN path,
 allowing bi-directional communication with any CNN layers.
 
+k-means cross-attention adopts a cluster-wise argmax instead of spatial-wise
+softmax, which aligns to k-means clustering algorithm.
+
 [1] MaX-DeepLab: End-to-End Panoptic Segmentation with Mask Transformers,
     CVPR 2021.
       Huiyu Wang, Yukun Zhu, Hartwig Adam, Alan Yuille, Liang-Chieh Chen.
+
+[2] k-means Mask Transformer, ECCV 2022.
+      Qihang Yu, Huiyu Wang, Siyuan Qiao, Maxwell Collins, Yukun Zhu,
+      Hartwig Adam, Alan Yuille, Liang-Chieh Chen.
 """
 
 import tensorflow as tf
 
+from deeplab2 import common
 from deeplab2.model import utils
 from deeplab2.model.layers import activations
 from deeplab2.model.layers import convolutions
@@ -97,7 +105,7 @@ class AttentionOperation(tf.keras.layers.Layer):
 
 
 class DualPathTransformerLayer(tf.keras.layers.Layer):
-  """Applies a dual path transformer layer, as proposed in MaX-DeepLab [1].
+  """Applies a transformer layer, as proposed in MaX-DeepLab models [1,2].
 
   Dual-path transformer layer takes a pixel space input and a memory space
   input, and performs memory2pixel attention, pixel2memory attention, and
@@ -108,9 +116,17 @@ class DualPathTransformerLayer(tf.keras.layers.Layer):
   a residual block with axial-attention, global-attention, or convolution in
   order to construct the full dual path transformer in the paper.
 
+  The flag "use_kmeans_cross_attention" enables k-means cross-attention, which
+  regards the memory (object query) as cluster center, and updates them in a
+  k-means clustering manner.
+
   [1] MaX-DeepLab: End-to-End Panoptic Segmentation with Mask Transformers,
       CVPR 2021.
         Huiyu Wang, Yukun Zhu, Hartwig Adam, Alan Yuille, Liang-Chieh Chen.
+
+  [2] k-means Mask Transformer, ECCV 2022.
+      Qihang Yu, Huiyu Wang, Siyuan Qiao, Maxwell Collins, Yukun Zhu,
+      Hartwig Adam, Alan Yuille, Liang-Chieh Chen.
   """
 
   def __init__(self,
@@ -123,10 +139,13 @@ class DualPathTransformerLayer(tf.keras.layers.Layer):
                value_expansion=2,
                feed_forward_network_channels=2048,
                use_memory_self_attention=True,
+               use_memory2pixel_feedback_attention=True,
                use_pixel2memory_feedback_attention=True,
+               use_kmeans_cross_attention=False,
                transformer_activation='softmax',
                bn_layer=tf.keras.layers.BatchNormalization,
-               conv_kernel_weight_decay=0.0):
+               conv_kernel_weight_decay=0.0,
+               auxiliary_predictor_func=None):
     """Initializes a DualPathTransformerLayer.
 
     This function implements a dual path transformer layer between a pixel space
@@ -134,10 +153,18 @@ class DualPathTransformerLayer(tf.keras.layers.Layer):
     transformer, the memory2pixel cross attention and the memory self-attention
     share a single activation, e.g. softmax.
 
+    The flag "use_kmeans_cross_attention" enables k-means cross-attention
+    proposed in the kMaX-DeepLab paper, which regards the memory (object query)
+    as cluster center, and updates them in a k-means clustering manner.
+
     Reference:
       MaX-DeepLab: "End-to-End Panoptic Segmentation with Mask Transformers",
         CVPR 2021. https://arxiv.org/abs/2012.00759
           Huiyu Wang, Yukun Zhu, Hartwig Adam, Alan Yuille, Liang-Chieh Chen.
+
+      k-means Mask Transformer, ECCV 2022.
+        Qihang Yu, Huiyu Wang, Siyuan Qiao, Maxwell Collins, Yukun Zhu,
+        Hartwig Adam, Alan Yuille, Liang-Chieh Chen.
 
     Args:
       name: A string, the name of this dual path transformer layer.
@@ -153,18 +180,28 @@ class DualPathTransformerLayer(tf.keras.layers.Layer):
         applied.
       use_memory_self_attention: A boolean, whether to apply the memory space
         self-attention.
+      use_memory2pixel_feedback_attention: A boolean, whether to apply the
+        memory2pixel feedback attention.
       use_pixel2memory_feedback_attention: A boolean, whether to apply the
         pixel2memory feedback attention.
+      use_kmeans_cross_attention: A boolean, whether to apply the kmeans
+        cross-attention.
       transformer_activation: A string, type of activation function for
         self-attention. Support 'sigmoid' and 'softmax'.
       bn_layer: A tf.keras.layers.Layer that computes the normalization
         (default: tf.keras.layers.BatchNormalization).
       conv_kernel_weight_decay: A float, the weight decay for convolution
         kernels.
+      auxiliary_predictor_func: A callable function that returns an
+        initialization of auxiliary predictor.
 
     Raises:
       ValueError: If filters * key_expansion is not divisible by num_heads.
       ValueError: If filters * value_expansion is not divisible by num_heads.
+      ValueError: If both use_memory2pixel_feedback_attention and
+        use_kmeans_cross_attention are False.
+      ValueError: If use_kmeans_cross_attention is True but
+        auxiliary_predictor_func is None.
     """
     super(DualPathTransformerLayer, self).__init__(name=name)
 
@@ -177,6 +214,10 @@ class DualPathTransformerLayer(tf.keras.layers.Layer):
 
     if total_value_depth % num_heads:
       raise ValueError('Total_value_depth should be divisible by num_heads.')
+
+    if not (use_memory2pixel_feedback_attention or use_kmeans_cross_attention):
+      raise ValueError('At least one of use_memory2pixel_feedback_attention or'
+                       ' use_kmeans_cross_attention needs to be enabled.')
 
     # Compute query key value with one convolution and a batch norm layer. The
     # initialization std is standard transformer initialization (without batch
@@ -216,10 +257,11 @@ class DualPathTransformerLayer(tf.keras.layers.Layer):
           conv_kernel_weight_decay=conv_kernel_weight_decay,
           kernel_initializer=tf.keras.initializers.TruncatedNormal(
               stddev=initialization_std))
-    else:
+    elif use_memory2pixel_feedback_attention:
       # Compute memory query only if memory key and value are not used.
       self._memory_query_conv_bn = convolutions.Conv1D(
-          total_key_depth, 'memory_query_conv_bn',
+          total_key_depth,
+          'memory_query_conv_bn',
           use_bias=False,
           use_bn=True,
           bn_layer=bn_layer,
@@ -242,7 +284,7 @@ class DualPathTransformerLayer(tf.keras.layers.Layer):
           conv_kernel_weight_decay=conv_kernel_weight_decay,
           kernel_initializer=tf.keras.initializers.TruncatedNormal(
               stddev=initialization_std))
-    else:
+    elif use_memory2pixel_feedback_attention:
       self._pixel_kv_conv_bn = convolutions.Conv1D(
           total_key_depth + total_value_depth, 'pixel_kv_conv_bn',
           use_bias=False,
@@ -252,17 +294,42 @@ class DualPathTransformerLayer(tf.keras.layers.Layer):
           conv_kernel_weight_decay=conv_kernel_weight_decay,
           kernel_initializer=tf.keras.initializers.TruncatedNormal(
               stddev=initialization_std))
-    self._memory_attention = AttentionOperation(
-        'memory_attention', activation, transformer_activation,
-        bn_layer=bn_layer)
+    else:
+      # In this case, only k-means cross attention is enabled, and thus we only
+      # need the value of pixel to update memory.
+      self._pixel_v_conv_bn = convolutions.Conv1D(
+          total_value_depth, 'pixel_v_conv_bn',
+          use_bias=False,
+          use_bn=True,
+          bn_layer=bn_layer,
+          activation='none',
+          conv_kernel_weight_decay=conv_kernel_weight_decay,
+          kernel_initializer=tf.keras.initializers.TruncatedNormal(
+              stddev=initialization_std))
+
+    if use_memory2pixel_feedback_attention or use_memory_self_attention:
+      self._memory_attention = AttentionOperation(
+          'memory_attention', activation, transformer_activation,
+          bn_layer=bn_layer)
     if use_pixel2memory_feedback_attention:
       self._pixel_attention = AttentionOperation(
           'pixel_attention', activation, transformer_activation,
           bn_layer=bn_layer)
 
+    if use_kmeans_cross_attention:
+      # If kmeans cross-attention is used, we perform an auxiliary prediction.
+      if auxiliary_predictor_func is None:
+        raise ValueError('auxiliary_predictor_func should not be None when'
+                         ' using kmeans cross attention.')
+      self._auxiliary_clustering_predictor = auxiliary_predictor_func()
+
     self._use_memory_self_attention = use_memory_self_attention
+    self._use_memory2pixel_feedback_attention = (
+        use_memory2pixel_feedback_attention)
     self._use_pixel2memory_feedback_attention = (
         use_pixel2memory_feedback_attention)
+    self._use_kmeans_cross_attention = use_kmeans_cross_attention
+    self._bottleneck_channels = bottleneck_channels
     self._total_key_depth = total_key_depth
     self._total_value_depth = total_value_depth
     self._num_heads = num_heads
@@ -283,14 +350,16 @@ class DualPathTransformerLayer(tf.keras.layers.Layer):
     # all residual blocks. This helps training at early epochs.
     # Reference: "Accurate, Large Minibatch SGD: Training ImageNet in 1 Hour".
     # https://arxiv.org/abs/1706.02677
-    self._memory_conv3_bn = convolutions.Conv1D(
-        memory_shape[-1], 'memory_conv3_bn',
-        use_bias=False,
-        use_bn=True,
-        bn_layer=self._bn_layer,
-        bn_gamma_initializer='zeros',
-        activation='none',
-        conv_kernel_weight_decay=self._conv_kernel_weight_decay)
+    if (self._use_memory2pixel_feedback_attention or
+        self._use_memory_self_attention):
+      self._memory_conv3_bn = convolutions.Conv1D(
+          memory_shape[-1], 'memory_conv3_bn',
+          use_bias=False,
+          use_bn=True,
+          bn_layer=self._bn_layer,
+          bn_gamma_initializer='zeros',
+          activation='none',
+          conv_kernel_weight_decay=self._conv_kernel_weight_decay)
 
     if self._feed_forward_network_channels > 0:
       self._memory_ffn_conv1_bn_act = convolutions.Conv1D(
@@ -321,6 +390,47 @@ class DualPathTransformerLayer(tf.keras.layers.Layer):
           activation='none',
           conv_kernel_weight_decay=self._conv_kernel_weight_decay)
 
+    if self._use_kmeans_cross_attention:
+      self._kmeans_memory_batch_norm_retrieved_value = self._bn_layer(
+          axis=-1, name='kmeans_memory_batch_norm_retrieved_value')
+      self._kmeans_memory_conv3_bn = convolutions.Conv1D(
+          memory_shape[-1], 'kmeans_memory_conv3_bn',
+          use_bias=False,
+          use_bn=True,
+          bn_layer=self._bn_layer,
+          bn_gamma_initializer='zeros',
+          activation='none',
+          conv_kernel_weight_decay=self._conv_kernel_weight_decay)
+
+  def kmeans_assignment_step(self, pixel_feature, cluster_centers,
+                             num_mask_slots, training):
+    auxiliary_result_dict = self._auxiliary_clustering_predictor(
+        {
+            'feature_panoptic': pixel_feature,
+            'feature_semantic': pixel_feature,
+            'transformer_class_feature': cluster_centers,
+            'transformer_mask_feature': cluster_centers
+        },
+        training=training)
+    # A cluster-wise argmax is applied to convert the attention logits to
+    # clustering results, which serve as attention weights.
+    clustering_result = tf.argmax(
+        auxiliary_result_dict[common.PRED_PIXEL_SPACE_MASK_LOGITS_KEY], axis=-1)
+    clustering_result = tf.cast(
+        tf.one_hot(clustering_result, depth=num_mask_slots, axis=-1),
+        tf.float32)
+    clustering_result = tf.stop_gradient(clustering_result)
+    return auxiliary_result_dict, clustering_result
+
+  def kmeans_update_memory_step(self, clustering_result, pixel_value, training):
+    kmeans_memory_space = tf.einsum('blm,bld->bmd', clustering_result,
+                                    pixel_value)
+    kmeans_memory_space = self._kmeans_memory_batch_norm_retrieved_value(
+        kmeans_memory_space, training=training)
+    kmeans_memory_space = self._kmeans_memory_conv3_bn(
+        kmeans_memory_space, training=training)
+    return kmeans_memory_space
+
   def call(self, inputs):
     """Performs a forward pass.
 
@@ -333,16 +443,20 @@ class DualPathTransformerLayer(tf.keras.layers.Layer):
     pass only the first two tensors when drop path is not used.
 
     Args:
-      inputs: A tuple of 3 or 6 tensors, containing
-        pixel_space_input should be a [batch, num_pixel, pixel_space_channels]
-          tensor.
+      inputs: A tuple of 4 or 8 tensors, containing
+        pixel_space_input should be a [batch, height, width,
+          pixel_space_channels] tensor.
         memory_space_input should be a [batch, num_memory,
           memory_space_channels] tensor.
+        auxiliary_outputs should be a tuple containing auxiliary outputs, where
+          each element has the dictionary type.
         float_tensor_training should be a float tensor of 0.0 or 1.0, whether
           the model is in training mode.
         (optional) pixel_space_drop_path_mask is a drop path mask tensor of
           shape [batch, 1, 1] for the pixel space.
         (optional) memory_space_attention_drop_path_mask is a drop path mask
+          tensor of shape [batch, 1, 1] for the memory space.
+        (optional) memory_kmeans_attention_drop_path_mask is a drop path mask
           tensor of shape [batch, 1, 1] for the memory space.
         (optional) memory_space_feed_forward_network_drop_path_mask is a drop
           path mask tensor of shape [batch, 1, 1] for the memory space feed
@@ -350,22 +464,24 @@ class DualPathTransformerLayer(tf.keras.layers.Layer):
 
     Returns:
       pixel_space_output: A [batch, num_pixel, pixel_space_channels] tensor.
-      activated_pixel_space_output: A [batch, num_pixel, pixel_space_channels]
-        tensor, activated pixel_space_output.
       memory_space_output: A [batch, num_memory, memory_space_channels]
         tensor.
+      auxiliary_outputs: A tuple containing auxiliary outputs, where each
+        element has the dictionary type.
 
     Raises:
-      ValueError: If the length of inputs is not 3 or 6.
+      ValueError: If the length of inputs is not 4 or 8.
     """
-    if len(inputs) not in (3, 6):
-      raise ValueError('The length of inputs should be either 3 or 6.')
+    if len(inputs) not in (4, 8):
+      raise ValueError('The length of inputs should be either 4 or 8.')
 
     # Unpack the inputs.
-    (pixel_space_input, memory_space_input, float_tensor_training,
+    (pixel_space_input, memory_space_input, auxiliary_outputs,
+     float_tensor_training,
      pixel_space_drop_path_mask, memory_space_attention_drop_path_mask,
+     memory_kmeans_attention_drop_path_mask,
      memory_space_feed_forward_network_drop_path_mask) = (
-         utils.pad_sequence_with_none(inputs, target_length=6))
+         utils.pad_sequence_with_none(inputs, target_length=8))
 
     # Recompute_grad takes only float tensors as inputs. It does not allow
     # bools or boolean tensors. For this reason, we cast training to a float
@@ -375,6 +491,11 @@ class DualPathTransformerLayer(tf.keras.layers.Layer):
     # Decode the inputs shapes.
     pixel_shape = pixel_space_input.get_shape().as_list()
     memory_shape = memory_space_input.get_shape().as_list()
+
+    # Flatten the pixel_space_input.
+    pixel_space_input = tf.reshape(
+        pixel_space_input,
+        [-1, pixel_shape[1] * pixel_shape[2], pixel_shape[3]])
 
     # Similar to the ResNet bottleneck design, we do an input down projection
     # in both the pixel space and the memory space.
@@ -399,13 +520,15 @@ class DualPathTransformerLayer(tf.keras.layers.Layer):
       memory_value = tf.reshape(memory_value, [
           -1, memory_shape[1], self._num_heads,
           self._total_value_depth // self._num_heads])
-    else:
+      # Reshape and transpose the query.
+      memory_query = utils.reshape_and_transpose_for_attention_operation(
+          memory_query, self._num_heads)
+    elif self._use_memory2pixel_feedback_attention:
       # Compute memory query only if memory key and value are not used.
-      memory_query = self._memory_query_conv_bn(memory_space,
-                                                training=training)
-    # Reshape and transpose the query.
-    memory_query = utils.reshape_and_transpose_for_attention_operation(
-        memory_query, self._num_heads)
+      memory_query = self._memory_query_conv_bn(memory_space, training=training)
+      # Reshape and transpose the query.
+      memory_query = utils.reshape_and_transpose_for_attention_operation(
+          memory_query, self._num_heads)
 
     if self._use_pixel2memory_feedback_attention:
       pixel_space_qkv = self._pixel_qkv_conv_bn(pixel_space,
@@ -417,41 +540,84 @@ class DualPathTransformerLayer(tf.keras.layers.Layer):
               self._total_value_depth], axis=-1)
       pixel_query = utils.reshape_and_transpose_for_attention_operation(
           pixel_query, self._num_heads)
-    else:
+      # Reshape and transpose the key and the value.
+      pixel_key = utils.reshape_and_transpose_for_attention_operation(
+          pixel_key, self._num_heads)
+    elif self._use_memory2pixel_feedback_attention:
       pixel_space_kv = self._pixel_kv_conv_bn(pixel_space, training=training)
       # Split the key and the value.
       pixel_key, pixel_value = tf.split(pixel_space_kv, [
           self._total_key_depth, self._total_value_depth], axis=-1)
-    # Reshape and transpose the key and the value.
-    pixel_key = utils.reshape_and_transpose_for_attention_operation(
-        pixel_key, self._num_heads)
+      # Reshape and transpose the key and the value.
+      pixel_key = utils.reshape_and_transpose_for_attention_operation(
+          pixel_key, self._num_heads)
+    else:
+      # In this case, only k-means cross attention is enabled, and thus we only
+      # need the value of pixel to update memory.
+      pixel_value = self._pixel_v_conv_bn(pixel_space, training=training)
     pixel_value = tf.reshape(pixel_value, [
-        -1, pixel_shape[1], self._num_heads,
-        self._total_value_depth // self._num_heads])
+        -1, pixel_shape[1] * pixel_shape[2], self._num_heads,
+        self._total_value_depth // self._num_heads
+    ])
 
+    memory_space_output = memory_space_input
+    pixel_space_output = pixel_space_input
+
+    # Perform kmeans cross-attention.
+    if self._use_kmeans_cross_attention:
+      # Assignment step.
+      pixel_space2d = tf.reshape(
+          pixel_space,
+          [-1, pixel_shape[1], pixel_shape[2], self._bottleneck_channels])
+      auxiliary_result_dict, clustering_result = self.kmeans_assignment_step(
+          pixel_space2d, memory_space, memory_shape[1], training)
+      clustering_result = tf.reshape(clustering_result,
+                                     [-1, pixel_shape[1] * pixel_shape[2],
+                                      memory_shape[1]])
+      # Add to auxiliary_outputs.
+      auxiliary_outputs = auxiliary_outputs + (auxiliary_result_dict,)
+      # Update step.
+      pixel_value_single_head = tf.reshape(
+          pixel_value,
+          [-1, pixel_shape[1] * pixel_shape[2], self._total_value_depth])
+      kmeans_memory_space = self.kmeans_update_memory_step(
+          clustering_result, pixel_value_single_head, training)
+      if memory_kmeans_attention_drop_path_mask is not None:
+        kmeans_memory_space = (
+            kmeans_memory_space * memory_kmeans_attention_drop_path_mask)
+      memory_space_output = memory_space_output + kmeans_memory_space
+
+    # Perform M2P/M2M attention.
     # Compute memory space attention.
-    if not self._use_memory_self_attention:
+    memory_attention_key = []
+    memory_attention_value = []
+    if self._use_memory2pixel_feedback_attention:
       # If memory self attention is not used, then only memory2pixel cross
       # attention is used for the memory space. In this case, the key and the
       # value are simply pixel_key and pixel_value.
-      memory_attention_key = pixel_key
-      memory_attention_value = pixel_value
-    else:
+      memory_attention_key.append(pixel_key)
+      memory_attention_value.append(pixel_value)
+    if self._use_memory_self_attention:
+      memory_attention_key.append(memory_key)
+      memory_attention_value.append(memory_value)
+
+    if (self._use_memory2pixel_feedback_attention or
+        self._use_memory_self_attention):
       # If we also use memory self attention, the key and the value are the
       # concatenation of keys and values in both the pixel space and the
       # memory space.
-      memory_attention_key = tf.concat([pixel_key, memory_key], axis=2)
-      memory_attention_value = tf.concat([pixel_value, memory_value], axis=1)
+      memory_attention_key = tf.concat(memory_attention_key, axis=2)
+      memory_attention_value = tf.concat(memory_attention_value, axis=1)
+      memory_space = self._memory_attention(
+          (memory_query, memory_attention_key, memory_attention_value),
+          training=training)
+      memory_space = self._memory_conv3_bn(memory_space, training=training)
 
-    memory_space = self._memory_attention(
-        (memory_query, memory_attention_key, memory_attention_value),
-        training=training)
-    memory_space = self._memory_conv3_bn(memory_space, training=training)
+      if memory_space_attention_drop_path_mask is not None:
+        memory_space = memory_space * memory_space_attention_drop_path_mask
+      memory_space_output = memory_space_output + memory_space
 
-    if memory_space_attention_drop_path_mask is not None:
-      memory_space = memory_space * memory_space_attention_drop_path_mask
-    memory_space_output = self._activation_fn(
-        memory_space_input + memory_space)
+    memory_space_output = self._activation_fn(memory_space_output)
 
     # Apply an optional feed-forward network to the memory space.
     if self._feed_forward_network_channels > 0:
@@ -465,6 +631,7 @@ class DualPathTransformerLayer(tf.keras.layers.Layer):
       memory_space_output = self._activation_fn(
           memory_space_output + memory_space)
 
+    # Perform P2M attention.
     # Compute pixel space attention and the output projection only when
     # pixel2memory_feedback_attention is used.
     if self._use_pixel2memory_feedback_attention:
@@ -474,15 +641,11 @@ class DualPathTransformerLayer(tf.keras.layers.Layer):
       if pixel_space_drop_path_mask is not None:
         pixel_space = pixel_space * pixel_space_drop_path_mask
       pixel_space_output = pixel_space_input + pixel_space
-    else:
-      # If pixel2memory_feedback_attention is not used, the pixel_space_input
-      # is not changed.
-      pixel_space_output = pixel_space_input
-    activated_pixel_space_output = self._activation_fn(pixel_space_output)
 
-    # Return the pixel space output and memory space output. Note that we
-    # return pixel sapce output with and without the activation function,
-    # because our decoder might use non-activated features.
-    return (pixel_space_output,
-            activated_pixel_space_output,
-            memory_space_output)
+    # Reshape back to 4D.
+    pixel_space_output = tf.reshape(
+        pixel_space_output,
+        [-1, pixel_shape[1], pixel_shape[2], pixel_shape[3]])
+
+    # Return the pixel space output, memory space output, and auxiliary outputs.
+    return pixel_space_output, memory_space_output, auxiliary_outputs

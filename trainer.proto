@@ -19,7 +19,7 @@ package deeplab2;
 option java_multiple_files = true;
 
 // Configure the solver options.
-// Next ID: 17
+// Next ID: 18
 message SolverOptions {
   optional bool use_sync_batchnorm = 1 [default = true];
   optional float batchnorm_momentum = 14 [default = 0.99];
@@ -41,6 +41,10 @@ message SolverOptions {
   optional string optimizer = 7 [default = 'adam'];
   // Set the value of the weight decay for training.
   optional float weight_decay = 8 [default = 0];
+  // Set the value of the weight decay of AdamW optimizer for training. We need
+  // to use a different value from weight_decay here, as weight_decay is used
+  // to set conv_kernel_weight_decay in the model.
+  optional float adamw_weight_decay = 17 [default = 0];
   // Set whether to use gradient clipping or not.
   optional bool use_gradient_clipping = 9 [default = false];
   // Set the norm used in gradient clipping.
