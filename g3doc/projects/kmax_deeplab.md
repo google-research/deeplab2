@@ -1,10 +1,11 @@
 # kMaX-DeepLab
 
-kMaX-DeepLab is an end-to-end method for general segmentation tasks. Built upon
-MaX-DeepLab [1] and CMT-DeepLab [2], kMaX-DeepLab proposes a novel view to
-regard the mask transformer [1] as a process of iteratively performing
-cluster-assignment and cluster-update steps.
-
+[kMaX-DeepLab](https://arxiv.org/pdf/2207.04044.pdf) is an end-to-end method for
+general segmentation tasks. Built upon
+[MaX-DeepLab](https://arxiv.org/pdf/2012.00759.pdf) [1] and
+[CMT-DeepLab](https://arxiv.org/pdf/2206.08948.pdf) [2], kMaX-DeepLab proposes a
+novel view to regard the mask transformer [1] as a process of iteratively
+performing cluster-assignment and cluster-update steps.
 
 <p align="center">
    <img src="../img/kmax_deeplab/clustering_view_of_mask_transformer.png" width=450>
@@ -46,6 +47,16 @@ but also enjoys a much better performance.
 We explore kMaX-DeepLab model variants that are built on top of several
 backbones (e.g., ResNet [3], MaX-S [1], and ConvNeXt [4]).
 
+The ImageNet pretrained weights are located in
+[checkpoints](./imagenet_pretrained_checkpoints.md). For the model zoo below,
+we use the following pretrained checkpoints:
+
+1. `Simple training strategy`: ResNet-50
+
+2. `Strong training strategy`: Axial-ResNet-50 (MaX-S w/ GeLU)
+
+3. `Converted from official weights`: ConvNeXt
+
 ### COCO Panoptic Segmentation
 
 We provide checkpoints pretrained on COCO 2017 panoptic train set and evaluated
@@ -57,15 +68,15 @@ All the reported results are obtained by *single-scale* inference. ResNet-50 use
 *ImageNet-1K* pretrained checkpoints, while the other backbones use
 *ImageNet-22K* pretrained checkpoints.
 
-Backbone                                                                                                                                                                                                                                  | val PQ \[\*\] | val PQ<sup>thing</sup> \[\*\] | val PQ<sup>stuff</sup> \[\*\] | test PQ \[\*\] | test PQ<sup>thing</sup> \[\*\] | test PQ<sup>stuff</sup> | val PQ \[\*\*\]
------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :-----------: | :---------------------------: | :---------------------------: | :------------: | :----------------------------: | :---------------------: | :-------------:
-ResNet-50 ([config](../../configs/coco/kmax_deeplab/kmax_meta_r50_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/max_deeplab_s_os16_res641_100k_coco_train.tar.gz))                               | 53.0          | 58.3                          | 44.9                          | 53.4           | 59.3                           | 44.5                    | 53.50
-Axial-ResNet50 (MaX-S) ([config](../../configs/coco/kmax_deeplab/kmax_meta_axial_r50_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/max_deeplab_s_os16_res641_200k_coco_train.tar.gz))            | 56.2          | 62.2                          | 47.1                          | 56.4           | 62.7                           | 46.9                    | 56.71
-ConvNeXt-T ([config](../../configs/coco/kmax_deeplab/kmax_meta_convnext_tiny_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/max_deeplab_s_os16_res641_400k_coco_train.tar.gz))                    | 55.3          | 61.0                          | 46.7                          | 55.7           | 61.7                           | 46.7                    | 55.80
-ConvNeXt-S ([config](../../configs/coco/kmax_deeplab/kmax_meta_convnext_small_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/max_deeplab_s_os16_res1025_100k_coco_train.tar.gz))                  | 56.3          | 62.2                          | 47.5                          | 57.0           | 63.3                           | 47.5                    | 56.86
-ConvNeXt-B ([config](../../configs/coco/kmax_deeplab/kmax_meta_convnext_base_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/max_deeplab_s_os16_res1025_200k_coco_train.tar.gz))                   | 57.2          | 63.4                          | 47.8                          | 57.8           | 64.3                           | 48.1                    | 57.73
-ConvNeXt-L ([config](../../configs/coco/kmax_deeplab/kmax_meta_convnext_large_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/max_deeplab_s_os16_res1025_400k_coco_train.tar.gz))                  | 57.9          | 64.0                          | 48.6                          | 58.0           | 64.5                           | 48.2                    | 58.38
-ConvNeXt-L w/ unlabeled set ([config](../../configs/coco/kmax_deeplab/kmax_meta_convnext_large_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/max_deeplab_l_os16_res1025_100k_coco_train.tar.gz)) | 58.1          | 64.3                          | 48.8                          | 58.5           | 64.8                           | 49.0                    | 58.69
+Backbone                                                                                                                                                                                                                                | val PQ \[\*\] | val PQ<sup>thing</sup> \[\*\] | val PQ<sup>stuff</sup> \[\*\] | test PQ \[\*\] | test PQ<sup>thing</sup> \[\*\] | test PQ<sup>stuff</sup> | val PQ \[\*\*\]
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-----------: | :---------------------------: | :---------------------------: | :------------: | :----------------------------: | :---------------------: | :-------------:
+ResNet-50 ([config](../../configs/coco/kmax_deeplab/kmax_meta_r50_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/kmax_resnet50_coco_train.tar.gz))                                              | 53.0          | 58.3                          | 44.9                          | 53.4           | 59.3                           | 44.5                    | 53.50
+Axial-ResNet-50 (MaX-S w/ GeLU) ([config](../../configs/coco/kmax_deeplab/kmax_meta_axial_r50_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/kmax_maxs_gelu_coco_train.tar.gz))                  | 56.2          | 62.2                          | 47.1                          | 56.4           | 62.7                           | 46.9                    | 56.71
+ConvNeXt-T ([config](../../configs/coco/kmax_deeplab/kmax_meta_convnext_tiny_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/kmax_convnext_tiny_coco_train.tar.gz))                              | 55.3          | 61.0                          | 46.7                          | 55.7           | 61.7                           | 46.7                    | 55.80
+ConvNeXt-S ([config](../../configs/coco/kmax_deeplab/kmax_meta_convnext_small_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/kmax_convnext_small_coco_train.tar.gz))                            | 56.3          | 62.2                          | 47.5                          | 57.0           | 63.3                           | 47.5                    | 56.86
+ConvNeXt-B ([config](../../configs/coco/kmax_deeplab/kmax_meta_convnext_base_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/kmax_convnext_base_coco_train.tar.gz))                              | 57.2          | 63.4                          | 47.8                          | 57.8           | 64.3                           | 48.1                    | 57.73
+ConvNeXt-L ([config](../../configs/coco/kmax_deeplab/kmax_meta_convnext_large_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/kmax_convnext_large_coco_train.tar.gz))                            | 57.9          | 64.0                          | 48.6                          | 58.0           | 64.5                           | 48.2                    | 58.38
+ConvNeXt-L w/ unlabeled set ([config](../../configs/coco/kmax_deeplab/kmax_meta_convnext_large_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/kmax_convnext_large_coco_train_unlabeled.tar.gz)) | 58.1          | 64.3                          | 48.8                          | 58.5           | 64.8                           | 49.0                    | 58.69
 
 \[\*\]: Results evaluated by the official script. \[\*\*\]: Results evaluated by
 our pipeline. See Q4 in [FAQ](../faq.md).
@@ -81,14 +92,14 @@ All the reported results are obtained by *single-scale* inference. ResNet-50 use
 *ImageNet-1K* pretrained checkpoints, while the other backbones use
 *ImageNet-22K* pretrained checkpoints.
 
-Backbone                                                                                                                                                                                                                             | PQ \[\*\] | PQ<sup>thing</sup> \[\*\] | PQ<sup>stuff</sup> \[\*\] | AP<sup>mask</sup> \[\*\] | mIoU \[\*\] | PQ \[\*\*\]
------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------: | :-----------------------: | :-----------------------: | :----------------------: | :---------: | :---------:
-ResNet-50 ([config](../../configs/cityscapes/kmax_deeplab/kmax_meta_r50_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/max_deeplab_s_os16_res641_100k_coco_train.tar.gz))                    | 64.3      | 57.7                      | 69.1                      | 38.5                     | 79.7        | 64.65
-Axial-ResNet50 (MaX-S) ([config](../../configs/cityscapes/kmax_deeplab/kmax_meta_axial_r50_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/max_deeplab_s_os16_res641_200k_coco_train.tar.gz)) | 66.4      | 61.2                      | 70.2                      | 41.6                     | 82.1        | 66.73
-ConvNeXt-T ([config](../../configs/cityscapes/kmax_deeplab/kmax_meta_convnext_tiny_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/max_deeplab_s_os16_res641_400k_coco_train.tar.gz))         | 66.3      | 60.2                      | 70.8                      | 41.2                     | 82.6        | 66.65
-ConvNeXt-S ([config](../../configs/cityscapes/kmax_deeplab/kmax_meta_convnext_small_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/max_deeplab_s_os16_res1025_100k_coco_train.tar.gz))       | 67.3      | 61.6                      | 71.5                      | 42.6                     | 83.1        | 67.71
-ConvNeXt-B ([config](../../configs/cityscapes/kmax_deeplab/kmax_meta_convnext_base_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/max_deeplab_s_os16_res1025_200k_coco_train.tar.gz))        | 68.0      | 62.6                      | 72.0                      | 43.0                     | 83.1        | 68.30
-ConvNeXt-L ([config](../../configs/cityscapes/kmax_deeplab/kmax_meta_convnext_large_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/max_deeplab_s_os16_res1025_400k_coco_train.tar.gz))       | 68.4      | 62.9                      | 72.4                      | 44.0                        | 83.5           | 68.73
+Backbone                                                                                                                                                                                                                           | PQ \[\*\] | PQ<sup>thing</sup> \[\*\] | PQ<sup>stuff</sup> \[\*\] | AP<sup>mask</sup> \[\*\] | mIoU \[\*\] | PQ \[\*\*\]
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------: | :-----------------------: | :-----------------------: | :----------------------: | :---------: | :---------:
+ResNet-50 ([config](../../configs/cityscapes/kmax_deeplab/kmax_meta_r50_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/kmax_resnet50_cityscapes_train.tar.gz))                             | 64.3      | 57.7                      | 69.1                      | 38.5                     | 79.7        | 64.65
+Axial-ResNet-50 (MaX-S w/ GeLU) ([config](../../configs/cityscapes/kmax_deeplab/kmax_meta_axial_r50_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/kmax_maxs_gelu_cityscapes_train.tar.gz)) | 66.4      | 61.2                      | 70.2                      | 41.6                     | 82.1        | 66.73
+ConvNeXt-T ([config](../../configs/cityscapes/kmax_deeplab/kmax_meta_convnext_tiny_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/kmax_convnext_tiny_cityscapes_train.tar.gz))             | 66.3      | 60.2                      | 70.8                      | 41.2                     | 82.6        | 66.65
+ConvNeXt-S ([config](../../configs/cityscapes/kmax_deeplab/kmax_meta_convnext_small_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/kmax_convnext_small_cityscapes_train.tar.gz))           | 67.3      | 61.6                      | 71.5                      | 42.6                     | 83.1        | 67.71
+ConvNeXt-B ([config](../../configs/cityscapes/kmax_deeplab/kmax_meta_convnext_base_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/kmax_convnext_base_cityscapes_train.tar.gz))             | 68.0      | 62.6                      | 72.0                      | 43.0                     | 83.1        | 68.30
+ConvNeXt-L ([config](../../configs/cityscapes/kmax_deeplab/kmax_meta_convnext_large_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/kmax_convnext_large_cityscapes_train.tar.gz))           | 68.4      | 62.9                      | 72.4                      | 44.0                     | 83.5        | 68.73
 
 \[\*\]: Results evaluated by the official script. \[\*\*\]: Results evaluated by
 our pipeline. See Q4 in [FAQ](../faq.md).
