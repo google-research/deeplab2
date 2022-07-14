@@ -33,6 +33,7 @@ model_options {
   initial_checkpoint: "${INIT_CHECKPOINT}"
   backbone {
     name: "mobilenet_v3_large"
+    use_squeeze_and_excite: true
     output_stride: 32
   }
   decoder {
