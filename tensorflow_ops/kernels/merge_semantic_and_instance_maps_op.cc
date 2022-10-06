@@ -42,7 +42,7 @@ REGISTER_OP("MergeSemanticAndInstanceMaps")
       DimensionHandle height = c->Dim(semantic_maps, 1);
       DimensionHandle width = c->Dim(semantic_maps, 2);
       c->set_output(0, c->MakeShape({batch, height, width}));
-      return tensorflow::Status::OK();
+      return tensorflow::OkStatus();
     })
     .Doc(R"doc(
 Generates parsing maps from semantic maps and instance maps.

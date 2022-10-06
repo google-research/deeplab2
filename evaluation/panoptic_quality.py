@@ -15,12 +15,21 @@
 
 """Implementation of the Panoptic Quality metric.
 
-Panoptic Quality is an instance-based metric for evaluating the task of
+Panoptic Quality (PQ) is an instance-based metric for evaluating the task of
 image parsing, aka panoptic segmentation.
 
-Please see the paper for details:
+Please see the paper for PQ details:
 "Panoptic Segmentation", Alexander Kirillov, Kaiming He, Ross Girshick,
-Carsten Rother and Piotr Dollar. arXiv:1801.00868, 2018.
+Carsten Rother and Piotr Dollar. In CVPR, 2019.
+
+Note that our TensorFlow re-implementation of Panoptic Quality usually gives
+a bit higher PQ score than the official numpy implementation
+(https://github.com/cocodataset/panopticapi).
+This re-imeplementation is simply used as an estimate of the prediction
+quality during TensorFlow training. The users should convert their panoptic
+prediction to COCO json format and run official numpy implementation, in order
+to have a fair comparison with others. See Q4 in our FAQ (g3doc/faq.md) for
+more details.
 """
 
 from typing import Any, List, Mapping, Optional, Tuple

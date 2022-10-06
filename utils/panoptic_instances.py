@@ -261,10 +261,10 @@ def combined_instance_scores(
 
   instance_semantic_labels = tf.math.floordiv(instance_panoptic_labels,
                                               panoptic_divisor)
-  instance_panoptic_labels = tf.boolean_mask(
-      instance_panoptic_labels, instance_semantic_labels != ignore_label)
-  instance_area = tf.boolean_mask(instance_area,
-                                  instance_semantic_labels != ignore_label)
+  valid_mask = tf.not_equal(instance_semantic_labels, ignore_label)
+  instance_panoptic_labels = tf.boolean_mask(instance_panoptic_labels,
+                                             valid_mask)
+  instance_area = tf.boolean_mask(instance_area, valid_mask)
 
   instance_semantic_probabilities = per_instance_semantic_probabilities(
       panoptic_labels, instance_panoptic_labels, instance_area,

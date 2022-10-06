@@ -112,7 +112,8 @@ def run_experiment(mode: Text, config: config_pb2.ExperimentOptions,
     dataset_name = config.eval_dataset_options.dataset
     if (mode == 'train_and_eval' and
         dataset_name != config.train_dataset_options.dataset):
-      raise ValueError('Using difference dataset_names in train_and_eval mode.')
+      logging.warning('Using difference dataset_names in train_and_eval mode.'
+                      ' Please confirm this is the desired behavior.')
     if num_gpus > 1:
       raise ValueError(
           'Using more than one GPU for evaluation is not supported.')

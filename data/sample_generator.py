@@ -209,7 +209,8 @@ class PanopticSampleGenerator:
            next_label=None,
            depth=None,
            panoptic_copy_paste_image=None,
-           panoptic_copy_paste_label=None):
+           panoptic_copy_paste_label=None,
+           frame_id=''):
     """Gets a sample.
 
     Args:
@@ -230,6 +231,7 @@ class PanopticSampleGenerator:
       panoptic_copy_paste_label: A tensor of shape
         [panoptic_copy_paste_label_height, panoptic_copy_paste_label_width, 1]
         or None. It is used when panoptic copy-paste is enabled.
+      frame_id: An optional string specifying the frame name.
 
     Returns:
       sample: A dictionary storing required data for panoptic segmentation.
@@ -394,6 +396,7 @@ class PanopticSampleGenerator:
       sample[common.GT_SIZE_RAW] = tf.stack([height, width], axis=0)
       if self._dataset_info['is_video_dataset']:
         sample[common.SEQUENCE_ID] = sequence
+        sample[common.FRAME_ID] = frame_id
       # Keep original labels for evaluation.
       if label is not None:
         orig_semantic_label, _, _, orig_crowd_region = (
@@ -408,6 +411,7 @@ class PanopticSampleGenerator:
                 original_next_label, axis=2)
       if depth is not None:
         sample[common.GT_DEPTH_RAW] = original_depth
+
     return sample
 
   def _generate_thing_id_mask_and_class(self,
@@ -942,3 +946,20 @@ class PanopticSampleGenerator:
           (1 - panoptic_copy_paste_ignore_pixel_int))
 
       return image, label
+
+
+class MultiCameraPanopticSampleGenerator(object):
+  """This class generates samples from multi-camera images and labels."""
+
+  def __init__(self, *args, **kwargs):
+    self._view_sample_generator = PanopticSampleGenerator(*args, **kwargs)
+
+  def __call__(self, sample_dict, panoptic_copy_psate_sample_dict=None):
+    if panoptic_copy_psate_sample_dict is not None:
+      raise NotImplementedError(
+          'MultiCamera is incompatible with panoptic_copy_paste.')
+    camera_datas = {}
+    for camera_name, val in sample_dict.items():
+      val = self._view_sample_generator(val)
+      camera_datas[camera_name] = val
+    return camera_datas

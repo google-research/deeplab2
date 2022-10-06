@@ -108,4 +108,18 @@ message DatasetOptions {
   // input for VPS. Note that `use_two_frames` is adopted in Motion-DeepLab,
   // while `use_next_frame` is used in ViP-DeepLab.
   optional bool use_next_frame = 17 [default = false];
+
+  // Used for the multi-camera setting.
+  // If empty, keep the `camera_name: camera_value` structure, where each
+  // example contains all camera information. Otherwise, use the selected
+  // cameras values, but treat them as individual frames. For WOD-PVPS
+  // multi-camera variants, we support cameras_to_use with the following string
+  // values:
+  //  - 'efc_side_left_auto'
+  //  - 'efc_front_left_auto'
+  //  - 'efc_front_auto'
+  //  - 'efc_front_right_auto'
+  //  - 'efc_side_right_auto'
+  //  - 'panorama'
+  repeated string cameras_to_use = 18;
 }

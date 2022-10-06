@@ -14,17 +14,18 @@
 # limitations under the License.
 
 """Utility functions for the trainer and evaluator runner."""
-from typing import Any
-from typing import Mapping
-from typing import Union
+
+from typing import Any, Mapping, Union
 
 import tensorflow as tf
 
 from deeplab2 import config_pb2
 from deeplab2.data import data_utils
 from deeplab2.data import dataset
+from deeplab2.data import multicamera_data_utils
 from deeplab2.data import sample_generator
 from deeplab2.data.dataloader import input_reader
+from deeplab2.data.dataloader import multicamera_input_reader
 from deeplab2.model.encoder import axial_resnet
 from deeplab2.model.layers import axial_block_groups
 
@@ -88,13 +89,23 @@ def create_dataset(dataset_config: config_pb2.DatasetOptions,
     A tf.data.Dataset.
   """
   dataset_info = dataset.MAP_NAME_TO_DATASET_INFO[dataset_config.dataset]
-  decoder = data_utils.SegmentationDecoder(
-      is_panoptic_dataset=True,
-      is_video_dataset=dataset_info.is_video_dataset,
-      is_depth_dataset=dataset_info.is_depth_dataset,
-      use_two_frames=dataset_config.use_two_frames,
-      use_next_frame=dataset_config.use_next_frame,
-      decode_groundtruth_label=dataset_config.decode_groundtruth_label)
+  if dataset_info.camera_names is None:
+    decoder = data_utils.SegmentationDecoder(
+        is_panoptic_dataset=True,
+        is_video_dataset=dataset_info.is_video_dataset,
+        is_depth_dataset=dataset_info.is_depth_dataset,
+        use_two_frames=dataset_config.use_two_frames,
+        use_next_frame=dataset_config.use_next_frame,
+        decode_groundtruth_label=dataset_config.decode_groundtruth_label)
+  else:
+    decoder = multicamera_data_utils.MultiCameraSegmentationDecoder(
+        is_panoptic_dataset=True,
+        is_video_dataset=dataset_info.is_video_dataset,
+        is_depth_dataset=dataset_info.is_depth_dataset,
+        cameras_to_use=dataset_info.camera_names,
+        use_next_frame=dataset_config.use_next_frame,
+        decode_groundtruth_label=dataset_config.decode_groundtruth_label,
+    )
 
   focus_small_instances = None
   if dataset_config.increase_small_instance_weights:
@@ -108,7 +119,7 @@ def create_dataset(dataset_config: config_pb2.DatasetOptions,
     panoptic_copy_paste_options = augmentation_options.panoptic_copy_paste
   else:
     panoptic_copy_paste_options = None
-  generator = sample_generator.PanopticSampleGenerator(
+  generator_kwargs = dict(
       dataset_info=dataset_info._asdict(),
       is_training=is_training,
       crop_size=dataset_config.crop_size,
@@ -125,14 +136,23 @@ def create_dataset(dataset_config: config_pb2.DatasetOptions,
       sigma=dataset_config.sigma,
       focus_small_instances=focus_small_instances,
       panoptic_copy_paste_options=panoptic_copy_paste_options)
-
-  reader = input_reader.InputReader(
+  reader_kwargs = dict(
       file_pattern=dataset_config.file_pattern,
       decoder_fn=decoder,
-      generator_fn=generator,
       use_panoptic_copy_paste=dataset_config.augmentations.HasField(
           'panoptic_copy_paste'),
-      is_training=is_training)
+      is_training=is_training,
+  )
+  if dataset_info.camera_names is None:
+    generator = sample_generator.PanopticSampleGenerator(**generator_kwargs)
+    reader = input_reader.InputReader(**reader_kwargs, generator_fn=generator)
+  else:
+    generator = sample_generator.MultiCameraPanopticSampleGenerator(
+        **generator_kwargs)
+    reader = multicamera_input_reader.MultiCameraInputReader(
+        **reader_kwargs,
+        camera_names=dataset_config.cameras_to_use,
+        generator_fn=generator)
 
   return reader(dataset_config.batch_size)
 

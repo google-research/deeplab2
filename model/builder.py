@@ -30,6 +30,7 @@ from deeplab2.model.encoder import mobilenet
 from deeplab2.model.pixel_decoder import kmax as kmax_pixel_decoder
 from deeplab2.model.pixel_encoder import axial_resnet
 from deeplab2.model.pixel_encoder import convnext
+from deeplab2.model.pixel_encoder import moat
 from deeplab2.model.transformer_decoder import kmax as kmax_trasnformer_decoder
 
 
@@ -215,6 +216,13 @@ def create_kmax_meta_pixel_encoder(
         pretrained_weights_path=pretrained_weights_path,
         drop_path_keep_prob=drop_path_keep_prob,
         zero_padding_for_downstream=True)
+  elif 'moat' in pixel_encoder_name.lower():
+    return moat.get_model(
+        name=pixel_encoder_name,
+        input_shape=input_shape,
+        survival_rate=drop_path_keep_prob,
+        pretrained_weights_path=pretrained_weights_path,
+    )
   elif 'resnet' in pixel_encoder_name.lower():
     return axial_resnet.get_model(
         pixel_encoder_name,

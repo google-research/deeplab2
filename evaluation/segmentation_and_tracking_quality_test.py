@@ -39,6 +39,18 @@ def _compute_metric_and_compare(metric, ground_truth, prediction,
 
 class STQualityTest(tf.test.TestCase):
 
+  def test_update_dict_stats(self):
+    stat_dict = {}
+    val = tf.convert_to_tensor([1, 1, 1, 2], dtype=tf.int32)
+    stq._update_dict_stats(stat_dict, val, None)
+    self.assertDictEqual(stat_dict, {1: 3, 2: 1})
+
+    stat_dict = {}
+    val = tf.convert_to_tensor([1, 1, 1, 2], dtype=tf.int32)
+    weights = tf.convert_to_tensor([1, 0.5, 0.5, 0.5], dtype=tf.float32)
+    stq._update_dict_stats(stat_dict, val, weights)
+    self.assertDictEqual(stat_dict, {1: 2, 2: 0.5})
+
   def test_complex_example(self):
     n_classes = 3
     ignore_label = 255

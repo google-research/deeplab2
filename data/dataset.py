@@ -49,6 +49,37 @@ The Cityscapes-DVPS dataset augments Cityscapes-VPS
 The SemKITTI-DVPS dataset converts 3D point annotations of SemanticKITTI
 (http://www.semantic-kitti.org) into 2D image labels.
 
+7. WOD-PVPS
+(https://waymo.com/open/data/perception/#2d-video-panoptic-segmentation)
+
+The Waymo Open Dataset: Panoramic Video Panoptic Segmentation contains high
+quality panoramic video annotations with time and cross-camera consistency.
+The Waymo Open Dataset (WOD): Panoramic Video Panoptic Segmentation (PVPS)
+contains high quality panoramic video annotations with time and cross-camera
+consistency.
+
+We can use the dataset in the following settings:
+- In the multicamera setting, an example contains all camera data within a
+frame (i.e., the instance correspondence between cameras are guaranteed).
+- In the non-multicamera setting, we could still use all the camera frames, but
+treat them as individual frames. Datasets variants with a subset of cameras
+could be done by discarding the rest of the cameras data when creating the
+dataset.
+
+The following variants are provided:
+- WOD_PVPS_IMAGE_PANOPTIC_SEG: WOD-PVPS dataset as a single frame panoptic
+segmentation dataset.
+- WOD_PVPS_IMAGE_PANOPTIC_SEG_MULTICAM: WOD-PVPS dataset as a single frame
+panoptic segmentation dataset in the multicamera setting.
+- WOD_PVPS_DEPTH_VIDEO_PANOPTIC_SEG: WOD-PVPS dataset as a depth-aware video
+panoptic segmentation dataset. The users could ignore the provided depth
+groundtruth and use the dataset for the task of video panoptic segmentation.
+- WOD_PVPS_DEPTH_VIDEO_PANOPTIC_SEG_MULTICAM: WOD-PVPS dataset as as a
+depth-aware video panoptic segmentation dataset in the multicamera setting. The
+users could ignore the provided depth groundtruth and use the dataset for the
+task of panoramic video panoptic segmentation.
+
+
 References:
 
 - Marius Cordts, Mohamed Omran, Sebastian Ramos, Timo Rehfeld, Markus
@@ -87,10 +118,15 @@ References:
 - Siyuan Qiao, Yukun Zhu, Hartwig Adam, Alan Yuille, and Liang-Chieh Chen.
   "ViP-DeepLab: Learning Visual Perception with Depth-aware Video Panoptic
   Segmentation." In CVPR, 2021.
+
+- Jieru Mei, Alex Zihao Zhu, Xinchen Yan, Hang Yan, Siyuan Qiao, Yukun Zhu,
+Liang-Chieh Chen, Henrik Kretzschmar, Dragomir Anguelov. "Waymo Open Dataset:
+Panoramic Video Panoptic Segmentation." arXiv: 2206.07704, 2022.
 """
 
 import collections
 
+from deeplab2.data import waymo_constants
 
 # Dataset names.
 _CITYSCAPES_PANOPTIC = 'cityscapes_panoptic'
@@ -100,10 +136,25 @@ _CITYSCAPES_DVPS = 'cityscapes_dvps'
 _SEMKITTI_DVPS = 'semkitti_dvps'
 _COCO_PANOPTIC = 'coco_panoptic'
 
+# WOD: PVPS dataset names.
+_WOD_PVPS_IMAGE_PANOPTIC_SEG = 'wod_pvps_image_panoptic_seg'
+_WOD_PVPS_DEPTH_VIDEO_PANOPTIC_SEG = 'wod_pvps_depth_video_panoptic_seg'
+_WOD_PVPS_IMAGE_PANOPTIC_SEG_MULTICAM = 'wod_pvps_image_panoptic_seg_multicam'
+_WOD_PVPS_DEPTH_VIDEO_PANOPTIC_SEG_MULTICAM = (
+    'wod_pvps_depth_video_panoptic_seg_multicam')
+
+
 # Colormap names.
 CITYSCAPES_COLORMAP = 'cityscapes'
 MOTCHALLENGE_COLORMAP = 'motchallenge'
 COCO_COLORMAP = 'coco'
+WOD_PVPS_COLORMAP = waymo_constants.COLORMAP
+
+# Camera Names for WOD: PVPS.
+WOD_PVPS_CAMERA_NAMES = [
+    'efc_side_left_auto', 'efc_front_left_auto', 'efc_front_auto',
+    'efc_front_right_auto', 'efc_side_right_auto'
+]
 
 
 # Named tuple to describe dataset properties.
@@ -132,10 +183,22 @@ DatasetDescriptor = collections.namedtuple(
         'is_depth_dataset',
         # The ignore label for depth annotations.
         'ignore_depth',
+        # A list of camera names, only for multicamera setup.
+        'camera_names',
     ]
 )
 
-CITYSCAPES_PANOPTIC_INFORMATION = DatasetDescriptor(
+
+def _build_dataset_info(**kwargs):
+  """Builds dataset information with default values."""
+  default = {
+      'camera_names': None,
+  }
+  default.update(kwargs)
+  return DatasetDescriptor(**default)
+
+
+CITYSCAPES_PANOPTIC_INFORMATION = _build_dataset_info(
     dataset_name=_CITYSCAPES_PANOPTIC,
     splits_to_sizes={'train_fine': 2975,
                      'val_fine': 500,
@@ -151,7 +214,7 @@ CITYSCAPES_PANOPTIC_INFORMATION = DatasetDescriptor(
     ignore_depth=None,
 )
 
-KITTI_STEP_INFORMATION = DatasetDescriptor(
+KITTI_STEP_INFORMATION = _build_dataset_info(
     dataset_name=_KITTI_STEP,
     splits_to_sizes={'train': 5027,
                      'val': 2981,
@@ -166,7 +229,7 @@ KITTI_STEP_INFORMATION = DatasetDescriptor(
     ignore_depth=None,
 )
 
-MOTCHALLENGE_STEP_INFORMATION = DatasetDescriptor(
+MOTCHALLENGE_STEP_INFORMATION = _build_dataset_info(
     dataset_name=_MOTCHALLENGE_STEP,
     splits_to_sizes={'train': 525,  # Sequence 9.
                      'val': 600,  # Sequence 2.
@@ -181,7 +244,7 @@ MOTCHALLENGE_STEP_INFORMATION = DatasetDescriptor(
     ignore_depth=None,
 )
 
-CITYSCAPES_DVPS_INFORMATION = DatasetDescriptor(
+CITYSCAPES_DVPS_INFORMATION = _build_dataset_info(
     dataset_name=_CITYSCAPES_DVPS,
     # The numbers of images are 2400/300/300 for train/val/test. Here, the
     # sizes are the number of consecutive frame pairs. As each sequence has 6
@@ -200,7 +263,7 @@ CITYSCAPES_DVPS_INFORMATION = DatasetDescriptor(
     ignore_depth=0,
 )
 
-SEMKITTI_DVPS_INFORMATION = DatasetDescriptor(
+SEMKITTI_DVPS_INFORMATION = _build_dataset_info(
     dataset_name=_SEMKITTI_DVPS,
     splits_to_sizes={'train': 19120,
                      'val': 4070,
@@ -216,7 +279,7 @@ SEMKITTI_DVPS_INFORMATION = DatasetDescriptor(
     ignore_depth=0,
 )
 
-COCO_PANOPTIC_INFORMATION = DatasetDescriptor(
+COCO_PANOPTIC_INFORMATION = _build_dataset_info(
     dataset_name=_COCO_PANOPTIC,
     splits_to_sizes={'train': 118287,
                      'val': 5000,
@@ -241,3 +304,67 @@ MAP_NAME_TO_DATASET_INFO = {
 }
 
 MAP_NAMES = list(MAP_NAME_TO_DATASET_INFO.keys())
+
+
+def _build_waymo_image_panoptic_seg_dataset(**kwargs):
+  """Builds Waymo dataset with default values."""
+  waymo_meta = waymo_constants.get_waymo_meta()
+  default = dict(
+      dataset_name=None,
+      # TODO(jierumei): Provide exact size.
+      splits_to_sizes={
+          'train': 70000,
+          'val': 10000,
+          'test': 20000,
+      },
+      ignore_label=waymo_constants.IGNORE_LABEL,
+      panoptic_label_divisor=waymo_constants.PANOPTIC_LABEL_DIVISOR,
+      num_classes=len(
+          list(
+              filter(lambda val: val['id'] != waymo_constants.IGNORE_LABEL,
+                     waymo_meta))),
+      class_has_instances_list=list(
+          map(lambda val: val['id'],
+              filter(lambda val: val['isthing'], waymo_meta))),
+      is_video_dataset=True,
+      colormap=waymo_constants.COLORMAP,
+      is_depth_dataset=False,
+      ignore_depth=None,
+      camera_names=None,
+  )
+  for key in kwargs:
+    if key not in default:
+      raise ValueError(f'Unknown dataset option: {key}')
+  default.update(kwargs)
+  return DatasetDescriptor(**default)
+
+
+WOD_PVPS_IMAGE_PANOPTIC_SEG_DATASET = _build_waymo_image_panoptic_seg_dataset()
+WOD_PVPS_DEPTH_VIDEO_PANOPTIC_SEG_DATASET = (
+    _build_waymo_image_panoptic_seg_dataset(
+        dataset_name=_WOD_PVPS_DEPTH_VIDEO_PANOPTIC_SEG,
+        is_depth_dataset=True,
+        ignore_depth=0))
+WOD_PVPS_IMAGE_PANOPTIC_SEG_MULTICAM_DATASET = (
+    _build_waymo_image_panoptic_seg_dataset(
+        dataset_name=_WOD_PVPS_IMAGE_PANOPTIC_SEG_MULTICAM,
+        camera_names=WOD_PVPS_CAMERA_NAMES + ['panorama']))
+WOD_PVPS_DEPTH_VIDEO_PANOPTIC_SEG_MULTICAM_DATASET = (
+    _build_waymo_image_panoptic_seg_dataset(
+        dataset_name=_WOD_PVPS_DEPTH_VIDEO_PANOPTIC_SEG_MULTICAM,
+        is_depth_dataset=True,
+        ignore_depth=0,
+        camera_names=WOD_PVPS_CAMERA_NAMES + ['panorama']))
+
+waymo_dataset_all = {
+    _WOD_PVPS_IMAGE_PANOPTIC_SEG:
+        WOD_PVPS_IMAGE_PANOPTIC_SEG_DATASET,
+    _WOD_PVPS_DEPTH_VIDEO_PANOPTIC_SEG:
+        WOD_PVPS_DEPTH_VIDEO_PANOPTIC_SEG_DATASET,
+    _WOD_PVPS_IMAGE_PANOPTIC_SEG_MULTICAM:
+        WOD_PVPS_IMAGE_PANOPTIC_SEG_MULTICAM_DATASET,
+    _WOD_PVPS_DEPTH_VIDEO_PANOPTIC_SEG_MULTICAM:
+        WOD_PVPS_DEPTH_VIDEO_PANOPTIC_SEG_MULTICAM_DATASET,
+}
+MAP_NAME_TO_DATASET_INFO.update(waymo_dataset_all)
+MAP_NAMES.extend(list(waymo_dataset_all.keys()))

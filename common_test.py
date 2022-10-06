@@ -53,6 +53,7 @@ class CommonTest(tf.test.TestCase):
     self.assertEqual(common.IMAGE, 'image')
     self.assertEqual(common.IMAGE_NAME, 'image_name')
     self.assertEqual(common.SEQUENCE_ID, 'sequence_id')
+    self.assertEqual(common.FRAME_ID, 'frame_id')
 
     self.assertEqual(common.KEY_FRAME_ID, 'video/frame_id')
     self.assertEqual(common.KEY_SEQUENCE_ID, 'video/sequence_id')
@@ -68,6 +69,27 @@ class CommonTest(tf.test.TestCase):
     self.assertEqual(common.KEY_IMAGE_FILENAME, 'image/filename')
     self.assertEqual(common.KEY_ENCODED_PREV_IMAGE, 'prev_image/encoded')
     self.assertEqual(common.KEY_ENCODED_IMAGE, 'image/encoded')
+
+  def test_multicamera_keys(self):
+    test_camera_name = 'front'
+    expected = {
+        common.KEY_PER_CAMERA_ENCODED_IMAGE:
+            'image/encoded/%s',
+        common.KEY_PER_CAMERA_ENCODED_NEXT_IMAGE:
+            'next_image/encoded/%s',
+        common.KEY_PER_CAMERA_IMAGE_HEIGHT:
+            'image/height/%s',
+        common.KEY_PER_CAMERA_IMAGE_WIDTH:
+            'image/width/%s',
+        common.KEY_PER_CAMERA_ENCODED_LABEL:
+            'image/segmentation/class/encoded/%s',
+        common.KEY_PER_CAMERA_ENCODED_NEXT_LABEL:
+            'next_image/segmentation/class/encoded/%s',
+        common.KEY_PER_CAMERA_ENCODED_DEPTH:
+            'image/depth/encoded/%s',
+    }
+    for key, val in expected.items():
+      self.assertEqual(key % test_camera_name, val % test_camera_name)
 
 
 if __name__ == '__main__':

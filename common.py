@@ -87,7 +87,9 @@ DEPTH_LOSS_WEIGHT_KEY = 'depth_loss_weight'
 RESIZED_IMAGE = 'resized_image'
 IMAGE = 'image'
 IMAGE_NAME = 'image_name'
+# For PVPS, we use sequence_id + frame_id to uniquely identify a frame.
 SEQUENCE_ID = 'sequence_id'
+FRAME_ID = 'frame_id'
 NEXT_IMAGE = 'next_image'
 
 # TfExample keys.
@@ -107,6 +109,16 @@ KEY_SEQUENCE_ID = 'video/sequence_id'
 KEY_FRAME_ID = 'video/frame_id'
 KEY_ENCODED_DEPTH = 'image/depth/encoded'
 KEY_DEPTH_FORMAT = 'image/depth/format'
+
+# TfExample keys for the panoramic setting, where individual camera keys are
+# obtained by formatting with the camera name.
+KEY_PER_CAMERA_ENCODED_IMAGE = 'image/encoded/%s'
+KEY_PER_CAMERA_ENCODED_NEXT_IMAGE = 'next_image/encoded/%s'
+KEY_PER_CAMERA_IMAGE_HEIGHT = 'image/height/%s'
+KEY_PER_CAMERA_IMAGE_WIDTH = 'image/width/%s'
+KEY_PER_CAMERA_ENCODED_LABEL = 'image/segmentation/class/encoded/%s'
+KEY_PER_CAMERA_ENCODED_NEXT_LABEL = 'next_image/segmentation/class/encoded/%s'
+KEY_PER_CAMERA_ENCODED_DEPTH = 'image/depth/encoded/%s'
 
 # Checkpoint Items
 # All models

@@ -16,20 +16,41 @@
 """Implementation of the Segmentation and Tracking Quality (STQ) metric."""
 
 import collections
-from typing import MutableMapping, Sequence, Dict, Text, Any
+from typing import Any, Dict, MutableMapping, Optional, Sequence, Text, Union
+
 import numpy as np
 import tensorflow as tf
 
 
 def _update_dict_stats(stat_dict: MutableMapping[int, tf.Tensor],
-                       id_array: tf.Tensor):
+                       id_array: tf.Tensor,
+                       weights: Optional[tf.Tensor] = None):
   """Updates a given dict with corresponding counts."""
-  ids, _, counts = tf.unique_with_counts(id_array)
-  for idx, count in zip(ids.numpy(), counts):
-    if idx in stat_dict:
-      stat_dict[idx] += count
+  if weights is None:
+    unique_weight_list = [1.0]
+  else:
+    unique_weight_list, _ = tf.unique(weights)
+    unique_weight_list = unique_weight_list.numpy().tolist()
+  # Iterate through the unique weight values, and weighted-average the counts.
+  # Example usage: lower the weights in the region covered by multiple camera in
+  # panoramic video panoptic segmentation (PVPS).
+  # NOTE(jierumei): The code is not optimized when unique_weight_list has many
+  # elements.
+  for weight in unique_weight_list:
+    if weight not in [0.5, 1.0]:
+      raise ValueError(
+          'We currently only support the case where at most two cameras cover '
+          'the overlapped regions in the PVPS task.')
+    if weights is None:
+      ids, _, counts = tf.unique_with_counts(id_array)
     else:
-      stat_dict[idx] = count
+      ids, _, counts = tf.unique_with_counts(
+          tf.boolean_mask(id_array, tf.equal(weight, weights)))
+    for idx, count in zip(ids.numpy(), tf.cast(counts, tf.float32)):
+      if idx in stat_dict:
+        stat_dict[idx] += count * weight
+      else:
+        stat_dict[idx] = count * weight
 
 
 class STQuality(object):
@@ -100,8 +121,11 @@ class STQuality(object):
                        'Please choose an offset that is higher than num_classes'
                        ' * max_instances_per_category = %d' % lower_bound)
 
-  def update_state(self, y_true: tf.Tensor, y_pred: tf.Tensor,
-                   sequence_id=0):
+  def update_state(self,
+                   y_true: tf.Tensor,
+                   y_pred: tf.Tensor,
+                   sequence_id: Union[int, str] = 0,
+                   weights: Optional[tf.Tensor] = None):
     """Accumulates the segmentation and tracking quality statistics.
 
     Args:
@@ -112,9 +136,12 @@ class STQuality(object):
       sequence_id: The optional ID of the sequence the frames belong to. When no
         sequence is given, all frames are considered to belong to the same
         sequence (default: 0).
+      weights: The weights for each pixel with the same shape of `y_true`.
     """
     y_true = tf.cast(y_true, dtype=tf.int64)
     y_pred = tf.cast(y_pred, dtype=tf.int64)
+    if weights is not None:
+      weights = tf.reshape(weights, y_true.shape)
     semantic_label = y_true // self._max_instances_per_category
     semantic_prediction = y_pred // self._max_instances_per_category
     # Check if the ignore value is outside the range [0, num_classes]. If yes,
@@ -133,7 +160,9 @@ class STQuality(object):
               tf.reshape(semantic_label, [-1]),
               tf.reshape(semantic_prediction, [-1]),
               self._confusion_matrix_size,
-              dtype=tf.int64))
+              dtype=tf.int64,
+              weights=tf.reshape(weights, [-1])
+              if weights is not None else None))
       self._sequence_length[sequence_id] += 1
     else:
       self._iou_confusion_matrix_per_sequence[sequence_id] = (
@@ -141,7 +170,9 @@ class STQuality(object):
               tf.reshape(semantic_label, [-1]),
               tf.reshape(semantic_prediction, [-1]),
               self._confusion_matrix_size,
-              dtype=tf.int64))
+              dtype=tf.int64,
+              weights=tf.reshape(weights, [-1])
+              if weights is not None else None))
       self._predictions[sequence_id] = {}
       self._ground_truth[sequence_id] = {}
       self._intersections[sequence_id] = {}
@@ -172,14 +203,19 @@ class STQuality(object):
     seq_intersects = self._intersections[sequence_id]
 
     # Compute and update areas of ground-truth, predictions and intersections.
-    _update_dict_stats(seq_preds, y_pred[prediction_mask])
-    _update_dict_stats(seq_gts, y_true[label_mask])
+    _update_dict_stats(
+        seq_preds, y_pred[prediction_mask],
+        weights[prediction_mask] if weights is not None else None)
+    _update_dict_stats(seq_gts, y_true[label_mask],
+                       weights[label_mask] if weights is not None else None)
 
     non_crowd_intersection = tf.logical_and(label_mask, prediction_mask)
     intersection_ids = (
         y_true[non_crowd_intersection] * self._offset +
         y_pred[non_crowd_intersection])
-    _update_dict_stats(seq_intersects, intersection_ids)
+    _update_dict_stats(
+        seq_intersects, intersection_ids,
+        weights[non_crowd_intersection] if weights is not None else None)
 
   def result(self) -> Dict[Text, Any]:
     """Computes the segmentation and tracking quality.

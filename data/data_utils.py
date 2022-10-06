@@ -15,7 +15,7 @@
 
 """Contains common utility functions and classes for building dataset."""
 
-import collections
+from collections import abc
 import io
 
 import numpy as np
@@ -80,7 +80,7 @@ def _int64_list_feature(values):
   Returns:
     A TF-Feature.
   """
-  if not isinstance(values, collections.Iterable):
+  if not isinstance(values, abc.Iterable):
     values = [values]
 
   return tf.train.Feature(int64_list=tf.train.Int64List(value=values))
@@ -338,7 +338,7 @@ class SegmentationDecoder(object):
       self._keys_to_features[common.KEY_ENCODED_DEPTH] = string_feature
 
   def _decode_image(self, parsed_tensors, key):
-    """Decodes image udner key from parsed tensors."""
+    """Decodes image under key from parsed tensors."""
     image = tf.io.decode_image(
         parsed_tensors[key],
         channels=3,

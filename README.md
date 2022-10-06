@@ -14,6 +14,20 @@ useful for your projects.
 
 ## Change logs
 
+*   10/04/2022: Open-source MOAT model [code](model/pixel_encoder/moat.py) and
+    [ImageNet pretrained weights](g3doc/projects/moat_imagenet_pretrained_checkpoints.md).
+    We thank [Chenglin Yang](https://chenglin-yang.github.io/) for their
+    valuable contributions.
+
+*   08/26/2022: Add ViP-DeepLab support for [Waymo Open Dataset: Panoramic Video Panoptic Segmentation](https://arxiv.org/abs/2206.07704).
+    We thank [Jieru Mei](https://meijieru.com/),
+    [Alex Zhu](https://github.com/alexzzhu),
+    [Xinchen Yan](https://sites.google.com/site/skywalkeryxc/),
+    and [Hang Yan](https://scholar.google.com/citations?user=A4UXXLMAAAAJ&hl=en),
+    for their valuable contributions.
+
+*   08/16/2022: Support Colab [demo](DeepLab_COCO_Demo.ipynb) for kMaX-DeepLab.
+
 *   07/12/2022: Open-source
     [k-means Mask Transformer](https://arxiv.org/pdf/2207.04044.pdf)
     (kMaX-DeepLab) code and [model zoo](g3doc/projects/kmax_deeplab.md).
@@ -37,7 +51,8 @@ useful for your projects.
 *   07/07/2021: KITTI-STEP and MOTChallenge-STEP are ready to use.
 
 *   06/07/2021: Add hungarian matching support on TPU for MaX-DeepLab, thanks to
-    the help from Jiquan Ngiam and Amil Merchant.
+    the help from [Jiquan Ngiam](https://cs.stanford.edu/~jngiam/)
+    and [Amil Merchant](https://scholar.google.com/citations?user=uRImMPoAAAAJ&hl=en).
 
 *   06/01/2021: "Hello, World!", DeepLab2 made publicly available.
 
@@ -71,7 +86,11 @@ We list a few projects that use DeepLab2.
 
 ## Colab Demo
 
-*   <a href='https://colab.research.google.com/github/google-research/deeplab2/blob/main/DeepLab_Demo.ipynb'>Colab notebook for off-the-shelf inference.</a><br>
+*   <a href='https://colab.research.google.com/github/google-research/deeplab2/blob/main/DeepLab_COCO_Demo.ipynb'>kMaX-DeepLab Colab notebook for off-the-shelf inference with COCO checkpoints.</a><br>
+
+*   <a href='https://colab.research.google.com/github/google-research/deeplab2/blob/main/DeepLab_Cityscsapes_Demo.ipynb'>Panoptic-DeepLab Colab notebook for off-the-shelf inference with Cityscapes checkpoints.</a><br>
+
+*   <a href='https://colab.research.google.com/github/google-research/deeplab2/blob/main/ViP_DeepLab_Demo.ipynb'>ViP-DeepLab Colab notebook for off-the-shelf inference with Cityscapes-DVPS checkpoints.</a><br>
 
 ## Running DeepLab2
 

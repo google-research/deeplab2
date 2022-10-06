@@ -15,11 +15,20 @@
 
 """Implementation of the Video Panoptic Quality metric.
 
-Video Panoptic Quality is an instance-based metric for evaluating the task
+Video Panoptic Quality (VPQ) is an instance-based metric for evaluating the task
 of video panoptic segmentation.
 Please see the paper for details:
 Dahun Kim, Sanghyun Woo, Joon-Young Lee, and In So Kweon.
 "Video panoptic segmentation." In CVPR, 2020.
+
+Note that our TensorFlow re-implementation of Video Panoptic Quality may give
+a bit higher VPQ score than the official numpy implementation
+(https://github.com/mcahny/vps).
+This re-imeplementation is simply used as an estimate of the prediction
+quality during TensorFlow training. The users should convert their video
+panoptic prediction to COCO json format and run official numpy implementation,
+in order to have a fair comparison with others. See Q4 in our FAQ (g3doc/faq.md)
+for more details.
 """
 
 from typing import List, Tuple

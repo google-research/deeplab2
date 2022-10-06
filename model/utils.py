@@ -509,6 +509,6 @@ def get_supported_tasks(
     supported_tasks.add(common.TASK_INSTANCE_SEGMENTATION)
   if is_motion_deeplab or is_vip_deeplab:
     supported_tasks.add(common.TASK_VIDEO_PANOPTIC_SEGMENTATION)
-  if is_vip_deeplab:
+  if is_vip_deeplab and config.model_options.vip_deeplab.HasField('depth_head'):
     supported_tasks.add(common.TASK_DEPTH_AWARE_VIDEO_PANOPTIC_SEGMENTATION)
   return supported_tasks
