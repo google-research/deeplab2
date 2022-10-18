@@ -23,6 +23,7 @@ import tensorflow as tf
 
 # OSS: removed unused atomic file imports.
 from deeplab2 import common
+from deeplab2.data import ade20k_constants
 from deeplab2.data import coco_constants
 from deeplab2.data import dataset
 from deeplab2.trainer import vis_utils
@@ -49,6 +50,7 @@ _CITYSCAPES_TRAIN_ID_TO_EVAL_ID = (
     7, 8, 11, 12, 13, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 31, 32, 33, 0
 )
 _COCO_TRAIN_ID_TO_EVAL_ID = coco_constants.get_id_mapping_inverse()
+_ADE20K_TRAIN_ID_TO_EVAL_ID = ade20k_constants.get_id_mapping_inverse()
 
 
 def _convert_train_id_to_eval_id(
@@ -73,6 +75,8 @@ def _convert_train_id_to_eval_id(
     train_id_to_eval_id = _CITYSCAPES_TRAIN_ID_TO_EVAL_ID
   elif 'coco' in dataset_name:
     train_id_to_eval_id = _COCO_TRAIN_ID_TO_EVAL_ID
+  elif 'ade20k' in dataset_name:
+    train_id_to_eval_id = _ADE20K_TRAIN_ID_TO_EVAL_ID
   else:
     raise ValueError(
         'Unsupported dataset %s for converting semantic class IDs.' %

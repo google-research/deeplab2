@@ -277,6 +277,7 @@ def create_kmax_meta_pixel_decoder(
 def create_kmax_meta_transformer_decoder(
     norm_layer: Optional[Callable[[], tf.keras.layers.Layer]],
     num_mask_slots: int,
+    transformer_decoder_drop_path_keep_prob: float,
     auxiliary_predictor_func: Optional[Callable[[], tf.keras.Model]] = None
 ) -> tf.keras.Model:
   """Creates a transformer decoder in kMaX meta architecture.
@@ -284,6 +285,8 @@ def create_kmax_meta_transformer_decoder(
   Args:
     norm_layer: A tf.keras.layers.Layer that computes the normalization.
     num_mask_slots: An integer, the number of mask slots that will be used.
+    transformer_decoder_drop_path_keep_prob: A float, the drop-path keep prob
+      for transformer decoder.
     auxiliary_predictor_func: A callable function that returns an initialization
       of auxiliary predictor.
 
@@ -295,4 +298,6 @@ def create_kmax_meta_transformer_decoder(
       auxiliary_predictor_func=auxiliary_predictor_func,
       norm_layer=norm_layer,
       num_mask_slots=num_mask_slots,
+      transformer_decoder_drop_path_keep_prob=(
+          transformer_decoder_drop_path_keep_prob),
       num_blocks=(2, 2, 2))

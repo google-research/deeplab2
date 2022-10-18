@@ -6,7 +6,7 @@
 ############### PLEASE READ THIS BEFORE USING THIS CONFIG ###############
 # Before using this config, you need to update the following fields:
 # - experiment_name: Use a unique experiment name for each experiment.
-# - initial_checkpoint: Update the path to the initial checkpoint.
+# - pretrained_weights: Update the path to the pretrained weights.
 # - train_dataset_options.file_pattern: Update the path to the
 #   training set. e.g., your_dataset/train*.tfrecord
 # - eval_dataset_options.file_pattern: Update the path to the
@@ -28,7 +28,7 @@ model_options {
     drop_path_keep_prob: 0.5
     # We use pretrained_weights instead of initial_checkpoint for loading
     # specifical weights for backbone (e.g., converted pytorch weights).
-    pretrained_weights: "${INIT_CHECKPOINT}"
+    pretrained_weights: "${PRETRAINED_WEIGHTS}"
   }
   decoder {
     feature_key: "feature_semantic"

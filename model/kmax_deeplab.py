@@ -90,15 +90,23 @@ class KMaXDeepLab(tf.keras.Model):
       high_resolution_output_stride = 2
       num_mask_slots = 256
       use_auxiliary_semantic_decoder = False
+      transformer_decoder_drop_path_keep_prob = 0.8
     elif 'coco' in dataset_descriptor.dataset_name:
       high_resolution_output_stride = 4
       num_mask_slots = 128
       use_auxiliary_semantic_decoder = True
+      transformer_decoder_drop_path_keep_prob = 0.8
+    elif 'ade20k' in dataset_descriptor.dataset_name:
+      high_resolution_output_stride = 4
+      num_mask_slots = 128
+      use_auxiliary_semantic_decoder = True
+      transformer_decoder_drop_path_keep_prob = 1.0
     else:
       logging.info('kMaX configs for COCO is used for untested datasets.')
       high_resolution_output_stride = 4
       num_mask_slots = 128
       use_auxiliary_semantic_decoder = True
+      transformer_decoder_drop_path_keep_prob = 0.8
 
     self._pixel_decoder = builder.create_kmax_meta_pixel_decoder(
         norm_layer=norm_layer,
@@ -107,6 +115,8 @@ class KMaXDeepLab(tf.keras.Model):
     self._transformer_decoder = builder.create_kmax_meta_transformer_decoder(
         norm_layer=norm_layer,
         num_mask_slots=num_mask_slots,
+        transformer_decoder_drop_path_keep_prob=(
+            transformer_decoder_drop_path_keep_prob),
         auxiliary_predictor_func=auxiliary_predictor_func)
 
     # Notably, decoder/max_deeplab.MaXDeepLab is in fact the MaX-DeepLab

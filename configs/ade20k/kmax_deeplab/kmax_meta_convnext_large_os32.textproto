@@ -1,7 +1,7 @@
 # proto-file: deeplab2/config.proto
 # proto-message: ExperimentOptions
 #
-# kMaX-DeepLab with ConvNeXt-small backbone with output stride 32.
+# kMaX-DeepLab with ConvNeXt-large backbone with output stride 32.
 #
 ############### PLEASE READ THIS BEFORE USING THIS CONFIG ###############
 # Before using this config, you need to update the following fields:
@@ -24,8 +24,8 @@ experiment_name: "${EXPERIMENT_NAME}"
 model_options {
   backbone {
     # kMaX meta is used with the prefix "kmax_".
-    name: "kmax_convnext_small"
-    drop_path_keep_prob: 0.6
+    name: "kmax_convnext_large"
+    drop_path_keep_prob: 0.3
     # We use pretrained_weights instead of initial_checkpoint for loading
     # specifical weights for backbone (e.g., converted pytorch weights).
     pretrained_weights: "${PRETRAINED_WEIGHTS}"
@@ -52,13 +52,14 @@ model_options {
       channels_project: 32
     }
     auxiliary_semantic_head {
-      output_channels: 134
+      output_channels: 151
       head_channels: 256
     }
-    instance_discrimination_sample_k: 4096
+    instance_discrimination_sample_k: 1024
     instance_discrimination_sample_temperature: 1.5
-    semantic_sample_k: 4096
+    semantic_sample_k: 1024
     semantic_sample_temperature: 2.0
+    transformer_decoder_drop_path_keep_prob: 1.0
   }
 }
 trainer_options {
@@ -82,7 +83,7 @@ trainer_options {
   }
   solver_options {
     base_learning_rate: 0.0005
-    training_number_of_steps: 150000
+    training_number_of_steps: 100000
     warmup_steps: 5000
     backbone_learning_rate_multiplier: 0.1
     optimizer: "adamw"
@@ -90,18 +91,18 @@ trainer_options {
   }
 }
 train_dataset_options {
-  dataset: "coco_panoptic"
+  dataset: "ade20k_panoptic"
   file_pattern: "${TRAIN_SET}"
   # Adjust the batch_size accordingly to better fit your GPU/TPU memory.
   # Also see Q1 in g3doc/faq.md.
   batch_size: 64
-  crop_size: 1281
-  crop_size: 1281
-  min_resize_value: 1281
-  max_resize_value: 1281
+  crop_size: 641
+  crop_size: 641
+  min_resize_value: 641
+  max_resize_value: 641
   augmentations {
-    min_scale_factor: 0.3
-    max_scale_factor: 1.7
+    min_scale_factor: 0.5
+    max_scale_factor: 2.0
     scale_factor_step_size: 0.1
     autoaugment_policy_name: "simple_classification_policy"
     panoptic_copy_paste {
@@ -114,30 +115,32 @@ train_dataset_options {
   increase_small_instance_weights: false
   small_instance_weight: 1.0
   thing_id_mask_annotations: true
+  max_thing_id: 256
 }
 eval_dataset_options {
-  dataset: "coco_panoptic"
+  dataset: "ade20k_panoptic"
   # Update the path to validation set.
   file_pattern: "${VAL_SET}"
   batch_size: 1
-  crop_size: 1281
-  crop_size: 1281
-  min_resize_value: 1281
-  max_resize_value: 1281
+  crop_size: 641
+  crop_size: 641
+  min_resize_value: 641
+  max_resize_value: 641
   # Add options to make the evaluation loss comparable to the training loss.
   increase_small_instance_weights: false
   small_instance_weight: 1.0
   thing_id_mask_annotations: true
+  max_thing_id: 256
 }
 evaluator_options {
   continuous_eval_timeout: -1
-  thing_area_limit: 400
-  stuff_area_limit: 6400
+  thing_area_limit: 0
+  stuff_area_limit: 0
   transformer_post_processing: "maskwise"
   pixel_confidence_threshold: 0.4
   maskwise_postprocessing {
-    transformer_class_confidence_threshold_thing: 0.7
-    transformer_class_confidence_threshold_stuff: 0.5
+    transformer_class_confidence_threshold_thing: 0.4
+    transformer_class_confidence_threshold_stuff: 0.4
     overlapping_threshold: 0.8
     reorder_class_weight: 1.0
     reorder_mask_weight: 1.0

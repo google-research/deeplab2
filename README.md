@@ -14,6 +14,9 @@ useful for your projects.
 
 ## Change logs
 
+*   10/18/2022: Add kMaX-DeepLab ADE20K panoptic segmentation results in
+    [model zoo](g3doc/projects/kmax_deeplab.md).
+
 *   10/04/2022: Open-source MOAT model [code](model/pixel_encoder/moat.py) and
     [ImageNet pretrained weights](g3doc/projects/moat_imagenet_pretrained_checkpoints.md).
     We thank [Chenglin Yang](https://chenglin-yang.github.io/) for their

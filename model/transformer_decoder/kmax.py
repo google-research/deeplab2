@@ -32,8 +32,8 @@ k-means center-update step.
     CVPR 2021.
       Huiyu Wang, Yukun Zhu, Hartwig Adam, Alan Yuille, Liang-Chieh Chen.
 """
-
 import functools
+from typing import Callable, Optional, Tuple
 
 import tensorflow as tf
 
@@ -56,7 +56,6 @@ transformer_decoder_block = functools.partial(
     # The channels of dual-path transformer is controlled by
     # (128 * transformer_expansion).
     transformer_expansion=1.0,
-    drop_path_keep_prob=0.8,
     activation='gelu',
     # Disable the pixel2pixel attention.
     use_axial_block=False,
@@ -86,11 +85,14 @@ class KMaXTransformerDecoder(tf.keras.Model):
   """
 
   def __init__(self,
-               name,
-               auxiliary_predictor_func,
-               norm_layer=tf.keras.layers.BatchNormalization,
-               num_blocks=(2, 2, 2),
-               num_mask_slots=128):
+               name: str,
+               auxiliary_predictor_func: Optional[Callable[[], tf.keras.Model]],
+               norm_layer: Optional[Callable[
+                   [],
+                   tf.keras.layers.Layer]] = tf.keras.layers.BatchNormalization,
+               num_blocks: Tuple[int, int, int] = (2, 2, 2),
+               num_mask_slots: int = 128,
+               transformer_decoder_drop_path_keep_prob: float = 1.0):
     """Initializes a KMaXTransformerDecoder.
 
     Args:
@@ -103,6 +105,8 @@ class KMaXTransformerDecoder(tf.keras.Model):
         each stage. The stage is counted backwards, i.e., from output stride
         32, 16, and 8.
       num_mask_slots: An integer, the number of mask slots that will be used.
+      transformer_decoder_drop_path_keep_prob: A float, the drop-path keep prob
+        for transformer decoder.
     Raises:
       ValueError: If the length of num_blocks is not 3.
     """
@@ -117,7 +121,8 @@ class KMaXTransformerDecoder(tf.keras.Model):
         kmax_decoder_fn = transformer_decoder_block(
             name=f'kmax_transformer_decoder_os{feature_output_stride}_{i}',
             bn_layer=norm_layer,
-            auxiliary_predictor_func=auxiliary_predictor_func)
+            auxiliary_predictor_func=auxiliary_predictor_func,
+            drop_path_keep_prob=transformer_decoder_drop_path_keep_prob)
         self._kmax_decoder.append(kmax_decoder_fn)
 
     self._cluster_centers = self.add_weight(

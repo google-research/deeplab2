@@ -35,12 +35,17 @@ but also enjoys a much better performance.
     kMaX-DeepLab, so one could skip compiling the merging operation.
 
 2.  Make sure the target dataset is correctly prepared (e.g.,
-    [COCO](../setup/coco.md), [Cityscapes](../setup/cityscapes.md)).
+    [COCO](../setup/coco.md), [Cityscapes](../setup/cityscapes.md),
+    [ADE20K](../setup/ade20k.md)).
 
 3.  Download the ImageNet pretrained
     [checkpoints](./imagenet_pretrained_checkpoints.md), and update the
     `initial_checkpoint` (for ResNet and MaX-S backbones) or
     `pretrained_weights` (for ConvNeXt backbones) path in the config files.
+
+4.  To run inference with provided models, please download the checkpoints in
+    the model zoo below, and update the `initial_checkpoint` path (for all types
+    of backbones) in the config files.
 
 ## Model Zoo
 
@@ -103,6 +108,34 @@ ConvNeXt-L ([config](../../configs/cityscapes/kmax_deeplab/kmax_meta_convnext_la
 
 \[\*\]: Results evaluated by the official script. \[\*\*\]: Results evaluated by
 our pipeline. See Q4 in [FAQ](../faq.md).
+
+### ADE20K Panoptic Segmentation
+
+We provide checkpoints pretrained on ADE20K panoptic train set and evaluated on
+the val set. If you would like to train those models by yourself, please find
+the corresponding config files under the directory
+[configs/ade20k/kmax_deeplab](../../configs/ade20k/kmax_deeplab).
+
+All the reported results are obtained by *single-scale* inference. ResNet-50 use
+*ImageNet-1K* pretrained checkpoints, while the other backbones use
+*ImageNet-22K* pretrained checkpoints.
+
+Backbone                                                                                                                                                                                                                         | Input Resolution | PQ \[\*\] | PQ<sup>thing</sup> \[\*\] | PQ<sup>stuff</sup> \[\*\] | mIoU \[\*\] | PQ \[\*\*\]
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------: | :-------: | :-----------------------: | :-----------------------: | :---------: | :---------:
+ResNet-50 ([config](../../configs/ade20k/kmax_deeplab/kmax_meta_r50_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/kmax_resnet50_res641_ade20k_train.tar.gz))                            | 641 x 641        | 41.5      | 40.4                      | 43.7                      | 45.0        | 41.47
+ResNet-50 ([config](../../configs/ade20k/kmax_deeplab/kmax_meta_r50_os32_res1281.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/kmax_resnet50_res1281_ade20k_train.tar.gz))                   | 1281 x 1281      | 42.3      | 42.2                      | 42.5                      | 45.3        | 42.37
+ConvNeXt-L ([config](../../configs/ade20k/kmax_deeplab/kmax_meta_convnext_large_os32.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/kmax_convnext_large_res641_ade20k_train.tar.gz))          | 641 x 641        | 48.7      | 48.0                      | 50.0                      | 54.8        | 48.75
+ConvNeXt-L ([config](../../configs/ade20k/kmax_deeplab/kmax_meta_convnext_large_os32_res1281.textproto), [ckpt](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/kmax_convnext_large_res1281_ade20k_train.tar.gz)) | 1281 x 1281      | 50.9      | 51.0                      | 50.7                      | 55.2        | 50.92
+
+\[\*\]: Results evaluated by the official script. \[\*\*\]: Results evaluated by
+our pipeline. See Q4 in [FAQ](../faq.md).
+
+Note that during inference, we resize the longer side to target size (641 or
+1281) and then pad shorter side to target size. Our inference strategy is
+different from the ways that other methods use on ADE20K, which instead resize
+shorter side to target size, or adopt sliding window (which may yield a better
+performance at the cost of more FLOPs). Our strategy makes sure the model is
+trained and tested on the same input resolution.
 
 ## Citing kMaX-DeepLab
 

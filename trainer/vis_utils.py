@@ -20,6 +20,7 @@ import numpy as np
 import PIL
 import tensorflow as tf
 
+from deeplab2.data import ade20k_constants
 from deeplab2.data import coco_constants
 from deeplab2.data import waymo_constants
 
@@ -390,6 +391,19 @@ def create_coco_label_colormap():
   return colormap
 
 
+def create_ade20k_label_colormap() -> np.ndarray:
+  """Creates a label colormap used in ADE20K dataset.
+
+  Returns:
+    A colormap for visualizing segmentation results.
+  """
+  ade20k_categories = ade20k_constants.get_ade20k_meta()
+  colormap = np.zeros((256, 3), dtype=np.uint8)
+  for category in ade20k_categories:
+    colormap[category['id']] = category['color']
+  return colormap
+
+
 def create_waymo_label_colormap():
   """Creates a label colormap used in Waymo segmentation dataset.
 
@@ -434,6 +448,8 @@ def label_to_color_image(label, colormap_name='cityscapes'):
     colormap = create_motchallenge_label_colormap()
   elif colormap_name == 'coco':
     colormap = create_coco_label_colormap()
+  elif colormap_name == 'ade20k':
+    colormap = create_ade20k_label_colormap()
   elif colormap_name == 'waymo':
     colormap = create_waymo_label_colormap()
   else:
@@ -503,6 +519,8 @@ def save_parsing_result(parsing_result,
     colormap = create_motchallenge_label_colormap()
   elif colormap_name == 'coco':
     colormap = create_coco_label_colormap()
+  elif colormap_name == 'ade20k':
+    colormap = create_ade20k_label_colormap()
   elif colormap_name == 'waymo':
     colormap = create_waymo_label_colormap()
   else:

@@ -58,6 +58,13 @@ The Waymo Open Dataset (WOD): Panoramic Video Panoptic Segmentation (PVPS)
 contains high quality panoramic video annotations with time and cross-camera
 consistency.
 
+8. ADE20K panoptic segmentation
+(https://groups.csail.mit.edu/vision/datasets/ADE20K/)
+
+Panoptic segmentation annotations for ADE20K dataset. Note that we convert the
+provided ADE20K panoptic segmentation format to the following one:
+panoptic label = semantic label * 1000 + instance id.
+
 We can use the dataset in the following settings:
 - In the multicamera setting, an example contains all camera data within a
 frame (i.e., the instance correspondence between cameras are guaranteed).
@@ -120,12 +127,17 @@ References:
   Segmentation." In CVPR, 2021.
 
 - Jieru Mei, Alex Zihao Zhu, Xinchen Yan, Hang Yan, Siyuan Qiao, Yukun Zhu,
-Liang-Chieh Chen, Henrik Kretzschmar, Dragomir Anguelov. "Waymo Open Dataset:
-Panoramic Video Panoptic Segmentation." arXiv: 2206.07704, 2022.
+  Liang-Chieh Chen, Henrik Kretzschmar, and Dragomir Anguelov. "Waymo Open
+  Dataset: Panoramic Video Panoptic Segmentation." arXiv: 2206.07704, 2022.
+
+- Bolei Zhou, Hang Zhao, Xavier Puig, Sanja Fidler, Adela Barriuso,
+  and Antonio Torralba. "Scene Parsing Through ADE20K Dataset." In CVPR, 2017.
+
 """
 
 import collections
 
+from deeplab2.data import ade20k_constants
 from deeplab2.data import waymo_constants
 
 # Dataset names.
@@ -135,6 +147,7 @@ _MOTCHALLENGE_STEP = 'motchallenge_step'
 _CITYSCAPES_DVPS = 'cityscapes_dvps'
 _SEMKITTI_DVPS = 'semkitti_dvps'
 _COCO_PANOPTIC = 'coco_panoptic'
+_ADE20K_PANOPTIC = 'ade20k_panoptic'
 
 # WOD: PVPS dataset names.
 _WOD_PVPS_IMAGE_PANOPTIC_SEG = 'wod_pvps_image_panoptic_seg'
@@ -148,6 +161,7 @@ _WOD_PVPS_DEPTH_VIDEO_PANOPTIC_SEG_MULTICAM = (
 CITYSCAPES_COLORMAP = 'cityscapes'
 MOTCHALLENGE_COLORMAP = 'motchallenge'
 COCO_COLORMAP = 'coco'
+_ADE20K_COLORMAP = 'ade20k'
 WOD_PVPS_COLORMAP = waymo_constants.COLORMAP
 
 # Camera Names for WOD: PVPS.
@@ -294,12 +308,30 @@ COCO_PANOPTIC_INFORMATION = _build_dataset_info(
     ignore_depth=None,
 )
 
+ADE20K_PANOPTIC_INFORMATION = _build_dataset_info(
+    dataset_name=_ADE20K_PANOPTIC,
+    splits_to_sizes={
+        'train': 20210,
+        'val': 2000,
+    },
+    num_classes=151,
+    ignore_label=0,
+    panoptic_label_divisor=1000,
+    class_has_instances_list=(
+        ade20k_constants.get_ade20k_class_has_instances_list()),
+    is_video_dataset=False,
+    colormap=_ADE20K_COLORMAP,
+    is_depth_dataset=False,
+    ignore_depth=None,
+)
+
 MAP_NAME_TO_DATASET_INFO = {
     _CITYSCAPES_PANOPTIC: CITYSCAPES_PANOPTIC_INFORMATION,
     _KITTI_STEP: KITTI_STEP_INFORMATION,
     _MOTCHALLENGE_STEP: MOTCHALLENGE_STEP_INFORMATION,
     _CITYSCAPES_DVPS: CITYSCAPES_DVPS_INFORMATION,
     _COCO_PANOPTIC: COCO_PANOPTIC_INFORMATION,
+    _ADE20K_PANOPTIC: ADE20K_PANOPTIC_INFORMATION,
     _SEMKITTI_DVPS: SEMKITTI_DVPS_INFORMATION,
 }
 

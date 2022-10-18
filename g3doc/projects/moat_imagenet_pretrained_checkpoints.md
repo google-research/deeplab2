@@ -41,7 +41,7 @@ resolution and thus generalize better to downstream tasks. We report
 the top-1 accuracy evaluated on the ImageNet-1K validation set in the following
 tables.
 
-###strong-MOAT family:
+### strong-MOAT family:
 
 In the following table, we provide strong-MOAT family ImageNet-pretrained
 checkpoints **with** positional embedding.
@@ -66,7 +66,7 @@ MOAT-3 ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab
 MOAT-4 ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/moat4_imagenet_22k_and_1k_512_without_position_embedding.tar.gz)) | no                   | 512        | ImageNet-22K + 1K | 482.5M  | 640.6B  | 88.9%
 
 
-###tiny-MOAT family:
+### tiny-MOAT family:
 
 In the following table, we provide tiny-MOAT family ImageNet-pretrained
 checkpoints **with** positional embedding.
