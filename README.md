@@ -67,6 +67,7 @@ See [Installation](g3doc/setup/installation.md).
 
 The dataset needs to be converted to TFRecord. We provide some examples below.
 
+* <a href='g3doc/setup/ade20k.md'>ADE20K</a><br>
 * <a href='g3doc/setup/cityscapes.md'>Cityscapes</a><br>
 * <a href='g3doc/setup/coco.md'>COCO</a><br>
 * <a href='g3doc/setup/kitti_step.md'>KITTI-STEP</a><br>
@@ -178,3 +179,6 @@ If you find DeepLab2 useful for your project, please consider citing
 7. Patrick Dendorfer, Aljosa Osep, Anton Milan, Konrad Schindler, Daniel
    Cremers, Ian Reid, Stefan Roth, and Laura Leal-Taixe. "MOTChallenge: A
    Benchmark for Single-camera Multiple Target Tracking." IJCV, 2020.
+
+8. Bolei Zhou, Hang Zhao, Xavier Puig, Sanja Fidler, Adela Barriuso, and
+   Antonio Torralba. "Scene Parsing through ADE20K Dataset." In CVPR, 2017.
