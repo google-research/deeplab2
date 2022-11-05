@@ -42,11 +42,10 @@ the top-1 accuracy evaluated on the ImageNet-1K validation set in the following
 tables.
 
 We have two options for input normalization due to some legacy issues.
-Option 1 means normalizing the RGB image by the mean [0.485 * 255, 0.456 * 255,
-0.406 * 255] and standard deviation [0.229 * 255, 0.224 * 255, 0.225 * 255].
-
-Option 2 means normalizing the RGB image by the mean 127.5
-and standard deviation 127.5.
+The `option 1` setting means normalizing the RGB image by the mean [0.485 * 255,
+0.456 * 255, 0.406 * 255] and standard deviation [0.229 * 255, 0.224 * 255,
+0.225 * 255], while the `option 2` setting means normalizing the RGB image by
+the mean 127.5 and standard deviation 127.5.
 
 ### strong-MOAT family:
 

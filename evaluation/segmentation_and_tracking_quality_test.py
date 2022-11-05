@@ -19,7 +19,6 @@ import numpy as np
 import tensorflow as tf
 
 from deeplab2.evaluation import segmentation_and_tracking_quality as stq
-from deeplab2.evaluation.numpy import segmentation_and_tracking_quality as numpy_stq
 
 
 def _compute_metric_and_compare(metric, ground_truth, prediction,
@@ -288,105 +287,6 @@ class STQualityTest(tf.test.TestCase):
       _compute_metric_and_compare(stq_metric, ground_truth_track,
                                   predicted_track,
                                   [0.3, 0.3, 0.3])
-
-  def test_basic_examples_numpy_compatibility(self):
-    n_classes = 2
-    ignore_label = 255
-    # classes = ['cars', 'sky'].
-    things_list = [0]
-    bit_shift = 16
-
-    # Since the semantic label is `0`, the instance ID is enough.
-    ground_truth_track = np.array([[1, 1, 1, 1, 1]])
-
-    stq_metric = numpy_stq.STQuality(n_classes, things_list, ignore_label,
-                                     bit_shift, 2**24)
-    max_instances_per_category = 1 << (bit_shift)
-    stq_metric_tf = stq.STQuality(
-        n_classes, things_list, ignore_label, max_instances_per_category,
-        2 ** 24)
-
-    def _assert_compatibility(ground_truth, prediction, weights, iter=1):
-      for _ in range(iter):
-        stq_metric_tf.update_state(
-            tf.convert_to_tensor(ground_truth),
-            tf.convert_to_tensor(prediction), 1,
-            tf.convert_to_tensor(weights) if weights is not None else None)
-        stq_metric.update_state(ground_truth, prediction, 1, weights)
-      np_result = stq_metric.result()
-      tf_result = stq_metric_tf.result()
-      for metric in [stq_metric, stq_metric_tf]:
-        metric.reset_states()
-      for key in np_result:
-        np.testing.assert_allclose(np_result[key], tf_result[key])
-
-    for weights in [None, np.array([1.0, 0.5, 1.0, 1.0, 0.5])]:
-      with self.subTest('Example 0'):
-        predicted_track = np.array([[1, 1, 1, 1, 1]])
-        _assert_compatibility(ground_truth_track, predicted_track, weights)
-
-      with self.subTest('Example 1'):
-        predicted_track = np.array([[1, 1, 2, 2, 2]])
-        _assert_compatibility(ground_truth_track, predicted_track, weights)
-
-      with self.subTest('Example 2'):
-        predicted_track = np.array([[1, 2, 2, 2, 2]])
-        _assert_compatibility(ground_truth_track, predicted_track, weights)
-
-      with self.subTest('Example 3'):
-        predicted_track = np.array([[1, 2, 3, 4, 5]])
-        _assert_compatibility(ground_truth_track, predicted_track, weights)
-
-      with self.subTest('Example 4'):
-        predicted_track = np.array([[1, 2, 1, 2, 2]])
-        _assert_compatibility(ground_truth_track, predicted_track, weights)
-
-      with self.subTest('Example 5'):
-        predicted_track = (
-            np.array([[0, 1, 1, 1, 1]]) +
-            (np.array([[1, 0, 0, 0, 0]]) << bit_shift))
-        _assert_compatibility(ground_truth_track, predicted_track, weights)
-
-      # First label is `crowd`.
-      ground_truth_track = np.array([[0, 1, 1, 1, 1, 1]])
-      weights_678 = (np.concatenate([weights, [1]])
-                     if weights is not None else None)
-
-      with self.subTest('Example 6'):
-        predicted_track = np.array([[1, 1, 1, 1, 1, 1]])
-        _assert_compatibility(ground_truth_track, predicted_track, weights_678)
-
-      with self.subTest('Example 7'):
-        predicted_track = np.array([[2, 2, 2, 2, 1, 1]])
-        _assert_compatibility(ground_truth_track, predicted_track, weights_678)
-
-      with self.subTest('Example 8'):
-        predicted_track = (
-            np.array([[2, 2, 0, 1, 1, 1]]) +
-            (np.array([[0, 0, 1, 0, 0, 0]]) << bit_shift))
-        _assert_compatibility(ground_truth_track, predicted_track, weights_678)
-
-      # First label is `sky`.
-      ground_truth_track = (
-          np.array([[0, 1, 1, 1, 1]]) +
-          (np.array([[1, 0, 0, 0, 0]]) << bit_shift))
-
-      with self.subTest('Example 9'):
-        predicted_track = np.array([[1, 1, 1, 1, 1]])
-        _assert_compatibility(ground_truth_track, predicted_track, weights)
-
-      with self.subTest('Example 10'):
-        predicted_track = np.array([[2, 2, 2, 1, 1]])
-        _assert_compatibility(ground_truth_track, predicted_track, weights)
-
-      with self.subTest('Example 11'):
-        predicted_track = (
-            np.array([[2, 2, 0, 1, 1]]) +
-            (np.array([[0, 0, 1, 0, 0]]) << bit_shift))
-        _assert_compatibility(ground_truth_track, predicted_track, weights)
-
-      with self.subTest('Example 11 Iter 2'):
-        _assert_compatibility(ground_truth_track, predicted_track, weights, 2)
 
 
 if __name__ == '__main__':

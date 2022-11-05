@@ -43,20 +43,6 @@ def _compute_metric_and_compare(metric, ground_truth, prediction,
 
 class STQualityTest(unittest.TestCase):
 
-  def test_update_dict_stats(self):
-    stat_dict = {}
-    val = np.array([1, 1, 1, 2], dtype=np.int32)
-    numpy_stq._update_dict_stats(stat_dict, val, None)
-    self.assertDictEqual(stat_dict, {1: 3, 2: 1})
-
-    stat_dict = {}
-    val = np.array([1, 1, 1, 2], dtype=np.int32)
-    weights = np.array([1, 0.5, 0.5, 0.5], dtype=np.float32)
-    numpy_stq._update_dict_stats(stat_dict, val, weights)
-    self.assertDictEqual(stat_dict, {1: 2, 2: 0.5})
-    numpy_stq._update_dict_stats(stat_dict, val, weights)
-    self.assertDictEqual(stat_dict, {1: 4, 2: 1})
-
   def test_complex_example(self):
     n_classes = 3
     ignore_label = 255
