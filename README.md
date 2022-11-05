@@ -96,6 +96,8 @@ We list a few projects that use DeepLab2.
 
 *   <a href='https://colab.research.google.com/github/google-research/deeplab2/blob/main/ViP_DeepLab_Demo.ipynb'>ViP-DeepLab Colab notebook for off-the-shelf inference with Cityscapes-DVPS checkpoints.</a><br>
 
+Note that the exported models used in all the demos are in **CPU** mode.
+
 ## Running DeepLab2
 
 See [Getting Started](g3doc/setup/getting_started.md). In short, run the

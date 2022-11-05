@@ -41,29 +41,36 @@ resolution and thus generalize better to downstream tasks. We report
 the top-1 accuracy evaluated on the ImageNet-1K validation set in the following
 tables.
 
+We have two options for input normalization due to some legacy issues.
+Option 1 means normalizing the RGB image by the mean [0.485 * 255, 0.456 * 255,
+0.406 * 255] and standard deviation [0.229 * 255, 0.224 * 255, 0.225 * 255].
+
+Option 2 means normalizing the RGB image by the mean 127.5
+and standard deviation 127.5.
+
 ### strong-MOAT family:
 
 In the following table, we provide strong-MOAT family ImageNet-pretrained
 checkpoints **with** positional embedding.
 
-backbone  | positional embedding | input size | data              | params  | FLOPs   | top-1 accuracy
-:---      | :---:                | :---:      | :---:             | :---:   | :---:   | :---:
-MOAT-0 ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/moat0_imagenet_1k_224_with_position_embedding.tar.gz)) | yes                  | 224        | ImageNet-1K       | 27.8M   | 5.7B    | 83.3%
-MOAT-1  ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/moat1_imagenet_1k_224_with_position_embedding.tar.gz)) | yes                  | 224        | ImageNet-1K       | 41.6M   | 9.1B    | 84.2%
-MOAT-2  ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/moat2_imagenet_22k_and_1k_384_with_position_embedding.tar.gz)) | yes                  | 384        | ImageNet-22K + 1K | 73.4M   | 54.3B   | 87.5%
-MOAT-3  ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/moat3_imagenet_22k_and_1k_512_with_position_embedding.tar.gz)) | yes                  | 512        | ImageNet-22K + 1K | 190.0M  | 271.0B  | 88.4%
-MOAT-4  ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/moat4_imagenet_22k_and_1k_512_with_position_embedding.tar.gz)) | yes                  | 512        | ImageNet-22K + 1K | 483.2M  | 648.5B  | 89.1%
+backbone  | positional embedding | input size | data              | input normalization | params  | FLOPs   | top-1 accuracy
+:---      | :---:                | :---:      | :---:             | :---:               | :---:   | :---:   | :---:
+MOAT-0 ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/moat0_imagenet_1k_224_w_position_embedding.tar.gz))          | yes                  | 224        | ImageNet-1K       | option 1 | 27.8M   | 5.7B    | 83.3%
+MOAT-1  ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/moat1_imagenet_1k_224_w_position_embedding.tar.gz))         | yes                  | 224        | ImageNet-1K       | option 1 | 41.6M   | 9.1B    | 84.2%
+MOAT-2  ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/moat2_imagenet_22k_and_1k_384_w_position_embedding.tar.gz)) | yes                  | 384        | ImageNet-22K + 1K | option 2 | 73.4M   | 54.3B   | 87.5%
+MOAT-3  ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/moat3_imagenet_22k_and_1k_512_w_position_embedding.tar.gz)) | yes                  | 512        | ImageNet-22K + 1K | option 2 | 190.0M  | 271.0B  | 88.4%
+MOAT-4  ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/moat4_imagenet_22k_and_1k_512_w_position_embedding.tar.gz)) | yes                  | 512        | ImageNet-22K + 1K | option 2 | 483.2M  | 648.5B  | 89.1%
 
 In the following table, we provide strong-MOAT family ImageNet-pretrained
 checkpoints **without** positional embedding.
 
-backbone  | positional embedding | input size | data              | params  | FLOPs   | top-1 accuracy
-:---      | :---:                | :---:      | :---:             | :---:   | :---:   | :---:
-MOAT-0 ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/moat0_imagenet_1k_224_without_position_embedding.tar.gz)) | no                   | 224        | ImageNet-1K       | 27.8M   | 5.7B    | 83.0%
-MOAT-1 ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/moat1_imagenet_1k_224_without_position_embedding.tar.gz)) | no                   | 224        | ImageNet-1K       | 41.5M   | 9.1B    | 84.1%
-MOAT-2 ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/moat2_imagenet_22k_and_1k_384_without_position_embedding.tar.gz)) | no                   | 384        | ImageNet-22K + 1K | 73.2M   | 53.8B   | 87.2%
-MOAT-3 ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/moat3_imagenet_22k_and_1k_512_without_position_embedding.tar.gz)) | no                   | 512        | ImageNet-22K + 1K | 189.5M  | 266.1B  | 88.2%
-MOAT-4 ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/moat4_imagenet_22k_and_1k_512_without_position_embedding.tar.gz)) | no                   | 512        | ImageNet-22K + 1K | 482.5M  | 640.6B  | 88.9%
+backbone  | positional embedding | input size | data              | input normalization | params  | FLOPs   | top-1 accuracy
+:---      | :---:                | :---:      | :---:             | :---:               | :---:   | :---:   | :---:
+MOAT-0 ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/moat0_imagenet_1k_224_wo_position_embedding.tar.gz))         | no                   | 224        | ImageNet-1K       | option 1 | 27.8M   | 5.7B    | 83.0%
+MOAT-1 ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/moat1_imagenet_1k_224_wo_position_embedding.tar.gz))         | no                   | 224        | ImageNet-1K       | option 1 | 41.5M   | 9.1B    | 84.1%
+MOAT-2 ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/moat2_imagenet_22k_and_1k_384_wo_position_embedding.tar.gz)) | no                   | 384        | ImageNet-22K + 1K | option 2 | 73.2M   | 53.8B   | 87.2%
+MOAT-3 ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/moat3_imagenet_22k_and_1k_512_wo_position_embedding.tar.gz)) | no                   | 512        | ImageNet-22K + 1K | option 2 | 189.5M  | 266.1B  | 88.2%
+MOAT-4 ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/moat4_imagenet_22k_and_1k_512_wo_position_embedding.tar.gz)) | no                   | 512        | ImageNet-22K + 1K | option 2 | 482.5M  | 640.6B  | 88.9%
 
 
 ### tiny-MOAT family:
@@ -71,22 +78,22 @@ MOAT-4 ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab
 In the following table, we provide tiny-MOAT family ImageNet-pretrained
 checkpoints **with** positional embedding.
 
-backbone    | positional embedding | input size | data            | params  | FLOPs   | top-1 accuracy
-:---        | :---:                | :---:      | :---:           | :---:   | :---:   | :---:
-tiny-MOAT-0 ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/tiny_moat0_imagenet_1k_256_with_position_embedding.tar.gz)) | yes                  | 256        | ImageNet-1K     | 3.4M    | 1.1B    | 76.6%
-tiny-MOAT-1 ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/tiny_moat1_imagenet_1k_256_with_position_embedding.tar.gz)) | yes                  | 256        | ImageNet-1K     | 5.1M    | 1.6B    | 79.2%
-tiny-MOAT-2 ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/tiny_moat2_imagenet_1k_256_with_position_embedding.tar.gz)) | yes                  | 256        | ImageNet-1K     | 9.8M    | 3.0B    | 81.7%
-tiny-MOAT-3 ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/tiny_moat3_imagenet_1k_256_with_position_embedding.tar.gz)) | yes                  | 256        | ImageNet-1K     | 19.5M   | 6.0B    | 83.2%
+backbone  | positional embedding | input size | data              | input normalization | params  | FLOPs   | top-1 accuracy
+:---      | :---:                | :---:      | :---:             | :---:               | :---:   | :---:   | :---:
+tiny-MOAT-0 ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/tiny_moat0_imagenet_1k_256_w_position_embedding.tar.gz)) | yes                  | 256        | ImageNet-1K     | option 1 | 3.4M    | 1.1B    | 76.6%
+tiny-MOAT-1 ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/tiny_moat1_imagenet_1k_256_w_position_embedding.tar.gz)) | yes                  | 256        | ImageNet-1K     | option 1 | 5.1M    | 1.6B    | 79.2%
+tiny-MOAT-2 ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/tiny_moat2_imagenet_1k_256_w_position_embedding.tar.gz)) | yes                  | 256        | ImageNet-1K     | option 1 | 9.8M    | 3.0B    | 81.7%
+tiny-MOAT-3 ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/tiny_moat3_imagenet_1k_256_w_position_embedding.tar.gz)) | yes                  | 256        | ImageNet-1K     | option 1 | 19.5M   | 6.0B    | 83.3%
 
 In the following table, we provide tiny-MOAT family ImageNet-pretrained
 checkpoints **without** positional embedding.
 
-backbone    | positional embedding | input size | data            | params  | FLOPs   | top-1 accuracy
-:---        | :---:                | :---:      | :---:           | :---:   | :---:   | :---:
-tiny-MOAT-0 ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/tiny_moat0_imagenet_1k_256_without_position_embedding.tar.gz)) | no                   | 256        | ImageNet-1K     | 3.3M    | 1.1B    | 76.0%
-tiny-MOAT-1 ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/tiny_moat1_imagenet_1k_256_without_position_embedding.tar.gz)) | no                   | 256        | ImageNet-1K     | 5.1M    | 1.6B    | 78.9%
-tiny-MOAT-2 ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/tiny_moat2_imagenet_1k_256_without_position_embedding.tar.gz)) | no                   | 256        | ImageNet-1K     | 9.7M    | 3.0B    | 81.3%
-tiny-MOAT-3 ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/tiny_moat3_imagenet_1k_256_without_position_embedding.tar.gz)) | no                   | 256        | ImageNet-1K     | 19.5M   | 6.0B    | 83.0%
+backbone  | positional embedding | input size | data              | input normalization | params  | FLOPs   | top-1 accuracy
+:---      | :---:                | :---:      | :---:             | :---:               | :---:   | :---:   | :---:
+tiny-MOAT-0 ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/tiny_moat0_imagenet_1k_256_wo_position_embedding.tar.gz)) | no                   | 256        | ImageNet-1K     | option 1 | 3.3M    | 1.1B    | 76.0%
+tiny-MOAT-1 ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/tiny_moat1_imagenet_1k_256_wo_position_embedding.tar.gz)) | no                   | 256        | ImageNet-1K     | option 1 | 5.1M    | 1.6B    | 78.9%
+tiny-MOAT-2 ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/tiny_moat2_imagenet_1k_256_wo_position_embedding.tar.gz)) | no                   | 256        | ImageNet-1K     | option 1 | 9.7M    | 3.0B    | 81.3%
+tiny-MOAT-3 ([initial_checkpoint](https://storage.googleapis.com/gresearch/tf-deeplab/checkpoint/tiny_moat3_imagenet_1k_256_wo_position_embedding.tar.gz)) | no                   | 256        | ImageNet-1K     | option 1 | 19.5M   | 6.0B    | 83.0%
 
 
 ### References
