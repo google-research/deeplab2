@@ -156,7 +156,7 @@ def overlay_heatmap_on_image(heatmap,
   """
 
   # Generate the cmap.
-  cmap = plt.cm.Reds
+  cmap = plt.cm.Reds  # pytype: disable=module-attr
   # pylint: disable=protected-access
   cmap._init()
   # pylint: disable=protected-access
