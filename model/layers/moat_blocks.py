@@ -460,7 +460,7 @@ class MOATBlock(tf.keras.layers.Layer):
         kernel_initializer=self._config.kernel_initializer,
         bias_initializer=self._config.bias_initializer)
 
-  def _make_wondows(self, inputs):
+  def _make_windows(self, inputs):
     _, height, width, channels = inputs.get_shape().with_rank(4).as_list()
     inputs = tf.reshape(
         inputs,
@@ -531,7 +531,7 @@ class MOATBlock(tf.keras.layers.Layer):
     def _func(output):
       output = self._attention_norm(output)
       _, height, width, _ = output.get_shape().with_rank(4).as_list()
-      output = self._make_wondows(output)
+      output = self._make_windows(output)
       output = self._attention(output)
       output = self._remove_windows(output, height, width)
       return output
