@@ -15,11 +15,14 @@
 
 """Utility functions related to preprocessing inputs."""
 
+from typing import Tuple, Sequence, Optional, Union
+
 import numpy as np
 import tensorflow as tf
 
 
-def flip_dim(tensor_list, prob=0.5, dim=1):
+def flip_dim(tensor_list: Sequence[tf.Tensor], prob: float = 0.5, dim: int = 1
+             ) -> Sequence[tf.Tensor]:
   """Randomly flips a dimension of the given tensor.
 
   The decision to randomly flip the `Tensors` is made together. In other words,
@@ -61,7 +64,7 @@ def flip_dim(tensor_list, prob=0.5, dim=1):
   return outputs
 
 
-def get_label_resize_method(label):
+def get_label_resize_method(label: tf.Tensor) -> tf.image.ResizeMethod:
   """Returns the resize method of labels depending on label dtype.
 
   Args:
@@ -82,7 +85,11 @@ def get_label_resize_method(label):
     raise ValueError('Label type must be either floating or integer.')
 
 
-def _crop(image, offset_height, offset_width, crop_height, crop_width):
+def crop(image: tf.Tensor,
+         offset_height: int,
+         offset_width: int,
+         crop_height: int,
+         crop_width: int) -> tf.Tensor:
   """Crops the given image using the provided offsets and sizes.
 
   Note that the method doesn't assume we know the input image size but it does
@@ -132,7 +139,9 @@ def _crop(image, offset_height, offset_width, crop_height, crop_width):
   return image
 
 
-def random_crop(image_list, crop_height, crop_width):
+def random_crop(image_list: Sequence[tf.Tensor],
+                crop_height: int,
+                crop_width: int) -> Sequence[tf.Tensor]:
   """Crops the given list of images.
 
   The function applies the same crop to each image in the list. This can be
@@ -213,11 +222,13 @@ def random_crop(image_list, crop_height, crop_width):
                                     dtype=tf.int32)
   offset_width = tf.random.uniform([], maxval=max_offset_width, dtype=tf.int32)
 
-  return [_crop(image, offset_height, offset_width,
-                crop_height, crop_width) for image in image_list]
+  return [crop(image, offset_height, offset_width,
+               crop_height, crop_width) for image in image_list]
 
 
-def get_random_scale(min_scale_factor, max_scale_factor, step_size):
+def get_random_scale(min_scale_factor: float,
+                     max_scale_factor: float,
+                     step_size: float) -> tf.Tensor:
   """Gets a random scale value.
 
   Args:
@@ -252,7 +263,10 @@ def get_random_scale(min_scale_factor, max_scale_factor, step_size):
   return shuffled_scale_factors[0]
 
 
-def randomly_scale_image_and_label(image, label=None, scale=1.0):
+def randomly_scale_image_and_label(image: tf.Tensor,
+                                   label: Optional[tf.Tensor] = None,
+                                   scale: float = 1.0
+                                   ) -> Tuple[tf.Tensor, Optional[tf.Tensor]]:
   """Randomly scales image and label.
 
   Args:
@@ -286,7 +300,7 @@ def randomly_scale_image_and_label(image, label=None, scale=1.0):
   return image, label
 
 
-def resolve_shape(tensor, rank=None):
+def resolve_shape(tensor: tf.Tensor, rank: Optional[int] = None) -> tf.Tensor:
   """Fully resolves the shape of a Tensor.
 
   Use as much as possible the shape components already known during graph
@@ -313,14 +327,15 @@ def resolve_shape(tensor, rank=None):
   return shape
 
 
-def _scale_dim(original_size, factor):
+def _scale_dim(original_size: int, factor: float) -> int:
   """Helper method to scale one input dimension by the given factor."""
   original_size = tf.cast(original_size, tf.float32)
   factor = tf.cast(factor, tf.float32)
   return tf.cast(tf.floor(original_size * factor), tf.int32)
 
 
-def process_resize_value(resize_spec):
+def process_resize_value(resize_spec: Optional[Union[int, Tuple[int, int]]]
+                         ) -> Optional[Tuple[int, int]]:
   """Helper method to process input resize spec.
 
   Args:
@@ -352,7 +367,8 @@ def process_resize_value(resize_spec):
   return resize_spec
 
 
-def _resize_to_match_min_size(input_shape, min_size):
+def _resize_to_match_min_size(input_shape: Tuple[int, int],
+                              min_size: Tuple[int, int]) -> Tuple[int, int]:
   """Returns the resized shape so that both sides match minimum size.
 
   Note: the input image will still be scaled if input height and width
@@ -377,7 +393,8 @@ def _resize_to_match_min_size(input_shape, min_size):
           _scale_dim(input_width, scale_factor))
 
 
-def _resize_to_fit_max_size(input_shape, max_size):
+def _resize_to_fit_max_size(input_shape: Tuple[int, int],
+                            max_size: Tuple[int, int]) -> Tuple[int, int]:
   """Returns the resized shape so that both sides fit within max size.
 
   Note: if input shape is already smaller or equal to maximum size, no resize
@@ -403,7 +420,10 @@ def _resize_to_fit_max_size(input_shape, max_size):
           _scale_dim(input_width, scale_factor))
 
 
-def resize_to_range_helper(input_shape, min_size, max_size=None, factor=None):
+def resize_to_range_helper(input_shape: Tuple[int, int],
+                           min_size: Tuple[int, int],
+                           max_size: Optional[Tuple[int, int]] = None,
+                           factor: Optional[int] = None) -> tf.Tensor:
   """Determines output size in specified range.
 
   The output size (height and/or width) can be described by two cases:
@@ -454,13 +474,15 @@ def resize_to_range_helper(input_shape, min_size, max_size=None, factor=None):
   return output_shape
 
 
-def resize_to_range(image,
-                    label=None,
-                    min_size=None,
-                    max_size=None,
-                    factor=None,
-                    align_corners=True,
-                    method=tf.image.ResizeMethod.BILINEAR):
+def resize_to_range(
+    image: tf.Tensor,
+    label: Optional[tf.Tensor] = None,
+    min_size: Optional[Tuple[int, int]] = None,
+    max_size: Optional[Tuple[int, int]] = None,
+    factor: Optional[int] = None,
+    align_corners: bool = True,
+    method: tf.image.ResizeMethod = tf.image.ResizeMethod.BILINEAR
+    ) -> Tuple[tf.Tensor, Optional[tf.Tensor]]:
   """Resizes image or label so their sides are within the provided range.
 
   The output size (height and/or width) can be described by two cases:
