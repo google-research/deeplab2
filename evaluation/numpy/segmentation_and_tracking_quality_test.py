@@ -30,12 +30,8 @@ import segmentation_and_tracking_quality as numpy_stq
 
 
 def _compute_metric_and_compare(metric, ground_truth, prediction,
-                                expected_result, is_tf_metric=False):
-  if is_tf_metric:
-    metric.update_state(
-        tf.convert_to_tensor(ground_truth), tf.convert_to_tensor(prediction), 1)
-  else:
-    metric.update_state(ground_truth, prediction, 1)
+                                expected_result):
+  metric.update_state(ground_truth, prediction, 1)
   result = metric.result()
   metric.reset_states()
   np.testing.assert_almost_equal(result['STQ'], expected_result[0])
