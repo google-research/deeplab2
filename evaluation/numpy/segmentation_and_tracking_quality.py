@@ -20,21 +20,39 @@ this file and the corresponding unit-test to your project.
 """
 
 import collections
-from typing import Mapping, MutableMapping, Sequence, Text, Any
+from typing import Mapping, MutableMapping, Optional, Sequence, Text, Any
 import numpy as np
 
 _EPSILON = 1e-15
 
 
 def _update_dict_stats(stat_dict: MutableMapping[int, np.ndarray],
-                       id_array: np.ndarray):
+                       id_array: np.ndarray,
+                       weights: Optional[np.ndarray] = None):
   """Updates a given dict with corresponding counts."""
-  ids, counts = np.unique(id_array, return_counts=True)
-  for idx, count in zip(ids, counts):
-    if idx in stat_dict:
-      stat_dict[idx] += count
+  if weights is None:
+    unique_weight_list = [1.0]
+  else:
+    unique_weight_list = np.unique(weights).tolist()
+  # Iterate through the unique weight values, and weighted-average the counts.
+  # Example usage: lower the weights in the region covered by multiple camera in
+  # panoramic video panoptic segmentation (PVPS).
+  # NOTE(jierumei): The code is not optimized when unique_weight_list has many
+  # elements.
+  for weight in unique_weight_list:
+    if weight not in [0.5, 1.0]:
+      raise ValueError(
+          'We currently only support the case where at most two cameras cover '
+          'the overlapped regions in the PVPS task.')
+    if weights is None:
+      ids, counts = np.unique(id_array, return_counts=True)
     else:
-      stat_dict[idx] = count
+      ids, counts = np.unique(id_array[weights == weight], return_counts=True)
+    for idx, count in zip(ids, counts.astype(np.float32)):
+      if idx in stat_dict:
+        stat_dict[idx] += count * weight
+      else:
+        stat_dict[idx] = count * weight
 
 
 class STQuality(object):
@@ -108,7 +126,27 @@ class STQuality(object):
     """Returns the semantic class from a panoptic label map."""
     return y >> self._label_bit_shift
 
-  def update_state(self, y_true: np.ndarray, y_pred: np.ndarray, sequence_id=0):
+  def _get_or_update_confusion_matrix(self,
+                                      y_true: np.ndarray,
+                                      y_pred: np.ndarray,
+                                      weights: Optional[np.ndarray] = None,
+                                      cm: Optional[np.ndarray] = None):
+    """Updates or creates the confusion matrix."""
+    if cm is None:
+      cm = np.zeros((self._confusion_matrix_size, self._confusion_matrix_size),
+                    dtype=np.int64)
+    idxs = np.stack([np.reshape(y_true, [-1]),
+                     np.reshape(y_pred, [-1])],
+                    axis=0)
+    np.add.at(cm, tuple(idxs),
+              1 if weights is None else np.reshape(weights, [-1]))
+    return cm
+
+  def update_state(self,
+                   y_true: np.ndarray,
+                   y_pred: np.ndarray,
+                   sequence_id=0,
+                   weights: Optional[np.ndarray] = None):
     """Accumulates the segmentation and tracking quality statistics.
 
     IMPORTANT: When encoding the parameters y_true and y_pred, please be aware
@@ -122,9 +160,12 @@ class STQuality(object):
       sequence_id: The optional ID of the sequence the frames belong to. When no
         sequence is given, all frames are considered to belong to the same
         sequence (default: 0).
+      weights: The weights for each pixel with the same shape of `y_true`.
     """
     y_true = y_true.astype(np.int64)
     y_pred = y_pred.astype(np.int64)
+    if weights is not None:
+      weights = weights.reshape(y_true.shape)
 
     semantic_label = self.get_semantic(y_true)
     semantic_prediction = self.get_semantic(y_pred)
@@ -136,25 +177,19 @@ class STQuality(object):
                                 semantic_label, self._num_classes)
       semantic_prediction = np.where(semantic_prediction != self._ignore_label,
                                      semantic_prediction, self._num_classes)
+    # TODO(meijieru): weight the confusion matrix.
     if sequence_id in self._iou_confusion_matrix_per_sequence:
-      idxs = (np.reshape(semantic_label, [-1]) <<
-              self._label_bit_shift) + np.reshape(semantic_prediction, [-1])
-      unique_idxs, counts = np.unique(idxs, return_counts=True)
-      self._iou_confusion_matrix_per_sequence[sequence_id][
-          unique_idxs >> self._label_bit_shift,
-          unique_idxs & self._bit_mask] += counts
+      self._iou_confusion_matrix_per_sequence[
+          sequence_id] = self._get_or_update_confusion_matrix(
+              semantic_label,
+              semantic_prediction,
+              weights,
+              cm=self._iou_confusion_matrix_per_sequence[sequence_id])
       self._sequence_length[sequence_id] += 1
     else:
-      self._iou_confusion_matrix_per_sequence[sequence_id] = np.zeros(
-          (self._confusion_matrix_size, self._confusion_matrix_size),
-          dtype=np.int64)
-      idxs = np.stack([
-          np.reshape(semantic_label, [-1]),
-          np.reshape(semantic_prediction, [-1])
-      ],
-                      axis=0)
-      np.add.at(self._iou_confusion_matrix_per_sequence[sequence_id],
-                tuple(idxs), 1)
+      self._iou_confusion_matrix_per_sequence[
+          sequence_id] = self._get_or_update_confusion_matrix(
+              semantic_label, semantic_prediction, weights, cm=None)
 
       self._predictions[sequence_id] = {}
       self._ground_truth[sequence_id] = {}
@@ -185,14 +220,19 @@ class STQuality(object):
     seq_intersects = self._intersections[sequence_id]
 
     # Compute and update areas of ground-truth, predictions and intersections.
-    _update_dict_stats(seq_preds, y_pred[prediction_mask])
-    _update_dict_stats(seq_gts, y_true[label_mask])
+    _update_dict_stats(
+        seq_preds, y_pred[prediction_mask],
+        weights[prediction_mask] if weights is not None else None)
+    _update_dict_stats(seq_gts, y_true[label_mask],
+                       weights[label_mask] if weights is not None else None)
 
     non_crowd_intersection = np.logical_and(label_mask, prediction_mask)
     intersection_ids = (
         y_true[non_crowd_intersection] * self._offset +
         y_pred[non_crowd_intersection])
-    _update_dict_stats(seq_intersects, intersection_ids)
+    _update_dict_stats(
+        seq_intersects, intersection_ids,
+        weights[non_crowd_intersection] if weights is not None else None)
 
   def result(self) -> Mapping[Text, Any]:
     """Computes the segmentation and tracking quality.
