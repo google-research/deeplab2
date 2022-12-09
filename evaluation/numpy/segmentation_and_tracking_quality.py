@@ -126,21 +126,23 @@ class STQuality(object):
     """Returns the semantic class from a panoptic label map."""
     return y >> self._label_bit_shift
 
-  def _get_or_update_confusion_matrix(self,
-                                      y_true: np.ndarray,
-                                      y_pred: np.ndarray,
-                                      weights: Optional[np.ndarray] = None,
-                                      cm: Optional[np.ndarray] = None):
+  def _get_or_update_confusion_matrix(
+      self,
+      y_true: np.ndarray,
+      y_pred: np.ndarray,
+      weights: Optional[np.ndarray] = None,
+      confusion_matrix: Optional[np.ndarray] = None):
     """Updates or creates the confusion matrix."""
-    if cm is None:
-      cm = np.zeros((self._confusion_matrix_size, self._confusion_matrix_size),
-                    dtype=np.int64)
+    if confusion_matrix is None:
+      confusion_matrix = np.zeros(
+          (self._confusion_matrix_size, self._confusion_matrix_size),
+          dtype=np.int64)
     idxs = np.stack([np.reshape(y_true, [-1]),
                      np.reshape(y_pred, [-1])],
                     axis=0)
-    np.add.at(cm, tuple(idxs),
+    np.add.at(confusion_matrix, tuple(idxs),
               1 if weights is None else np.reshape(weights, [-1]))
-    return cm
+    return confusion_matrix
 
   def update_state(self,
                    y_true: np.ndarray,
@@ -177,19 +179,16 @@ class STQuality(object):
                                 semantic_label, self._num_classes)
       semantic_prediction = np.where(semantic_prediction != self._ignore_label,
                                      semantic_prediction, self._num_classes)
-    # TODO(meijieru): weight the confusion matrix.
     if sequence_id in self._iou_confusion_matrix_per_sequence:
       self._iou_confusion_matrix_per_sequence[
           sequence_id] = self._get_or_update_confusion_matrix(
-              semantic_label,
-              semantic_prediction,
-              weights,
-              cm=self._iou_confusion_matrix_per_sequence[sequence_id])
+              semantic_label, semantic_prediction, weights,
+              self._iou_confusion_matrix_per_sequence[sequence_id])
       self._sequence_length[sequence_id] += 1
     else:
       self._iou_confusion_matrix_per_sequence[
           sequence_id] = self._get_or_update_confusion_matrix(
-              semantic_label, semantic_prediction, weights, cm=None)
+              semantic_label, semantic_prediction, weights, None)
 
       self._predictions[sequence_id] = {}
       self._ground_truth[sequence_id] = {}
