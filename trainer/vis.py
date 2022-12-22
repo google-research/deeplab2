@@ -90,12 +90,12 @@ def _convert_train_id_to_eval_id(
 
 
 def _get_fg_mask(label_map: np.ndarray, thing_list: List[int]) -> np.ndarray:
-  fg_mask = np.zeros_like(label_map, np.bool)
+  fg_mask = np.zeros_like(label_map, bool)
   for class_id in np.unique(label_map):
     if class_id in thing_list:
       fg_mask = np.logical_or(fg_mask, np.equal(label_map, class_id))
   fg_mask = np.expand_dims(fg_mask, axis=2)
-  return fg_mask.astype(np.int)
+  return fg_mask.astype(int)
 
 
 def store_raw_instance_predictions_cityscapes(

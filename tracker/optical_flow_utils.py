@@ -29,4 +29,4 @@ def warp_flow(img: np.ndarray, flow_tensor: np.ndarray) -> np.ndarray:
 
 def remove_occlusions(warped_binary_img: np.ndarray,
                       occlusion_map: np.ndarray) -> np.ndarray:
-  return warped_binary_img.astype(np.bool) & (1 - occlusion_map).astype(np.bool)
+  return warped_binary_img.astype(bool) & (1 - occlusion_map).astype(bool)
