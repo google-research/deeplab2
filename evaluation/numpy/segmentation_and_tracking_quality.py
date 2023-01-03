@@ -240,8 +240,7 @@ class STQuality(object):
                        weights[label_mask] if weights is not None else None)
 
     non_crowd_intersection = np.logical_and(label_mask, prediction_mask)
-    intersection_ids = (
-        y_true[non_crowd_intersection] * self._offset +
+    intersection_ids = (y_true[non_crowd_intersection] * self._offset +
                         y_pred[non_crowd_intersection])
     _update_dict_stats(
         seq_intersects, intersection_ids,
@@ -313,8 +312,7 @@ class STQuality(object):
       unions = intersections + fps + fns
 
       num_classes = np.count_nonzero(unions)
-      ious = (
-          intersections.astype(np.double) /
+      ious = (intersections.astype(np.double) /
               np.maximum(unions, 1e-15).astype(np.double))
       iou_per_seq[index] = np.sum(ious) / num_classes
 
@@ -325,8 +323,7 @@ class STQuality(object):
     unions = intersections + fps + fns
 
     num_classes = np.count_nonzero(unions)
-    ious = (
-        intersections.astype(np.double) /
+    ious = (intersections.astype(np.double) /
             np.maximum(unions, _EPSILON).astype(np.double))
     iou_mean = np.sum(ious) / num_classes
 
