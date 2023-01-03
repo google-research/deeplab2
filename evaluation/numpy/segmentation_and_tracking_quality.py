@@ -136,12 +136,26 @@ class STQuality(object):
     if confusion_matrix is None:
       confusion_matrix = np.zeros(
           (self._confusion_matrix_size, self._confusion_matrix_size),
-          dtype=np.int64)
-    idxs = np.stack([np.reshape(y_true, [-1]),
-                     np.reshape(y_pred, [-1])],
-                    axis=0)
-    np.add.at(confusion_matrix, tuple(idxs),
-              1 if weights is None else np.reshape(weights, [-1]))
+          dtype=np.float64)
+
+    if weights is None:
+      unique_weight_list = [1.0]
+    else:
+      weights = np.reshape(weights, [-1])
+      unique_weight_list = np.unique(weights).tolist()
+
+    idxs = (np.reshape(y_true, [-1]) << self._label_bit_shift) + np.reshape(
+        y_pred, [-1])
+    for weight in unique_weight_list:
+      if weight not in [0.5, 1.0]:
+        raise ValueError(
+            'We currently only support the case where at most two cameras cover '
+            'the overlapped regions in the PVPS task.')
+
+      idxs_masked = idxs if weights is None else idxs[weights == weight]
+      unique_idxs, counts = np.unique(idxs_masked, return_counts=True)
+      confusion_matrix[self.get_semantic(unique_idxs), unique_idxs &
+                       self._bit_mask] += counts.astype(np.float64) * weight
     return confusion_matrix
 
   def update_state(self,
@@ -228,7 +242,7 @@ class STQuality(object):
     non_crowd_intersection = np.logical_and(label_mask, prediction_mask)
     intersection_ids = (
         y_true[non_crowd_intersection] * self._offset +
-        y_pred[non_crowd_intersection])
+                        y_pred[non_crowd_intersection])
     _update_dict_stats(
         seq_intersects, intersection_ids,
         weights[non_crowd_intersection] if weights is not None else None)
@@ -284,7 +298,7 @@ class STQuality(object):
     # Remove fp from confusion matrix for the void/ignore class.
     total_confusion = np.zeros(
         (self._confusion_matrix_size, self._confusion_matrix_size),
-        dtype=np.int64)
+        dtype=np.float64)
     for index, confusion in enumerate(
         self._iou_confusion_matrix_per_sequence.values()):
       removal_matrix = np.zeros_like(confusion)
@@ -301,7 +315,7 @@ class STQuality(object):
       num_classes = np.count_nonzero(unions)
       ious = (
           intersections.astype(np.double) /
-          np.maximum(unions, 1e-15).astype(np.double))
+              np.maximum(unions, 1e-15).astype(np.double))
       iou_per_seq[index] = np.sum(ious) / num_classes
 
     # `intersections` corresponds to true positives.
@@ -313,7 +327,7 @@ class STQuality(object):
     num_classes = np.count_nonzero(unions)
     ious = (
         intersections.astype(np.double) /
-        np.maximum(unions, _EPSILON).astype(np.double))
+            np.maximum(unions, _EPSILON).astype(np.double))
     iou_mean = np.sum(ious) / num_classes
 
     st_quality = np.sqrt(aq_mean * iou_mean)
