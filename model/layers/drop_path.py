@@ -20,6 +20,7 @@ Gao Huang, Yu Sun, Zhuang Liu, Daniel Sedra, Kilian Weinberger,
 Deep Networks with Stochastic Depth. In ECCV, 2016.
 """
 import tensorflow as tf
+from deeplab2.model import utils
 
 
 def get_drop_path_keep_prob(keep_prob_for_last_stage, schedule,
@@ -73,7 +74,8 @@ def generate_drop_path_random_mask(input_tensor, drop_path_keep_prob):
   binary_tensor = None
   if drop_path_keep_prob < 1.0:
     input_shape = input_tensor.get_shape().as_list()
-    random_tensor_shape = [input_shape[0]] + [1] * (len(input_shape) - 1)
+    batch_size = utils.resolve_batch_size(input_tensor)
+    random_tensor_shape = [batch_size] + [1] * (len(input_shape) - 1)
     random_tensor = drop_path_keep_prob
     random_tensor += tf.random.uniform(
         random_tensor_shape, dtype=input_tensor.dtype)

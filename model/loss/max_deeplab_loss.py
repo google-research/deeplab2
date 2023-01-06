@@ -88,7 +88,7 @@ def _generate_mask_slot_semantic_one_hot(
       num_mask_slots, num_thing_classes + num_stuff_classes].
   """
   semantic_map_shape = mask_gt_semantic_map.get_shape().as_list()
-  batch_size = semantic_map_shape[0]
+  batch_size = utils.resolve_batch_size(mask_gt_semantic_map)
   num_ground_truth_masks = semantic_map_shape[-1]
 
   # Concatenate the indices in each dimension of the ground truth one hot
@@ -474,7 +474,7 @@ class MaXDeepLabLoss(tf.keras.layers.Layer):
     # example, if we want to one-hot encode a class ID of 133 (the largest ID
     # for the COCO dataset), we will need a one-hot encoding of length 134.
     one_hot_depth = max(self._thing_stuff_class_ids) + 1
-    batch_size = y_true[common.GT_SEMANTIC_KEY].get_shape().as_list()[0]
+    batch_size = utils.resolve_batch_size(y_true[common.GT_SEMANTIC_KEY])
 
     # Compute pixel_gt_semantic_map (downsampling and reshaping to the 1D
     # representation that will be mainly used in this loss function).
@@ -491,7 +491,7 @@ class MaXDeepLabLoss(tf.keras.layers.Layer):
         tf.not_equal(pixel_gt_semantic_map, self._ignore_label), tf.float32)
     pixel_gt_non_void_mask = tf.ensure_shape(
         pixel_gt_non_void_mask,
-        [batch_size, output_height * output_width])
+        [None, output_height * output_width])
 
     # Compute pixel_gt_semantic_one_hot from pixel_gt_semantic_map in order to
     # gather pixel_gt_stuff_id_one_hot from pixel_gt_semantic_one_hot.
@@ -502,7 +502,7 @@ class MaXDeepLabLoss(tf.keras.layers.Layer):
                                           self._stuff_class_ids, axis=-1)
     pixel_gt_stuff_id_one_hot = tf.ensure_shape(
         pixel_gt_stuff_id_one_hot,
-        [batch_size, output_height * output_width, self._num_stuff_classes])
+        [None, output_height * output_width, self._num_stuff_classes])
 
     # Compute pixel_gt_thing_id_one_hot for thing masks.
     pixel_gt_thing_id_map = utils.strided_downsample(
@@ -522,7 +522,7 @@ class MaXDeepLabLoss(tf.keras.layers.Layer):
                                           pixel_gt_stuff_id_one_hot], axis=-1)
     pixel_gt_mask_id_one_hot = tf.ensure_shape(
         pixel_gt_mask_id_one_hot,
-        [batch_size, output_height * output_width, self._pixel_gt_num_mask_id])
+        [None, output_height * output_width, self._pixel_gt_num_mask_id])
 
     # Compute mask_gt_area by summing the one hot encodings spatially.
     mask_gt_area = tf.expand_dims(
@@ -566,7 +566,7 @@ class MaXDeepLabLoss(tf.keras.layers.Layer):
     # resolution, due to downsampling.
     mask_gt_non_void_mask = tf.cast(mask_gt_semantic_map > -1, tf.float32)
     mask_gt_non_void_mask = tf.ensure_shape(
-        mask_gt_non_void_mask, [batch_size, self._pixel_gt_num_mask_id])
+        mask_gt_non_void_mask, [None, self._pixel_gt_num_mask_id])
 
     return (pixel_gt_thing_mask, pixel_gt_non_void_mask,
             pixel_gt_mask_id_one_hot, mask_gt_semantic_map,
@@ -637,7 +637,7 @@ class MaXDeepLabLoss(tf.keras.layers.Layer):
 
     # Auxiliary instance_discrimination_loss.
     if self._instance_discrimination_loss_weight > 0.0:
-      batch_size = pixel_feature.get_shape().as_list()[0]
+      batch_size = utils.resolve_batch_size(pixel_feature)
       resulting_dict[common.INSTANCE_DISCRIMINATION_LOSS] = (
           self._instance_discrimination_loss(
               {_GT_KEY: sampled_gt_similarity},
@@ -852,8 +852,9 @@ class MaXDeepLabLoss(tf.keras.layers.Layer):
     ]
 
     pixel_feature = y_pred[common.PRED_PIXEL_SPACE_NORMALIZED_FEATURE_KEY]
-    batch_size, output_height, output_width, _ = (
+    _, output_height, output_width, _ = (
         pixel_feature.get_shape().as_list())
+    batch_size = utils.resolve_batch_size(pixel_feature)
     pixel_feature = tf.reshape(
         pixel_feature, [batch_size, output_height * output_width, -1])
 

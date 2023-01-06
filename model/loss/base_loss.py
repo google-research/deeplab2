@@ -92,7 +92,8 @@ def compute_mask_dice_loss(y_true: tf.Tensor,
       y_true, [3, 4], message='Input tensors y_true must have rank 3 or 4.')
 
   shape_list = y_true.shape.as_list()
-  batch, channels = shape_list[0], shape_list[-1]
+  channels = shape_list[-1]
+  batch = utils.resolve_batch_size(y_true)
   if prediction_activation == 'sigmoid':
     y_pred = tf.math.sigmoid(y_pred)
   elif prediction_activation == 'softmax':
