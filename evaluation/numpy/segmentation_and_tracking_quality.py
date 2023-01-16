@@ -176,7 +176,8 @@ class STQuality(object):
       sequence_id: The optional ID of the sequence the frames belong to. When no
         sequence is given, all frames are considered to belong to the same
         sequence (default: 0).
-      weights: The weights for each pixel with the same shape of `y_true`.
+      weights: The optional weights for each pixel with the same shape of
+        `y_true`. Defaults to using the same weight for every pixel.
     """
     y_true = y_true.astype(np.int64)
     y_pred = y_pred.astype(np.int64)
