@@ -16,10 +16,17 @@
 """Implementation of the Segmentation and Tracking Quality (STQ) metric."""
 
 import collections
+import warnings
 from typing import Any, Dict, MutableMapping, Optional, Sequence, Text, Union
 
 import numpy as np
 import tensorflow as tf
+
+
+def _check_weights(unique_weight_list: Sequence[float]):
+  if not set(unique_weight_list).issubset({0.5, 1.0}):
+    warnings.warn("Potential performance degration as the code is not optimized"
+                  " when weights has too many different elements.")
 
 
 def _update_dict_stats(stat_dict: MutableMapping[int, tf.Tensor],
@@ -31,16 +38,11 @@ def _update_dict_stats(stat_dict: MutableMapping[int, tf.Tensor],
   else:
     unique_weight_list, _ = tf.unique(weights)
     unique_weight_list = unique_weight_list.numpy().tolist()
+  _check_weights(unique_weight_list)
   # Iterate through the unique weight values, and weighted-average the counts.
   # Example usage: lower the weights in the region covered by multiple camera in
   # panoramic video panoptic segmentation (PVPS).
-  # NOTE(jierumei): The code is not optimized when unique_weight_list has many
-  # elements.
   for weight in unique_weight_list:
-    if weight not in [0.5, 1.0]:
-      raise ValueError(
-          'We currently only support the case where at most two cameras cover '
-          'the overlapped regions in the PVPS task.')
     if weights is None:
       ids, _, counts = tf.unique_with_counts(id_array)
     else:

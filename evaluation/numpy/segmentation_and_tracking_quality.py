@@ -20,10 +20,17 @@ this file and the corresponding unit-test to your project.
 """
 
 import collections
+import warnings
 from typing import Mapping, MutableMapping, Optional, Sequence, Text, Any
 import numpy as np
 
 _EPSILON = 1e-15
+
+
+def _check_weights(unique_weight_list: Sequence[float]):
+  if not set(unique_weight_list).issubset({0.5, 1.0}):
+    warnings.warn("Potential performance degration as the code is not optimized"
+                  " when weights has too many different elements.")
 
 
 def _update_dict_stats(stat_dict: MutableMapping[int, np.ndarray],
@@ -34,16 +41,11 @@ def _update_dict_stats(stat_dict: MutableMapping[int, np.ndarray],
     unique_weight_list = [1.0]
   else:
     unique_weight_list = np.unique(weights).tolist()
+  _check_weights(unique_weight_list)
   # Iterate through the unique weight values, and weighted-average the counts.
   # Example usage: lower the weights in the region covered by multiple camera in
   # panoramic video panoptic segmentation (PVPS).
-  # NOTE(jierumei): The code is not optimized when unique_weight_list has many
-  # elements.
   for weight in unique_weight_list:
-    if weight not in [0.5, 1.0]:
-      raise ValueError(
-          'We currently only support the case where at most two cameras cover '
-          'the overlapped regions in the PVPS task.')
     if weights is None:
       ids, counts = np.unique(id_array, return_counts=True)
     else:
@@ -143,15 +145,11 @@ class STQuality(object):
     else:
       weights = np.reshape(weights, [-1])
       unique_weight_list = np.unique(weights).tolist()
+    _check_weights(unique_weight_list)
 
     idxs = (np.reshape(y_true, [-1]) << self._label_bit_shift) + np.reshape(
         y_pred, [-1])
     for weight in unique_weight_list:
-      if weight not in [0.5, 1.0]:
-        raise ValueError(
-            'We currently only support the case where at most two cameras cover '
-            'the overlapped regions in the PVPS task.')
-
       idxs_masked = idxs if weights is None else idxs[weights == weight]
       unique_idxs, counts = np.unique(idxs_masked, return_counts=True)
       confusion_matrix[self.get_semantic(unique_idxs), unique_idxs &
