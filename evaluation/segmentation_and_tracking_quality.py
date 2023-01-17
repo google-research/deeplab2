@@ -160,7 +160,7 @@ class STQuality(object):
               tf.reshape(semantic_label, [-1]),
               tf.reshape(semantic_prediction, [-1]),
               self._confusion_matrix_size,
-              dtype=tf.int64,
+              dtype=tf.float64,
               weights=tf.reshape(weights, [-1])
               if weights is not None else None))
       self._sequence_length[sequence_id] += 1
@@ -170,7 +170,7 @@ class STQuality(object):
               tf.reshape(semantic_label, [-1]),
               tf.reshape(semantic_prediction, [-1]),
               self._confusion_matrix_size,
-              dtype=tf.int64,
+              dtype=tf.float64,
               weights=tf.reshape(weights, [-1])
               if weights is not None else None))
       self._predictions[sequence_id] = {}
@@ -266,7 +266,7 @@ class STQuality(object):
     # Remove fp from confusion matrix for the void/ignore class.
     total_confusion = np.zeros(
         (self._confusion_matrix_size, self._confusion_matrix_size),
-        dtype=np.int64)
+        dtype=np.float64)
     for index, confusion in enumerate(
         self._iou_confusion_matrix_per_sequence.values()):
       confusion = confusion.numpy()
