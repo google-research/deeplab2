@@ -215,8 +215,8 @@ class STQuality(object):
 
     instance_label = y_true & self._bit_mask  # 0xFFFF == 2 ^ 16 - 1
 
-    label_mask = np.zeros_like(semantic_label, dtype=np.bool)
-    prediction_mask = np.zeros_like(semantic_prediction, dtype=np.bool)
+    label_mask = np.zeros_like(semantic_label, dtype=bool)
+    prediction_mask = np.zeros_like(semantic_prediction, dtype=bool)
     for things_class_id in self._things_list:
       label_mask = np.logical_or(label_mask, semantic_label == things_class_id)
       prediction_mask = np.logical_or(prediction_mask,
