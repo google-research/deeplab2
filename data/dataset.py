@@ -166,8 +166,8 @@ WOD_PVPS_COLORMAP = waymo_constants.COLORMAP
 
 # Camera Names for WOD: PVPS.
 WOD_PVPS_CAMERA_NAMES = [
-    'efc_side_left_auto', 'efc_front_left_auto', 'efc_front_auto',
-    'efc_front_right_auto', 'efc_side_right_auto'
+    'side_left', 'front_left', 'front',
+    'front_right', 'side_right'
 ]
 
 

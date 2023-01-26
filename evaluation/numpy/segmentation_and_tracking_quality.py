@@ -250,6 +250,36 @@ class STQuality(object):
         seq_intersects, intersection_ids,
         weights[non_crowd_intersection] if weights is not None else None)
 
+  def merge_state(self, metrics: Sequence['STQuality']):
+    """Merges the results of multiple STQuality metrics.
+
+    This can be used to distribute metric computation for multiple sequences on
+    multiple instances, by computing metrics on each sequence separately, and
+    then merging the metrics with this function.
+
+    Note that only metrics with unique sequences are supported. Passing in
+    metrics with common instances is not supported.
+
+    Args:
+      metrics: A sequence of STQuality objects with unique sequences.
+
+    Raises:
+      ValueError: If a sequence is re-used between different metrics, or is
+        already in this metric.
+    """
+    # pylint: disable=protected-access
+    for metric in metrics:
+      for sequence in metric._ground_truth.keys():
+        if sequence in self._ground_truth:
+          raise ValueError('Tried to merge metrics with duplicate sequences.')
+        self._ground_truth[sequence] = metric._ground_truth[sequence]
+        self._predictions[sequence] = metric._predictions[sequence]
+        self._intersections[sequence] = metric._intersections[sequence]
+        self._iou_confusion_matrix_per_sequence[sequence] = (
+            metric._iou_confusion_matrix_per_sequence[sequence])
+        self._sequence_length[sequence] = metric._sequence_length[sequence]
+    # pylint: enable=protected-access
+
   def result(self) -> Mapping[Text, Any]:
     """Computes the segmentation and tracking quality.
 

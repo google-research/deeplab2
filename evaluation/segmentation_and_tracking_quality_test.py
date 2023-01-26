@@ -388,6 +388,91 @@ class STQualityTest(tf.test.TestCase):
       with self.subTest('Example 11 Iter 2'):
         _assert_compatibility(ground_truth_track, predicted_track, weights, 2)
 
+  def _get_merge_state_inputs(self, bit_shift):
+    ground_truth1 = np.array([[0, 1, 1, 1, 1, 1]])
+    ground_truth2 = (
+        np.array([[0, 1, 1, 1, 1]]) +
+        (np.array([[1, 0, 0, 0, 0]]) << bit_shift))
+
+    prediction1 = np.array([[2, 2, 2, 2, 1, 1]])
+    prediction2 = (
+        np.array([[2, 2, 0, 1, 1]]) +
+        (np.array([[0, 0, 1, 0, 0]]) << bit_shift))
+    return ground_truth1, ground_truth2, prediction1, prediction2
+
+  def test_merge_state_np(self):
+    # Test that merge_state with separate metrics returns the same metrics as
+    # using one metric.
+    n_classes = 2
+    ignore_label = 255
+    # classes = ['cars', 'sky'].
+    things_list = [0]
+    bit_shift = 16
+    ground_truth1, ground_truth2, prediction1, prediction2 = (
+        self._get_merge_state_inputs(bit_shift))
+
+    stq_metric_np1 = numpy_stq.STQuality(n_classes, things_list, ignore_label,
+                                         bit_shift, 2**24)
+    stq_metric_np2 = numpy_stq.STQuality(n_classes, things_list, ignore_label,
+                                         bit_shift, 2**24)
+    stq_metric_np3 = numpy_stq.STQuality(n_classes, things_list, ignore_label,
+                                         bit_shift, 2**24)
+
+    stq_metric_np1.update_state(ground_truth1, prediction1, 1)
+    stq_metric_np2.update_state(ground_truth2, prediction2, 2)
+    stq_metric_np3.merge_state([stq_metric_np1, stq_metric_np2])
+    results_merged = stq_metric_np3.result()
+
+    stq_metric_np = numpy_stq.STQuality(n_classes, things_list, ignore_label,
+                                        bit_shift, 2**24)
+    stq_metric_np.update_state(ground_truth1, prediction1, 1)
+    stq_metric_np.update_state(ground_truth2, prediction2, 2)
+    results = stq_metric_np.result()
+
+    self.assertDictEqual(results_merged, results)
+
+  def test_merge_state_tf(self):
+    # Test that merge_state with separate metrics returns the same metrics as
+    # using one metric.
+    n_classes = 2
+    ignore_label = 255
+    # classes = ['cars', 'sky'].
+    things_list = [0]
+    bit_shift = 16
+    max_instances_per_category = 1 << (bit_shift)
+    ground_truth1, ground_truth2, prediction1, prediction2 = (
+        self._get_merge_state_inputs(bit_shift))
+
+    stq_metric_tf1 = stq.STQuality(
+        n_classes, things_list, ignore_label, max_instances_per_category,
+        2 ** 24)
+    stq_metric_tf2 = stq.STQuality(
+        n_classes, things_list, ignore_label, max_instances_per_category,
+        2 ** 24)
+    stq_metric_tf3 = stq.STQuality(
+        n_classes, things_list, ignore_label, max_instances_per_category,
+        2 ** 24)
+    stq_metric_tf1.update_state(
+        tf.convert_to_tensor(ground_truth1),
+        tf.convert_to_tensor(prediction1), 1)
+    stq_metric_tf2.update_state(
+        tf.convert_to_tensor(ground_truth2),
+        tf.convert_to_tensor(prediction2), 2)
+    stq_metric_tf3.merge_state([stq_metric_tf1, stq_metric_tf2])
+    results_merged_tf = stq_metric_tf3.result()
+
+    stq_metric_tf = stq.STQuality(
+        n_classes, things_list, ignore_label, max_instances_per_category,
+        2 ** 24)
+    stq_metric_tf.update_state(
+        tf.convert_to_tensor(ground_truth1),
+        tf.convert_to_tensor(prediction1), 1)
+    stq_metric_tf.update_state(
+        tf.convert_to_tensor(ground_truth2),
+        tf.convert_to_tensor(prediction2), 2)
+    results_tf = stq_metric_tf.result()
+    self.assertDictEqual(results_merged_tf, results_tf)
+
 
 if __name__ == '__main__':
   tf.test.main()

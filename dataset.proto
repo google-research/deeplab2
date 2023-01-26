@@ -115,11 +115,11 @@ message DatasetOptions {
   // cameras values, but treat them as individual frames. For WOD-PVPS
   // multi-camera variants, we support cameras_to_use with the following string
   // values:
-  //  - 'efc_side_left_auto'
-  //  - 'efc_front_left_auto'
-  //  - 'efc_front_auto'
-  //  - 'efc_front_right_auto'
-  //  - 'efc_side_right_auto'
+  //  - 'side_left'
+  //  - 'front_left'
+  //  - 'front'
+  //  - 'front_right'
+  //  - 'side_right'
   //  - 'panorama'
   repeated string cameras_to_use = 18;
 }
