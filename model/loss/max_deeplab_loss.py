@@ -107,9 +107,10 @@ def _generate_mask_slot_semantic_one_hot(
   # Generate mask_slot_semantic_one_hot by scattering constant ones onto a
   # constant zero tensor.
   updates = tf.ones([batch_size * num_ground_truth_masks], dtype=tf.float32)
-  mask_slot_semantic_one_hot = tf.scatter_nd(
-      indices, updates,
-      shape=[batch_size, num_mask_slots, max(thing_stuff_class_ids) + 2])
+  mask_slot_semantic_one_hot = tf.tensor_scatter_nd_add(
+      tf.zeros(
+          [batch_size, num_mask_slots, max(thing_stuff_class_ids) + 2],
+          updates.dtype), indices, updates)
 
   # Gather the wanted classes in the desired (thing + stuff) order.
   thing_stuff_tensor = tf.cast(thing_stuff_class_ids, tf.int32)
