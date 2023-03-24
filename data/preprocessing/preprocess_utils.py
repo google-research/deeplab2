@@ -248,7 +248,7 @@ def get_random_scale(min_scale_factor: float,
     raise ValueError('Unexpected value of min_scale_factor.')
 
   if min_scale_factor == max_scale_factor:
-    return np.float32(min_scale_factor)
+    return np.float32(min_scale_factor)  # pytype: disable=bad-return-type  # numpy-scalars
 
   # When step_size = 0, we sample the value uniformly from [min, max).
   if step_size == 0:
