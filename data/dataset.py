@@ -58,13 +58,6 @@ The Waymo Open Dataset (WOD): Panoramic Video Panoptic Segmentation (PVPS)
 contains high quality panoramic video annotations with time and cross-camera
 consistency.
 
-8. ADE20K panoptic segmentation
-(https://groups.csail.mit.edu/vision/datasets/ADE20K/)
-
-Panoptic segmentation annotations for ADE20K dataset. Note that we convert the
-provided ADE20K panoptic segmentation format to the following one:
-panoptic label = semantic label * 1000 + instance id.
-
 We can use the dataset in the following settings:
 - In the multicamera setting, an example contains all camera data within a
 frame (i.e., the instance correspondence between cameras are guaranteed).
@@ -85,6 +78,13 @@ groundtruth and use the dataset for the task of video panoptic segmentation.
 depth-aware video panoptic segmentation dataset in the multicamera setting. The
 users could ignore the provided depth groundtruth and use the dataset for the
 task of panoramic video panoptic segmentation.
+
+8. ADE20K panoptic segmentation
+(https://groups.csail.mit.edu/vision/datasets/ADE20K/)
+
+Panoptic segmentation annotations for ADE20K dataset. Note that we convert the
+provided ADE20K panoptic segmentation format to the following one:
+panoptic label = semantic label * 1000 + instance id.
 
 
 References:
