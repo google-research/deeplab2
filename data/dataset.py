@@ -351,10 +351,7 @@ def _build_waymo_image_panoptic_seg_dataset(**kwargs):
       },
       ignore_label=waymo_constants.IGNORE_LABEL,
       panoptic_label_divisor=waymo_constants.PANOPTIC_LABEL_DIVISOR,
-      num_classes=len(
-          list(
-              filter(lambda val: val['id'] != waymo_constants.IGNORE_LABEL,
-                     waymo_meta))),
+      num_classes=len(waymo_meta),
       class_has_instances_list=list(
           map(lambda val: val['id'],
               filter(lambda val: val['isthing'], waymo_meta))),

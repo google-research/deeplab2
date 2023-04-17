@@ -32,8 +32,8 @@ import immutabledict
 COLORMAP = "waymo"
 PANOPTIC_LABEL_DIVISOR = 100000
 
-IGNORE_LABEL_NAME = "ignore_label"
-IGNORE_LABEL = 255
+IGNORE_LABEL_NAME = "unknown"
+IGNORE_LABEL = 0
 
 _WAYMO_COLORS = immutabledict.immutabledict({
     "bicycle": [119, 11, 32],
@@ -55,6 +55,7 @@ _WAYMO_COLORS = immutabledict.immutabledict({
     "pole": [153, 153, 153],
     "road": [128, 64, 128],
     "road_marker": [217, 210, 233],
+    "sdc": [102, 102, 102],
     "sidewalk": [244, 35, 232],
     "sign": [246, 178, 107],
     "sky": [70, 130, 180],
@@ -62,12 +63,13 @@ _WAYMO_COLORS = immutabledict.immutabledict({
     "traffic_light": [250, 170, 30],
     "trailer": [111, 168, 220],
     "truck": [0, 0, 70],
-    "unknown(sdc)": [102, 102, 102],
-    "vegetation": [107, 142, 35]
+    "unknown": [102, 102, 102],
+    "vegetation": [107, 142, 35],
 })
 
 _WAYMO_CLASS_NAMES = [
-    "unknown(sdc)",
+    "unknown",
+    "sdc",
     "car",
     "truck",
     "bus",
@@ -114,10 +116,4 @@ def get_waymo_meta() -> Sequence[Any]:
         "isthing": int(name in _IS_THINGS)
     }
     meta.append(item)
-  meta.append({
-      "color": [0, 0, 0],
-      "name": IGNORE_LABEL_NAME,
-      "id": IGNORE_LABEL,
-      "isthing": 0
-  })
   return meta
