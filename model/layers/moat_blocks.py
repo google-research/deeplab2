@@ -460,7 +460,7 @@ class MOATBlock(tf.keras.layers.Layer):
         kernel_initializer=self._config.kernel_initializer,
         bias_initializer=self._config.bias_initializer)
 
-  def _make_wondows(self, inputs):
+  def _make_windows(self, inputs):
     _, height, width, channels = inputs.get_shape().with_rank(4).as_list()
     inputs = tf.reshape(
         inputs,
@@ -530,10 +530,18 @@ class MOATBlock(tf.keras.layers.Layer):
     attention_shortcut = output
     def _func(output):
       output = self._attention_norm(output)
-      _, height, width, _ = output.get_shape().with_rank(4).as_list()
-      output = self._make_wondows(output)
+      _, height, width, channels = output.get_shape().with_rank(4).as_list()
+      
+      if self._config.window_size:
+        output = self._make_windows(output)
+      
       output = self._attention(output)
-      output = self._remove_windows(output, height, width)
+      
+      if self._config.window_size:
+        output = self._remove_windows(output, height, width)
+      else:
+        output = tf.reshape(output, [-1, height, width, channels])
+        
       return output
 
     func = _func
