@@ -98,6 +98,11 @@ We list a few projects that use DeepLab2.
 
 Note that the exported models used in all the demos are in **CPU** mode.
 
+## Gradio Demo
+
+*   <a href='https://gradio.app/hub/AK391/deeplab2'>Gradio Web Demo</a><br>
+
+
 ## Running DeepLab2
 
 See [Getting Started](g3doc/setup/getting_started.md). In short, run the
