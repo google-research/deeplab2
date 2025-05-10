@@ -62,8 +62,8 @@ class DSTQuality(stq.STQuality):
                ignore_label: int,
                max_instances_per_category: int,
                offset: int,
-               depth_threshold: Tuple[float] = (1.25, 1.1),
-               name: str = 'dstq',):  # pytype: disable=annotation-type-mismatch
+               depth_threshold: Tuple[float, float] = (1.25, 1.1),
+               name: str = 'dstq'):
     """Initialization of the DSTQ metric.
 
     Args:
